@@ -1,6 +1,6 @@
 // chess.cpp
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-12-29
+// @version 2021-04-28
 // - wasm implementation, 2x faster than fast chess.js
 // - FRC support
 // - emcc --bind -o ../js/chess-wasm.js chess.cpp -s WASM=1 -Wall -s MODULARIZE=1 -O3 --closure 1
@@ -51,7 +51,7 @@ constexpr uint8_t   MAX_DEPTH = 64;
 constexpr Piece     MoveCapture(Move move) {return (move >> 10) & 7;};
 constexpr uint8_t   MoveFlag(Move move) {return (move >> 13) & 3;};
 constexpr Square    MoveFrom(Move move) {return (move >> 15) & 127;};
-constexpr uint8_t   moveOrder(Move move) {return (move & 1023);};
+constexpr uint8_t   MoveOrder(Move move) {return (move & 1023);};
 constexpr Piece     MovePromote(Move move) {return (move >> 22) & 7;};
 constexpr Square    MoveTo(Move move) {return (move >> 25) & 127;};
 constexpr Piece     NONE = 0;
@@ -117,7 +117,7 @@ int MOBILITY_LIMITS[] = {
     // attacks + defenses
     // those values could be optimized automatically
     PIECE_ATTACKS[16][16] = {
-        //  .   P   N   B   R   Q   K   .   .   p   n   b   r   q   k   .
+        //   P   N   B   R   Q   K   .   .   p   n   b   r   q   k   .
         {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0},
         {0,  7, 15, 10,  2,  1,  0,  0,  0,  1,  1,  1,  1,  1,  5,  0},    // P
         {0,  5,  9,  9,  8,  8,  0,  0,  0,  5,  2,  9,  5,  5,  5,  0},    // N
@@ -186,20 +186,20 @@ int MOBILITY_LIMITS[] = {
     // material eval
     PIECE_SCORES[] = {
         0,
-        160,        // P
+        161,        // P
         720,        // N
-        750,        // B
+        752,        // B
         1200,       // R
-        2500,       // Q
-        5000,       // K
+        2496,       // Q
+        4992,       // K
         0,
         0,
-        160,        // p
+        161,        // p
         720,        // n
-        750,        // b
+        752,        // b
         1200,       // r
-        2500,       // q
-        5000,       // k
+        2496,       // q
+        4992,       // k
         0,
     },
     PROMOTE_SCORES[] = {
@@ -227,9 +227,10 @@ std::map<std::string, int> EVAL_MODES = {
     {"hce", 1 + 2},
     {"mat", 1},
     {"mob", 2},
-    {"nn", 1 + 2 + 4 + 32},
-    {"null", 0},
-    {"sq", 1 + 2 + 4 + 8},
+    {"nn", 1 + 2 + 4 + 8 + 16 + 32},
+    {"nul", 0},
+    {"paw", 1 + 2 + 4 + 8},
+    {"kin", 1 + 2 + 4 + 16},
 };
 // piece names for print
 std::map<char, Piece> PIECES = {
@@ -1416,49 +1417,72 @@ public:
 
     /**
      * Evaluate the current position
-     * - eval_mode: 0:null, 1:mat, 2:hc2, &4:qui, 8:nn
+     * - eval_mode: 0:nul, 1:mat, 2:hc2, 4:att, 8:paw, 16:kin, 32:nn
      * - 8/5q2/8/3K4/8/8/8/7k w - - 0 1 KQ vs K
      * - 8/5r2/8/3K4/8/8/8/7k w - - 0 1 KR vs K
      * - 8/5n2/8/3K4/8/8/b7/7k w - - 0 1  KNB vs K
      */
     int evaluate() {
+        // 1) draw
         if (half_moves >= 100)
             return 0;
-        int score = 0;
+        int mat0 = materials[WHITE],
+            mat1 = materials[BLACK],
+            num_pawn0 = mat0 & 15,
+            num_pawn1 = mat1 & 15,
+            low0 = (!num_pawn0 && mat0 < 6000),
+            low1 = (!num_pawn1 && mat1 < 6000),
+            score = 0;
 
+        if (low0) {
+            if (low1)
+                return 0;
+            mat0 -= 300;
+            if (num_pawn1)
+                mat1 += 600;
+        }
+        else if (low1) {
+            mat1 -= 300;
+            if (num_pawn0)
+                mat0 += 600;
+        }
+
+        // 2) material
         if (eval_mode & 1) {
-            score += materials[WHITE] - materials[BLACK];
+            score += mat0 - mat1;
             // KRR vs KR => KR should not exchange the rook
-            float ratio = materials[WHITE] * 1.0f / (materials[WHITE] + materials[BLACK]) - 0.5f;
+            float ratio = mat0 * 1.0f / (mat0 + mat1) - 0.5f;
             score += int(ratio * 2048 + 0.5f);
         }
 
-        // mobility
+        // 3) mobility
         if (eval_mode & 2) {
-            if (!materials[WHITE]) {
+            auto factor = (eval_mode & 16)? 1: 2;
+
+            if (mat0 <= 5000) {
                 auto king = kings[WHITE],
                     king2 = kings[BLACK];
-                score -= (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 15;
-                score += (std::abs(Filer(king) - Filer(king2)) + std::abs(Rank(king) - Rank(king2))) * 10;
+                score -= (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 25;
+                score += (std::abs(Filer(king) - Filer(king2)) + std::abs(Rank(king) - Rank(king2))) * 40;
                 score += mobilities[6] * 15;
             }
             else
                 for (auto i = 1; i < 7; i ++)
-                    score += Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * 2;
+                    score += Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * factor;
 
-            if (!materials[BLACK]) {
+            if (mat1 <= 5000) {
                 auto king = kings[BLACK],
                     king2 = kings[WHITE];
-                score -= (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 15;
-                score += (std::abs(Filer(king) - Filer(king2)) + std::abs(Rank(king) - Rank(king2))) * 10;
-                score += mobilities[6] * 15;
+                score += (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 25;
+                score -= (std::abs(Filer(king) - Filer(king2)) + std::abs(Rank(king) - Rank(king2))) * 40;
+                score -= mobilities[14] * 15;
             }
             else
                 for (auto i = 9; i < 15; i ++)
-                    score -= Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * 2;
+                    score -= Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * factor;
         }
 
-        // attacks + defenses
+        // 4) attacks + defenses
         if (eval_mode & 4) {
             for (auto i = 1; i < 7; i ++)
                 score += attacks[i] + defenses[i];
@@ -1466,10 +1490,28 @@ public:
                 score -= attacks[i] + defenses[i];
         }
 
-        // squares
-        if (eval_mode & 8)
-            score += positions[WHITE] - positions[BLACK];
+        // 5) pawns
+        if (eval_mode & 8) {
+            for (auto square = SQUARE_A8; square <= SQUARE_H1; square ++) {
+                if (square & 0x88) {
+                    square += 7;
+                    continue;
+                }
+                auto piece = board[square];
+                if (piece == PAWN) {
+                    if (board[square + 1] == PAWN)
+                        score += 15;
+                }
+                else if (piece == PAWN + 8) {
+                    if (board[square + 1] == PAWN + 8)
+                        score -= 15;
+                }
+            }
+        }
 
+        // 6) king
+        // if (eval_mode & 16) {
+        // }
         return score * (1 - (turn << 1));
     }
 
@@ -1484,6 +1526,10 @@ public:
         memset(positions, 0, sizeof(positions));
 
         for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+            if (i & 0x88) {
+                i += 7;
+                continue;
+            }
             auto piece = board[i];
             if (!piece)
                 continue;
@@ -2022,7 +2068,7 @@ public:
      * @param text c2c4 a7a8a ...
      * @param sloppy allow sloppy parser
      */
-    std::vector<MoveText> multiSan(std::string multi, bool sloppy) {
+    std::vector<MoveText> multiSan(std::string multi, bool sloppy, bool create_fen) {
         std::vector<MoveText> result;
         int prev = 0,
             size = multi.size();
@@ -2037,7 +2083,7 @@ public:
                 if (obj.from == obj.to)
                     break;
                 makeMove(packObject(obj));
-                obj.fen = createFen();
+                obj.fen = create_fen? createFen(): "";
                 obj.ply = fen_ply + ply;
                 obj.score = 0;
                 result.emplace_back(obj);

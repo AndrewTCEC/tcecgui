@@ -1,6 +1,6 @@
 // chess-wasm.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-12-29
+// @version 2021-04-28
 //
 /*
 globals
@@ -195,7 +195,9 @@ beforeEach(() => {
     [false, 'd=4 t=8 q=10', 5, [5, 1, 1e9, 0, 8, 10]],
     [false, 'd=6', 0, [6, 1, 1e9, 0, 0, 0]],
     [false, 'd=6', 4, [4, 1, 1e9, 0, 0, 0]],
-    [false, 'd=8 e=nn n=1000 s=ab t=30', 0, [8, 39, 1000, 2, 30, 0]],
+    [false, 'd=7 e=paw', 0, [7, 15, 1e9, 0, 0, 0]],
+    [false, 'd=7 e=kin', 0, [7, 23, 1e9, 0, 0, 0]],
+    [false, 'd=8 e=nn n=1000 s=ab t=30', 0, [8, 63, 1000, 2, 30, 0]],
     [true, 'e=hce q=5', 0, [4, 3, 1e9, 0, 0, 5]],
     [true, 'e=att', 0, [4, 7, 1e9, 0, 0, 0]],
 ].forEach(([frc, options, depth, answer], id) => {
@@ -249,15 +251,15 @@ beforeEach(() => {
 
 // evaluate
 [
-    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=null', [0, 0]],
-    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=mat', [-485, -485]],
+    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=nul', [0, 0]],
+    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=mat', [-483, -483]],
     ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=mob', [212, 212]],
-    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=hce', [-273, -273]],
-    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=att', [-175, -175]],
-    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=mat', [-1509, -1509]],
-    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=mob', [114, 150]],
-    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=hce', [-1395, -1359]],
-    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=att', [-1358, -1322]],
+    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=hce', [-271, -271]],
+    ['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=att', [-173, -173]],
+    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=mat', [-2501, -2501]],
+    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=mob', [220, 220]],
+    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=hce', [-2281, -2281]],
+    ['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=att', [-2244, -2244]],
 ].forEach(([fen, options, answer], id) => {
     test(`evaluate:${id}`, () => {
         chess.configure(false, options, 1);
@@ -498,10 +500,10 @@ beforeEach(() => {
 [
     ['8/8/8/8/8/8/8/8 w - - 0 1', 0, 0],
     ['8/8/8/8/8/8/8/8 w - - 0 1', 1, 0],
-    ['8/p7/8/8/8/8/8/Q7 w - - 0 1', 0, 2500],
-    ['8/p7/8/8/8/8/8/Q7 w - - 0 1', 1, 160],
-    [START_FEN, 0, 9120],
-    [START_FEN, 1, 9120],
+    ['8/p7/8/8/8/8/8/Q7 w - - 0 1', 0, 2496],
+    ['8/p7/8/8/8/8/8/Q7 w - - 0 1', 1, 161],
+    [START_FEN, 0, 9128],
+    [START_FEN, 1, 9128],
 ].forEach(([fen, color, answer], id) => {
     test(`material:${id}`, () => {
         chess.load(fen, false);
@@ -711,6 +713,16 @@ beforeEach(() => {
         'Nf7', [true, false],
         {capture: 0, fen: '', flag: 0, from: 54, m: 'Nf7+', ply: 92, promote: 0, pv: '', score: 115, to: 21},
     ],
+    [
+        '2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31',
+        'Qd2c2', [true, false],
+        {capture: 0, fen: '', flag: 0, from: 0, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 0},
+    ],
+    [
+        '2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31',
+        'Qd2c2', [true, true],
+        {capture: 0, fen: '', flag: 0, from: 99, m: 'Q2c2', ply: 60, promote: 0, pv: '', score: 100, to: 98},
+    ],
 ].forEach(([fen, move, [decorate, sloppy], answer], id) => {
     test(`moveSan:${id}`, () => {
         chess.load(fen, false);
@@ -793,7 +805,7 @@ beforeEach(() => {
     [
         START_FEN,
         '1. d4 d5 2. c4',
-        false,
+        [false, true],
         [
             {
                 capture: 0, fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1', flag: 0, from: 99,
@@ -813,17 +825,18 @@ beforeEach(() => {
     [
         START_FEN,
         '1. b4 e5 2. Bb2 d6 3. e3 Be7 4. c4 Nf6 5. Nc3 O-O 6. Qc2 c6 7. Nf3 Bg4 8. Be2 Nbd7 9. h3 Bh5 10. O-O Bg6 11. Qb3 Ne4 12. Nxe4 Bxe4 13. Bc3 Qc7 14. a4 a5 15. bxa5 Nc5 16. Qb2 Bf6 17. d4 exd4 18. exd4 Ne6 19. Nd2 Bf5 20. Rfd1 Rfe8 21. Bf1 c5 22. Nb3 h6 23. dxc5 Bxc3 24. Qxc3 Nxc5 25. Nd4 Qd7 26. Qb4 Ra6 27. Ra2 Be6 28. Nxe6 Qxe6 29. Re2 Qc8 30. Rxe8+ Qxe8 31. g3 Qe7 32. Bg2 Kf8 33. Bd5 Qd7 34. Rd4 Qxa4 35. Qb1 Rxa5 36. Kg2 Ne6 37. Bxe6 fxe6 38. Qxb7 Qe8 39. Rxd6 Qa8 40. Qxa8+ Rxa8 41. Rxe6 Kf7 42. Rc6 h5 43. Rc5 g6 44. Kf3 Ra2 45. h4 Rc2 46. Kf4 Rxf2+ 47. Kg5 Rf3 48. Rc7+ Ke6 49. Kxg6 Rxg3+ 50. Kxh5',
-        false,
+        [false, false],
         undefined,
         '8/2R5/4k3/7K/2P4P/6r1/8/8 b - - 0 50',
     ],
-].forEach(([fen, multi, sloppy, answer, new_fen], id) => {
+].forEach(([fen, multi, [sloppy, create_fen], answer, new_fen], id) => {
     test(`multiSan:${id}`, () => {
         chess.load(fen, false);
-        let moves = ArrayJS(chess.multiSan(multi, sloppy));
+        let moves = ArrayJS(chess.multiSan(multi, sloppy, create_fen));
         if (answer) {
             for (let move of moves)
-                expect(get_move_ply({fen: move.fen})).toEqual(move.ply);
+                if (move.fen)
+                    expect(get_move_ply({fen: move.fen})).toEqual(move.ply);
             expect(moves).toEqual(answer);
         }
         expect(chess.fen()).toEqual(new_fen);
@@ -1264,22 +1277,24 @@ beforeEach(() => {
     ['1rb1kbnq/1p1p4/p1nPp1p1/6Br/5Q2/P1N2N2/1P2PPPP/3RKB1R w K -', 'f4f7', 'd=5 e=att q=2 s=ab t=0', -2127, {}],
     ['r2k1bnr/3bpppp/pnp3q1/QN6/8/1P2P3/1B2BPPP/2KR3R w - - 6 18', 'a5b6', 'd=5 s=ab x=20', 30991, {}],
     ['1nb2k1r/rpbpqp1p/p4n1P/P1p1p1p1/R6R/2N3P1/1PPPPP2/2BQKBN1 w - g6 0 11', 'c3b5', 'e=hce q=2 s=ab', -1985, {}],
-    ['4B2k/8/8/8/1P2N2P/2P1P1R1/P2PKPP1/R1B3N1 w - - 13 42', '', '', [], {e4f6: 40, g3g5: 7028}],
+    ['4B2k/8/8/8/1P2N2P/2P1P1R1/P2PKPP1/R1B3N1 w - - 13 42', '', '', [], {e4f6: 40, g3g5: 7988}],
     ['4nk2/7Q/8/4p1N1/r3P3/q1P1NPP1/4K3/6R1 w - - 2 73', '', 1, 1260, {}],
     ['4nk2/7Q/8/4p1N1/r3P3/q1P1NPP1/4K3/6R1 w - - 2 73', '', 2, 30999, {1: 'g5e6 h7f7'}],
     ['4nk2/7Q/8/4p1N1/r3P3/q1P1NPP1/4K3/6R1 w - - 2 73', '', 3, 30999, {1: 'g5e6 h7f7'}],
     ['7k/2Q5/8/1B2P3/8/2PRKN2/8/8 w - - 1 47', '', '', [], {1: 'd3d8', b5c4: 50, c7f7: 50}],
     ['7k/3Q4/1p6/2p5/4K3/1P4PP/P6q/8 w - - 48 107', '', 3, [], {a2a3: 188, d7d8: 511, d7h7: -2345}],
+    // 10
     ['8/6Q1/7p/7k/4P3/P2P2K1/8/8 w - - 0 75', '', 'd=2 e=mat s=mm', [], {g3h3: 0, g7g4: 30999}],
-    ['8/7R/8/4B3/P5N1/6P1/PKP3k1/7r b - - 48 96', '', 3, [], {h1b1: -3565, h1h7: -980}],
+    ['8/7R/8/4B3/P5N1/6P1/PKP3k1/7r b - - 48 96', '', 3, [], {h1b1: -4533, h1h7: -980}],
     ['bq1b1k1r/p1pp1r2/1p6/3Pp1Q1/4p1p1/1N6/PPP2PKP/B2R3R w h -', '', 'd=4 e=hce s=ab', [], {g5d2: -332, h2h4: -3005}],
     ['bq1b1k1r/p1pp1r2/1p6/3Pp1Q1/4p1p1/1N6/PPP2PKP/B2R3R w h -', '', 'd=4 e=hce s=mm', [], {g5d2: -332, h2h4: -3005}],
     ['r1b1kbnr/p2np2p/8/5p1P/8/N7/2P2qP1/4K1NR w kq - 0 16', '', 1, [], {1: 'e1f2'}],
     ['r1b5/ppppn2r/8/4P1Kp/3k1B2/6P1/P6P/4R3 w - - 8 28', '', 'd=2 e=qui q=1 s=ab', [], {e1d1: -2034, e1e4: -3488}],
-    ['rn1qkbnr/pp2pppp/8/2pp4/1P5P/2PQ1P2/P3P1P1/RNB1KBNR w KQkq c6 0 7', 'd3h7', 'd=1 e=hce q=1 s=ab', -1737, {}],
+    ['rn1qkbnr/pp2pppp/8/2pp4/1P5P/2PQ1P2/P3P1P1/RNB1KBNR w KQkq c6 0 7', 'd3h7', 'd=1 e=hce q=1 s=ab', -1681, {}],
     ['rn1qkbnr/pp2pppp/8/2pp4/1P5P/2PQ1P2/P3P1P1/RNB1KBNR w KQkq c6 0 7', 'd3h7', 'd=1 e=hce q=1 s=mm', 880, {}],
     ['rn1qkbnr/ppp1pppp/8/3p4/6bP/6P1/PPPPPP2/RNBQKBNR w KQkq - 1 3', 'e2e4', 'd=3 e=hce q=1 s=ab', -1880, {}],
     ['rnb1k1nr/1p1p1p2/1qp1p3/4P1pp/p2P4/1N1B4/PPP2PPP/R2QK1NR w KQkq -', '', 3, [], {b3c1: 0, b3c5: 0, b3d2: 0}],
+    // 20
     ['rnb1k1nr/pppp1pp1/4p2p/8/2PP2q1/2PBPN2/P4PPP/R1BQK2R w KQkq - 2 8', '', 1, [], {2: 'e1h1'}],
     ['rnbq1bnr/ppppk1pp/5p2/4p3/8/3P1N2/PPPQPPPP/RNB1KB1R w KQ - 2 4', 'd2g5', 'd=3 e=hce q=1 s=ab', -2321, {}],
     ['rnbqkbnr/p3ppQp/1p1p4/1N6/8/8/PPP1PPPP/R1B1KBNR b KQkq - 0 5', '', 1, 2434, {}],

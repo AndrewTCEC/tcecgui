@@ -1,24 +1,23 @@
 // 3d.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-04
+// @version 2021-02-19
 //
 // general 3d rendering code
 //
 // included after: common, engine, global
+// jshint -W069
 /*
 globals
-_, Abs, add_timeout, AnimationFrame, api_translate_get, Assign, Attrs, Audio, C, CameraControls, cannot_click, Class,
-clear_timeout, create_url_list,
-DefaultInt, DEFAULTS, DEV, device, document, done_touch, Events, Exp, exports, Format, full_scroll, get_drop_id,
-global, HasClass, HTML, Id, Input, IsArray, IsDigit, IsFunction, IsString, KEY_TIMES, Keys, KEYS,
-LINKS, load_library, LS, Max, navigator, NO_IMPORTS, Now, ON_OFF, Parent, PD, require,
-S, save_option, set_draggable, Show, SP, Stats, Style, T:true, THREE, Title, translate_nodes, translates, TYPES,
-Undefined, update_svg, update_theme, Visible, window, X_SETTINGS, Y
+_, Abs, add_timeout, AnimationFrame, Assign, Attrs, Audio, C, CacheId, CameraControls, clear_timeout,
+DefaultInt, DEV, document, Events, Exp, exports, Format, global, HTML, IsString, KEY_TIMES, Keys, KEYS,
+LoadLibrary, LS, navigator, Now, require,
+S, save_option, set_modal_events, Show, Stats, Style, T:true, THREE, translate_nodes,
+Vector2:true, Visible, window, Y, y_x
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined' && typeof require != 'undefined') {
     ['common'].forEach(key => {
         Object.assign(global, require(`./${key}.js`));
     });
@@ -28,7 +27,6 @@ if (typeof global != 'undefined') {
 let audiobox = {
         sounds: {},
     },
-    AUTO_ON_OFF = ['auto', 'on', 'off'],
     axes = [0, 0, 0, 0],
     AXIS_DEAD_ZONE = 0.2,
     AXIS_MAPPING = [
@@ -62,25 +60,23 @@ let audiobox = {
     button_repeat_time,
     buttons = {},
     camera,
+    camera_auto,
     camera_control,
     camera_id,
     camera_id2,
     camera_look,
     camera_pos,
+    camera_reverse,
     camera_target,
     CAMERAS = {
-        static: {
+        'static': {
             dir: [0, 0, 0],
             lerp: [-1, -1, 0],
             pos: [0, 0, 0],
         },
     },
-    change_queue,
-    click_target,
     clock,
     clock2,
-    context_areas = {},
-    context_target,
     controls,
     cube,
     cubes = [],
@@ -103,13 +99,10 @@ let audiobox = {
     next_paused,
     now,
     now2,
-    Object3D,
     old_pos,
     old_rot,
-    POPUP_ADJUSTS = {},
     PARENT_3D = 'body',
     PARTS = [],
-    Quaternion,
     raycaster,
     rendered = 0,
     renderer,
@@ -126,6 +119,7 @@ let audiobox = {
     SIMULATION_HZ = 60,
     stats,
     STEPS = {},
+    T,
     t_quat,
     t_rot,
     t_sphere,
@@ -141,13 +135,10 @@ let audiobox = {
     VECTOR_X,
     VECTOR_Y,
     VECTOR_Z,
-    Vector2,
-    Vector3,
     VECTORS,
     vibration,
     virtual_animate_scenery,
     virtual_can_render_simulate,
-    virtual_change_setting_special,
     virtual_game_action_key,
     virtual_game_action_keyup,
     virtual_game_actions,
@@ -159,7 +150,6 @@ let audiobox = {
     virtual_pre_simulation,
     virtual_random_position,
     virtual_resize_3d_special,
-    virtual_set_modal_events_special,
     virtual_show_modal_special,
     virtual_simulate_object,
     virtual_update_camera,
@@ -168,6 +158,21 @@ let audiobox = {
     virtual_update_renderer_special,
     world,
     world_transform;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** @typedef {{x:number, y:number, z:number, w:number}} */
+let Quaternion;
+/** @typedef {{x:number, y:number, z:number}} */
+let Vector3;
+
+/**
+ * @typedef {{
+ * position: Vector3,
+ * quaternion: Quaternion,
+ * rotation: *,
+ * }} */
+let Object3D;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -203,8 +208,8 @@ function init_3d(force) {
         return;
 
     // vars
-    if (!window.T)
-        window.T = THREE;
+    if (!T)
+        T = window.T = window.THREE;
 
     Object3D = T.Object3D;
     Quaternion = T.Quaternion;
@@ -248,7 +253,7 @@ function init_3d(force) {
     init_lights();
 
     // renderer
-    let canvas = Id('canvas'),
+    let canvas = CacheId('canvas'),
     context = canvas.getContext('webgl2') || canvas.getContext('webgl');
     renderer = new T.WebGLRenderer({
         antialias: false,
@@ -262,12 +267,12 @@ function init_3d(force) {
         shadowMapSoft: true,
         toneMappingExposure: 3.2,
     });
-    renderer.shadowMap.enabled = !!Y.shadow;
+    renderer.shadowMap.enabled = !!Y['shadow'];
     // renderer.shadowMap.type = T.PCFSoftShadowMap;
 
     // more
-    if (DEV.frame) {
-        stats = new Stats();
+    if (DEV['frame']) {
+        stats = new window.Stats();
         stats.showPanel(0);     // 0: fps, 1: ms, 2: mb, 3+: custom
         document.body.appendChild(stats.dom);
     }
@@ -353,7 +358,7 @@ function interpolate_store(part) {
  * Load a model
  * @param {string} name key for model storage
  * @param {string} filename
- * @param {function} callback
+ * @param {Function} callback
  */
 function load_model(name, filename, callback) {
     // 0) need T
@@ -403,8 +408,8 @@ function load_model(name, filename, callback) {
 
 /**
  * Load multiple models
- * @param {Object} filenames
- * @param {function} callback
+ * @param {!Object} filenames
+ * @param {Function} callback
  */
 function load_models(filenames, callback) {
     let keys = Keys(filenames),
@@ -429,7 +434,7 @@ function load_models(filenames, callback) {
  * @param {number=} y
  * @param {number=} z
  * @param {number=} w
- * @returns {Object}
+ * @returns {Quaternion}
  */
 function new_quaternion(x, y, z, w) {
     return new Quaternion(x, y, z, w);
@@ -460,7 +465,7 @@ function new_vector3(x, y, z) {
  * Render the 3D scene
  */
 function render() {
-    if (!cube || !clock || !Y.three)
+    if (!cube || !clock || !T || !Y.three)
         return;
 
     let [can_render, can_simulate] = virtual_can_render_simulate? virtual_can_render_simulate(): [true, true],
@@ -632,12 +637,12 @@ function render() {
 
 /**
  * Request a render
- * @param {Object|number} timer
+ * @param {Object|number=} timer
  */
 function request_render(timer) {
     if (dirty & 4)
         return;
-    if (dirty && (!timer || !Number.isFinite(timer)))
+    if (dirty && (!timer || isNaN(timer)))
         return;
     dirty = 2;
     AnimationFrame(render);
@@ -694,6 +699,7 @@ function resize_3d() {
     camera.width = width;
 
     if (renderer && !controls && use_controls) {
+        let CameraControls = window.CameraControls;
         CameraControls.install({T: T, THREE: T});
         controls = new CameraControls(camera, renderer.domElement);
         controls.dampingFactor = 0.1;
@@ -706,7 +712,7 @@ function resize_3d() {
 
 /**
  * Set controls to the current camera
- * @param {boolean=} pause
+ * @param {boolean} pause
  * @param {Vector3} target
  * @param {boolean=} transition
  */
@@ -733,8 +739,9 @@ function set_camera_control(pause, target, transition) {
 /**
  * Set the camera view
  * @param {string=} id
+ * @param {boolean=} auto was set automatically, not manually
  */
-function set_camera_id(id) {
+function set_camera_id(id, auto) {
     // default value
     if (!id) {
         id = Y.camera_id;
@@ -753,6 +760,10 @@ function set_camera_id(id) {
     // change the camera view
     camera_id = id;
     save_option('camera_id', id);
+    if (!auto) {
+        camera_auto = 0;
+        camera_reverse = false;
+    }
 }
 
 /**
@@ -773,7 +784,7 @@ function update_light_settings() {
 
     let exists = light_main.quality,
         [main_intensity, under_intensity, quality] =
-        virtual_update_light_settings_special? virtual_update_light_settings_special(): [1, 1, Y.shadow];
+        virtual_update_light_settings_special? virtual_update_light_settings_special(): [1, 1, Y['shadow']];
 
     light_main.intensity = main_intensity;
     light_main.castShadow = !!quality;
@@ -816,15 +827,15 @@ function update_light_settings() {
 function update_renderer() {
     if (renderer) {
         let ratio = 4;
-        if (Y.x == 'play')
-            ratio = DefaultInt((Y.resolution || '').split(':').slice(-1)[0], 2);
+        if (y_x == 'play')
+            ratio = DefaultInt((Y['resolution'] || '').split(':').slice(-1)[0], 2);
 
         if (three_loaded)
-            renderer.outputEncoding = T[`${Y.encoding}Encoding`] || T.sRGBEncoding;
-        renderer.toneMappingExposure = Y.exposure;
-        renderer.gammaFactor = Y.gamma;
+            renderer.outputEncoding = T[`${Y['encoding']}Encoding`] || T.sRGBEncoding;
+        renderer.toneMappingExposure = Y['exposure'];
+        renderer.gammaFactor = Y['gamma'];
         renderer.setPixelRatio(window.devicePixelRatio / ratio);
-        renderer.shadowMap.enabled = !!Y.shadow;
+        renderer.shadowMap.enabled = !!Y['shadow'];
     }
     update_light_settings();
 
@@ -848,9 +859,9 @@ function update_time(delta) {
 
 /**
  * Convert a btQuaternion to Quaternion
- * @param {Object} quaternion
+ * @param {!Object} quaternion
  * @param {Object=} target
- * @returns {Object}
+ * @returns {!Object}
  */
 function three_quat(quaternion, target) {
     target = target || t_quat;
@@ -860,7 +871,7 @@ function three_quat(quaternion, target) {
 
 /**
  * Convert a bVector3 to T.Vector3
- * @param {Object} vector
+ * @param {!Object} vector
  * @param {Vector3=} target
  * @returns {Vector3}
  */
@@ -972,19 +983,21 @@ function gamepad_update() {
  * Play a sound
  * @param {Cube} cube
  * @param {string} name
- * @param {string=} _ filename
- * @param {string=} ext
- * @param {number=} cycle end of the cycle
- * @param {boolean=} inside
- * @param {boolean=} interrupt play the sound again even if it's being played
- * @param {function=} loaded only load the audio
- * @param {number=} start start of the 2nd cycle
- * @param {boolean=} voice
- * @param {number=} volume
+ * @param {Object} obj
+ * @param {string=} obj._ filename
+ * @param {string=} obj.ext
+ * @param {number=} obj.cycle end of the cycle
+ * @param {boolean=} obj.inside
+ * @param {boolean=} obj.interrupt play the sound again even if it's being played
+ * @param {Function=} obj.loaded only load the audio
+ * @param {number=} obj.start start of the 2nd cycle
+ * @param {boolean=} obj.voice
+ * @param {number=} obj.volume
+ * @returns {boolean}
  */
 function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded, start=0, voice, volume=1}={}) {
     if (!cube || !cube.sounds || !name)
-        return;
+        return false;
 
     // ext can be in the name
     let items = name.split('.');
@@ -994,7 +1007,7 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
     let audio = cube.sounds[name];
     // already played the same sound this frame => skip
     if (audio && frame && audio.frame == frame)
-        return;
+        return false;
 
     // play sounds weaker depending on the distance
     // - distance between 2 segments is ~1500 units
@@ -1003,7 +1016,7 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
         if (!isNaN(cube.camera))
             volume *= Exp(-cube.camera * 0.0072);
 
-    volume *= Y.volume / 10;
+    volume *= Y['volume'] / 10;
     if ((inside || voice) && !cube.see)
         volume *= 0.05;
 
@@ -1011,7 +1024,7 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
     if (volume < 0.001) {
         if (audio)
             audio.pause();
-        return;
+        return false;
     }
 
     // load & seek
@@ -1036,7 +1049,7 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
             loaded();
         else
             audio.onloadeddata = loaded;
-        return;
+        return true;
     }
 
     // play
@@ -1046,66 +1059,11 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
     .catch(() => {
         audio.pause();
     });
+    return true;
 }
 
 // UI
 /////
-
-/**
- * Change a setting
- * @param {string} name
- * @param {string|number} value
- * @param {boolean=} close close the popup
- */
-function change_setting(name, value, close) {
-    if (value != undefined) {
-        // TODO: clamp the value if min/max are defined
-        if (TYPES[name] == 'i' && !isNaN(value))
-            value *= 1;
-
-        let no_import = NO_IMPORTS[name] || 0;
-        if (!(no_import & 2)) {
-            if (no_import & 4)
-                Y[name] = value;
-            else
-                save_option(name, value);
-        }
-    }
-
-    // holding down a key => skip
-    if (KEYS[38] || KEYS[40]) {
-        change_queue = [name, value, close];
-        return;
-    }
-    change_queue = null;
-
-    if (virtual_change_setting_special && virtual_change_setting_special(name, value, close))
-        return;
-
-    switch (name) {
-    case 'language':
-        if (value == 'eng' || translates._lan == value)
-            translate_nodes('body');
-        else if (value != 'eng')
-            api_translate_get();
-        break;
-    case 'theme':
-        update_theme([value]);
-        break;
-    }
-}
-
-/**
- * Destroy a popup content + style
- * @param {Node} node
- * @param {number} &1:html, &2:style
- */
-function destroy_popup(node, flag) {
-    if (flag & 1)
-        HTML(node, '');
-    if (flag & 2)
-        Style(node, 'height:unset;transform:unset;width:unset');
-}
 
 /**
  * Check gamepad inputs at regular intervals when the menu is visible
@@ -1146,7 +1104,7 @@ function gamepad_modal() {
  * @returns {boolean}
  */
 function is_overlay_visible() {
-    return Visible(Id('overlay'));
+    return !!Visible(CacheId('overlay'));
 }
 
 /**
@@ -1174,16 +1132,16 @@ function show_menu() {
  * @param {string=} name
  */
 function show_modal(show, text, title, name) {
-    S(Id('overlay'), show);
+    S(CacheId('overlay'), show);
 
-    let node = Id('modal');
+    let node = CacheId('modal');
     if (IsString(text)) {
-        Attrs(Id('modal-title'), {'data-t': title? title: ''});
+        Attrs(CacheId('modal-title'), {'data-t': title? title: ''});
         HTML(node, text);
         translate_nodes(node);
     }
 
-    Style(node, `opacity:${show? 1: 0}`);
+    Style(node, [['opacity', show? 1: 0]]);
 
     if (show) {
         add_timeout('pad', gamepad_modal, 300);
@@ -1201,480 +1159,6 @@ function show_modal(show, text, title, name) {
 }
 
 /**
- * Show/hide popup
- * @param {string=} name
- * @param {boolean|string=} show
- * @param {boolean=} adjust only change its position
- * @param {number=} bar_x width of the scrollbar
- * @param {boolean=} center place the popup in the center of the screen
- * @param {number=} event 0 to disable set_modal_events
- * @param {string=} html 0 to skip => keep the current HTML
- * @param {string=} id id of the element that us used for adjust
- * @param {boolean=} instant popup appears instantly
- * @param {number=} margin_y
- * @param {number=} offset mouse offset from the popup
- * @param {string=} node_id popup id
- * @param {boolean=} overlay dark overlay is used behind the popup
- * @param {string=} setting
- * @param {number=} shadow 0:none, 1:normal, 2:light
- * @param {Node=} target element that was clicked
- * @param {number[]]=} xy
- */
-function show_popup(name, show, {
-        adjust, bar_x=20, center, event=1, html='', id, instant=true, margin_y=0, node_id, offset=[0, 0], overlay,
-        setting, shadow=1, target, xy}={}) {
-    // remove the red rectangle
-    if (!adjust)
-        set_draggable();
-    else if (device.iphone)
-        return;
-
-    // if clicked on home-form => make sure to reset click_target
-    let is_toggle = (show == 'toggle');
-    if (is_toggle || show == undefined)
-        click_target = null;
-
-    // find the modal
-    let node = click_target || Id(node_id || 'modal');
-    if (!node)
-        return;
-
-    let dataset = node.dataset,
-        data_id = dataset.id,
-        data_name = dataset.name,
-        is_modal = (node.id == 'modal'),
-        popup_adjust = POPUP_ADJUSTS[name] || POPUP_ADJUSTS[data_id || data_name];
-    if (adjust && !popup_adjust)
-        adjust = false;
-    if (center == undefined)
-        center = dataset.center || '';
-
-    // smart toggle
-    if (is_toggle)
-        show = (data_id != (id || name) || !HasClass(node, 'popup-show') || (xy && xy + '' != dataset.xy));
-
-    if (!adjust && overlay != undefined)
-        S(Id('overlay'), show && overlay);
-
-    if (show || adjust) {
-        let px = 0,
-            py = 0,
-            win_x = window.innerWidth - 16,
-            win_y = window.innerHeight,
-            x = 0,
-            x2 = 0,
-            y = 0,
-            y2 = 0;
-
-        if (show)
-            click_target = Parent(target, {class_: 'popup', self: true});
-
-        // create the html
-        switch (name) {
-        case 'options':
-            if (!xy)
-                context_target = null;
-            html = show_settings(setting, {xy: xy});
-            break;
-        default:
-            let link = LINKS[name];
-            if (link)
-                html = create_url_list(LINKS[name]);
-            break;
-        }
-
-        if (show) {
-            destroy_popup(node, 2);
-            if (html !== 0)
-                HTML(node, html);
-            // focus?
-            let focus = _('[data-f]', node);
-            if (focus)
-                focus.focus();
-        }
-        else {
-            id = data_id;
-            name = data_name;
-        }
-
-        Class(node, 'settings', !!(name == 'options' && (adjust || setting)));
-        translate_nodes(node);
-        update_svg();
-
-        if (is_modal) {
-            // make sure the popup remains inside the window
-            let height = node.clientHeight,
-                width = node.clientWidth;
-
-            // center?
-            if (center) {
-                x = win_x / 2 - width / 2;
-                y = win_y / 2 - height / 2;
-            }
-            else {
-                let target = Id(id),
-                    rect = target? target.getBoundingClientRect(): null;
-
-                // align the popup with the target, if any
-                if (adjust) {
-                    // &1:adjust &2:top &4:right &8:bottom &16:left & 32:vcenter &64:hcenter
-                    if (rect && popup_adjust > 1) {
-                        if (popup_adjust & 2)
-                            y = rect.top;
-                        if (popup_adjust & 4)
-                            x = rect.right;
-                        if (popup_adjust & 8)
-                            y = rect.bottom;
-                        if (popup_adjust & 16)
-                            x = rect.left;
-                        if (popup_adjust & 32)
-                            y = (rect.top + rect.bottom) / 2;
-                        if (popup_adjust & 64)
-                            x = (rect.left + rect.right) / 2;
-                        xy = [x, y];
-                    }
-                    else if (!xy) {
-                        let item = dataset.xy;
-                        if (item)
-                            xy = item.split(',').map(item => item * 1);
-                    }
-
-                    let data_margin = dataset.my;
-                    if (data_margin)
-                        margin_y = data_margin * 1;
-                }
-
-                // xy[2] => can align to the rect.right
-                if (xy) {
-                    x = xy[0];
-                    y = xy[1];
-                    x2 = xy[2] || x;
-                    y2 = xy[3] || y;
-                }
-                else if (name && !px && rect)
-                    [x, y, x2, y2] = [rect.left, rect.bottom, rect.right, rect.top];
-            }
-
-            x += offset[0];
-            y += offset[1];
-
-            // align left doesn't work => try align right, and if not then center
-            if (x + width > win_x - bar_x) {
-                if (x2 >= win_x - bar_x)
-                    x2 = win_x - bar_x;
-
-                if (x2 - width > 0) {
-                    px = -100;
-                    x = Max(0, x2 - offset[0]);
-                }
-                else {
-                    px = -50;
-                    x = Max(0, win_x / 2 - offset[0]);
-                }
-            }
-            // same for y
-            if (y + height + margin_y > win_y) {
-                if (y2 >= win_y - 1)
-                    y2 = win_y - 1;
-
-                if (y2 < win_y && y2 - height > 0) {
-                    py = -100;
-                    y = Max(0, y2 - offset[1]);
-                }
-                else {
-                    py = -50;
-                    y = Max(0, win_y / 2 - offset[1]);
-                }
-            }
-
-            dataset.center = center || '';
-            dataset.my = margin_y || '';
-            dataset.xy = xy || '';
-            x += full_scroll.x;
-            y += full_scroll.y;
-            Style(node, `transform:translate(${px}%, ${py}%) translate(${x}px, ${y}px)`);
-        }
-    }
-
-    if (!adjust) {
-        if (is_modal) {
-            if (instant != undefined)
-                Class(node, 'instant', instant);
-            Class(node, 'popup-show popup-enable', !!show);
-
-            // remember which popup it is, so if we click again on the same id => it closes it
-            dataset.id = show? (id || ''): '';
-            dataset.name = show? name: '';
-            if (!show)
-                destroy_popup(node, 3);
-        }
-        if (show) {
-            dataset.ev = event;
-            let height = 'unset',
-                width = 'unset';
-            if (popup_adjust) {
-                if (popup_adjust & 128)
-                    height = '100%';
-                if (popup_adjust & 256)
-                    width = '100%';
-            }
-            Style(node, `height:${height};width:${width}`);
-
-            // shadow
-            Class(node, `${shadow == 0? '': '-'}shadow0 ${shadow == 2? '': '-'}shadow2`);
-        }
-        else {
-            dataset.center = '';
-            dataset.my = '';
-            dataset.xy = '';
-        }
-
-        set_modal_events(node);
-        Show(node);
-    }
-}
-
-/**
- * Show a settings page
- * @param {string} name
- * @param {number=} flag &1:title &2:OK
- * @param {string=} grid_class
- * @param {string=} item_class
- * @param {string=} title
- * @param {boolean=} unique true if the dialog comes from a contextual popup, otherwise from main options
- * @param {boolean=} xy
- * @returns {string} html
- */
-function show_settings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={}) {
-    let settings = name? (X_SETTINGS[name] || []): X_SETTINGS,
-        class_ = settings._class || '',
-        keys = Keys(settings),
-        lines = [`<grid class="${grid_class}${class_? ' ': ''}${class_}">`],
-        parent_id = get_drop_id(context_target)[1],
-        prefix = settings._prefix,
-        split = settings._split,
-        suffix = settings._suffix;
-
-    flag = Undefined(flag, settings._flag) || 0;
-
-    // set multiple columns
-    if (split) {
-        let new_keys = [],
-            offset = split;
-        keys = keys.filter(key => (key != '_split' && !settings[key]._pop));
-
-        for (let i = 0; i < split; i ++) {
-            new_keys.push(keys[i]);
-            if (keys[i][0] == '_')
-                new_keys.push('');
-            else {
-                new_keys.push(keys[offset] || '');
-                offset ++;
-            }
-        }
-        keys = new_keys;
-    }
-
-    if (!(flag & 1)) {
-        if (parent_id)
-            lines.push(`<div class="item2 span" data-set="-1">${parent_id}</div>`);
-        else if (name) {
-            if (!title)
-                title = settings._title || `${Title(name).replace(/_/g, ' ')}${settings._same? '': ' options'}`;
-            lines.push(
-                `<div class="item-title span" data-set="${unique? -1: ''}" data-n="${name}" data-t="${title}"></div>`);
-        }
-    }
-
-    keys.forEach(key => {
-        if (!key && split) {
-            lines.push('<div></div>');
-            return;
-        }
-
-        // only in popup
-        let setting = settings[key];
-        if (setting._pop)
-            return;
-
-        // extra _keys: class, color, flag, on, span, value
-        let sclass = setting._class,
-            scolor = setting._color,
-            sflag = setting._flag,
-            son = setting._on,
-            sset = setting._set,
-            sspan = setting._span,
-            ssvg = setting._svg,
-            ssyn = setting._syn || '',
-            svalue = setting._value;
-        if (sflag && sflag & flag)
-            return;
-        if (son && !son())
-            return;
-        if (svalue)
-            setting = svalue;
-
-        // separator
-        if (key[0] == '_') {
-            if (parseInt(key[1]))
-                lines.push(`<hr${split? '': ' class="span"'}>`);
-            return;
-        }
-
-        // link or list
-        let clean = key,
-            data = setting[0],
-            fourth = setting[4],
-            is_string = IsString(data)? ` name="${key}"`: '',
-            more_class = (split || (data && !is_string))? '': ' span',
-            more_data = data? '': ` data-set="${sset || key}"`,
-            string_digit = is_string? data * 1: 0,
-            third = setting[3],
-            title = setting[2],
-            y_key = Y[key];
-
-        // only in popup2?
-        if (!xy && (string_digit & 4))
-            return;
-
-        if (sclass)
-            more_class = ` ${sclass}`;
-        else if (sspan)
-            more_class = ' item-title span';
-
-        if (IsFunction(third) && !third())
-            return;
-        if (IsFunction(fourth))
-            y_key = fourth();
-
-        // only contextual actions?
-        if (title && title[0] == '!') {
-            if (!parent_id)
-                return;
-            title = title.slice(1);
-        }
-
-        // remove prefix and suffix
-        if (clean.length == 2 && IsDigit(clean[1]))
-            clean = '';
-        else {
-            if (suffix && clean.slice(-suffix.length) == suffix)
-                clean = clean.slice(0, -suffix.length);
-            if (prefix && clean.slice(0, prefix.length) == prefix)
-                clean = clean.slice(prefix.length);
-        }
-
-        // TODO: improve that part, it can be customised better
-        if (string_digit & 2)
-            scolor = '#f00';
-        let style = scolor? `${(Y.theme == 'dark')? ' class="tshadow"': ''} style="color:${scolor}"`: '',
-            title2 = title? `data-t="${title}" data-t2="title"`: '';
-
-        lines.push(
-            `<a${is_string} class="${item_class}${more_class}${title === 0? ' off': ''}"${more_data}${title2}>`
-                + (ssvg? `<i class="icon" data-svg="${ssvg}"></i>`: '')
-                + `<i data-t="${Title(clean).replace(/_/g, ' ')}${ssyn}"${style}></i>`
-                + ((setting == '')? ' ...': '')
-            + '</a>'
-        );
-
-        if (is_string)
-            return;
-
-        if (IsArray(data)) {
-            if (data == ON_OFF)
-                lines.push(
-                    '<vert class="fcenter fastart">'
-                        + `<input name="${key}" type="checkbox" ${y_key? 'checked': ''}>`
-                    + '</vert>'
-                );
-            else
-                lines.push(
-                    '<vert class="fcenter">'
-                    + `<select name="${key}">`
-                        + data.map(option => {
-                            let splits = (option + '').split('='),
-                                value = Undefined({off: 0, on: 1}[option], option);
-                            if (splits.length > 1) {
-                                option = splits[1];
-                                value = splits[0];
-                            }
-                            let selected = (y_key == value)? ' selected': '';
-                            return `<option value="${value}"${selected} data-t="${option}"></option>`;
-                        }).join('')
-                    + '</select>'
-                    + '</vert>'
-                );
-        }
-        else if (data) {
-            let auto = data.auto || '',
-                class_ = data.class || '',
-                focus = data.focus || '',
-                holder = data.text || '',
-                type = data.type || '';
-            class_ = ` class="setting${class_? ' ': ''}${class_}"`;
-            if (focus)
-                focus = ` data-f="${focus}"`;
-            lines.push('<vert class="fcenter">');
-
-            // placeholder + autocomplete
-            if (holder)
-                holder = ` data-t="${data.text}" data-t2="placeholder"`;
-            if (auto)
-                auto = ` autocomplete="${auto}"`;
-
-            if (type == 'area')
-                lines.push(`<textarea name="${key}"${class_}${holder}${auto}${focus}>${y_key}</textarea>`);
-            else if (type == 'info' || type == 'upper')
-                lines.push(`<div class="${type}" name="${key}" data-t="${data.text || ''}"></div>`);
-            else if (type == 'number')
-                lines.push(`<input name="${key}" type="${type}"${class_} min="${data.min}" max="${data.max}" step="${data.step || 1}"${holder} value="${y_key}"${focus}>`);
-            else if (type == 'link') {
-                if (data.text)
-                    lines.push(`<input name="${key}" type="text"${class_}${holder} value=""${focus}>`);
-                lines.push('<label for="file" data-t="Choose file"></label>');
-                Attrs(Id('file'), {'data-x': key});
-            }
-            else if (type)
-                lines.push(`<input name="${key}" type="${type}"${class_}${holder}${auto} value="${y_key}"${focus}>`);
-            // dictionary
-            else
-                lines.push(
-                    `<select name="${key}"${focus}>`
-                        + Keys(data).map(value => {
-                            let option = data[value],
-                                selected = (Y[key] == value)? ' selected': '';
-                            return `<option value="${value}"${selected} data-t="${option}"></option>`;
-                        }).join('')
-                    + '</select>'
-                );
-
-            lines.push('</vert>');
-        }
-    });
-
-    // -1 to close the popup
-    if (!(flag & 2)) {
-        if (parent_id) {
-            let context_area = context_areas[parent_id] || {};
-            lines.push(
-                `<hori class="span">`
-                    + `<div class="item2" data-set="-1" data-t="ok"></div>`
-                    + `<div class="item2${context_area[1]? ' active': ''}" data-t="join next"></div>`
-                    + `<div class="item2" data-t="hide"></div>`
-                + '</hori>'
-            );
-        }
-        else if (name)
-            lines.push(
-                `<a class="item item-title span" data-set="-1" data-t="${settings._cancel? 'CANCEL': 'OK'}"></a>`);
-    }
-
-    lines.push('</grid>');
-    return lines.join('');
-}
-
-/**
  * Update debug information
  */
 function update_debug() {
@@ -1683,7 +1167,7 @@ function update_debug() {
         sep = ' : ';
 
     // gamepad
-    if (DEV.input) {
+    if (DEV['input']) {
         lines.push('&nbsp;');
         lines.push(`id=${gamepad_id}`);
         lines.push(`axes=${Format(axes, sep)}`);
@@ -1694,7 +1178,7 @@ function update_debug() {
     }
 
     // debugs
-    if (DEV.debug) {
+    if (DEV['debug']) {
         let debug_keys = Keys(debugs).sort();
         if (debug_keys.length) {
             lines.push('&nbsp;');
@@ -1707,7 +1191,7 @@ function update_debug() {
     if (virtual_update_debug_special)
         lines = [...lines, ...virtual_update_debug_special()];
 
-    HTML(Id('debug'), `<div>${lines.join('</div><div>')}</div>`);
+    HTML(CacheId('debug'), `<div>${lines.join('</div><div>')}</div>`);
 }
 
 // STARTUP
@@ -1743,114 +1227,20 @@ function set_3d_events() {
 }
 
 /**
- * Used when showing a modal
- * @param {Node=} parent
- */
-function set_modal_events(parent) {
-    // settings events
-    parent = parent || Id('modal');
-    if (parent.dataset.ev == 0)
-        return;
-
-    // click on item => toggle if possible
-    C('.item', function() {
-        // button
-        let name = this.name;
-        if (name || HasClass(this, 'item-title')) {
-            click_target = Parent(this, {class_: 'popup', self: true});
-            change_setting(name, undefined, (this.dataset.set == '-1' || HasClass(this, 'span'))? 2: 0);
-            return;
-        }
-
-        // input + select
-        let next = this.nextElementSibling;
-        if (!next)
-            return;
-        next = _('input, select', next);
-        if (!next)
-            return;
-        switch (next.tagName) {
-        case 'INPUT':
-            if (next.type == 'checkbox') {
-                next.checked = !next.checked;
-                change_setting(next.name, next.checked * 1);
-            }
-            break;
-        case 'SELECT':
-            if (next.options.length == 2) {
-                next.selectedIndex ^= 1;
-                change_setting(next.name, next.value);
-            }
-            break;
-        }
-    }, parent);
-    C('.item2', function() {
-        let name = this.dataset.t;
-        change_setting(name? name.replace(/ /g, '_'): name);
-    }, parent);
-
-    // right click on item => reset to default
-    Events('.item', 'contextmenu', function(e) {
-        let next = this.nextElementSibling;
-        if (next) {
-            next = _('input, select, textarea', next);
-            if (next) {
-                let name = next.name,
-                    def = DEFAULTS[name];
-                if (def != undefined) {
-                    if (next.type == 'checkbox')
-                        next.checked = def? true: false;
-                    else
-                        next.value = def;
-                    save_option(name, def);
-                    change_setting(name, def);
-                }
-            }
-        }
-        PD(e);
-        SP(e);
-    }, parent);
-
-    // inputs
-    Events('input, select, textarea', 'change', function() {
-        done_touch();
-        change_setting(this.name, (this.type == 'checkbox')? this.checked * 1: this.value);
-    }, {}, parent);
-    //
-    Input('input, select, textarea', function() {
-        done_touch();
-        change_setting();
-    }, parent);
-    //
-    C('input, select, textarea', function() {
-        if (cannot_click())
-            return;
-        change_setting();
-    }, parent);
-    //
-    C('div[name]', function() {
-        change_setting(this.getAttribute('name'));
-    }, parent);
-
-    if (virtual_set_modal_events_special)
-        virtual_set_modal_events_special();
-}
-
-/**
  * Start the 3D engine
  */
 function start_3d() {
     if (T)
         init_3d(true);
     else
-        load_library('./js/4d_.js?version=1', () => init_3d(true));
+        LoadLibrary('./js/4d_.js?version=1', () => init_3d(true));
 }
 
 /**
  * Initialise structures
  */
 function startup_3d() {
-    window.T = window.T || window.THREE || null;
+    T = window.T = window.T || window.THREE || null;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1859,9 +1249,7 @@ function startup_3d() {
 if (typeof exports != 'undefined') {
     Assign(exports, {
         audiobox: audiobox,
-        AUTO_ON_OFF: AUTO_ON_OFF,
         play_sound: play_sound,
-        POPUP_ADJUSTS: POPUP_ADJUSTS,
         SHADOW_QUALITIES: SHADOW_QUALITIES,
     });
 }

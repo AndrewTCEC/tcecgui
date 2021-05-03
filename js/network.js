@@ -1,43 +1,80 @@
 // network
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-10-30
+// @version 2021-04-29
 //
 // all socket functions are here
 //
 // included after: common, engine, global, 3d, xboard, game
+// jshint -W069
 /*
 globals
-_, A, add_timeout, analyse_crosstable, analyse_log, analyse_tournament, Class, create_cup, CreateNode,
-DEV, From, HasClass, Hide, HOST, HTML, Id, InsertNodes, io,
-LOCALHOST, LS, S, save_option, set_viewers, Show, socket:true, TIMEOUTS, update_live_eval, update_pgn,
-update_player_eval, update_table, update_twitch, Y
+_, A, add_timeout, analyse_crosstable, analyse_log, analyse_tournament, Assign, CacheId, Class, create_cup, CreateNode,
+DEV, exports, From, global, HasClass, Hide, HOST, HTML, InsertNodes,
+LoadLibrary, LOCALHOST, LS, Max, Min, Now, RandomInt, require, S, save_option, set_viewers, Show, socket:true,
+update_live_eval, update_pgn, update_player_eval, update_table, update_twitch, VisibleWidth, window, Y, y_x
 */
 'use strict';
 
+// <<
+if (typeof global != 'undefined') {
+    ['common', 'engine'].forEach(key => {
+        Object.assign(global, require(`./${key}.js`));
+    });
+}
+// >>
+
 // modify those values in config.js
-let TWITCH_CHANNEL = 'https://player.twitch.tv/?channel=TCEC_Chess_TV&parent=tcec-chess.com/',
+let TWITCH_CHANNEL = 'TCEC_Chess_TV',
     TWITCH_CHAT = 'https://www.twitch.tv/embed/TCEC_Chess_TV/chat?parent=tcec-chess.com';
 
-let prev_room = 0,
+let log_time = 0,
+    num_listen = 0,
+    prev_room = 0,
     socket_data = {
-        archive: {},
-        live: {},
+        'archive': {},
+        'live': {},
     },
+    socket_ready = false,
+    TIMEOUT_banner = 30000,
+    TIMEOUT_check = 60,
+    TIMEOUT_log = 500,
+    TIMEOUT_pause = 3000,
+    TIMEOUT_users = 5000,
+    twitch_player,
     virtual_resize;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Initialise sockets
+ * Connect/disconnect the socket
+ */
+function check_socket_io() {
+    // 1) disconnect?
+    if (DEV['no_socket']) {
+        if (socket && socket.connected)
+            socket.close();
+        return;
+    }
+
+    // 2) connect
+    if (!socket)
+        socket = window.io.connect(HOST);
+    else if (!socket.connected)
+        socket.connect(HOST);
+
+    if (!socket_ready)
+        event_sockets();
+}
+
+/**
+ * Initialise socket events
  * + handle all messages
  */
-function init_sockets() {
-    if (DEV.no_socket)
-        return;
-    socket = io.connect(HOST);
-
+function event_sockets() {
     // live_log
     socket.on('htmlread', data => {
+        log_time = Now();
+
         log_socket('htmlread', data);
         let data_ = data.data,
             date = new Date().toLocaleTimeString(),
@@ -94,12 +131,12 @@ function init_sockets() {
     socket.on('tournament', data => {
         log_socket('tournament', data, true);
         analyse_tournament('live', data);
-        if (Y.x == 'live')
+        if (y_x == 'live')
             update_twitch(null, `https://www.twitch.tv/embed/${data.twitchaccount}/chat`);
     });
     socket.on('updeng', data => {
         log_socket('updeng', data);
-        if (!DEV.wasm)
+        if (!DEV['wasm'])
             update_player_eval('live', data);
     });
     socket.on('users', data => {
@@ -116,7 +153,17 @@ function init_sockets() {
     });
 
     //
-    add_timeout('get_users', () => socket.emit('getusers', 'd'), TIMEOUTS.users);
+    add_timeout('get_users', () => socket.emit('getusers', 'd'), TIMEOUT_users);
+    add_timeout('check', () => {
+        if (!Y['log_auto_start'])
+            return;
+        if (Now() > log_time + TIMEOUT_check - 1) {
+            listen_log(0);
+            add_timeout('log', () => listen_log('all'), TIMEOUT_log);
+        }
+    }, TIMEOUT_check * 1000 + RandomInt(10), true);
+
+    socket_ready = true;
 }
 
 /**
@@ -124,8 +171,8 @@ function init_sockets() {
  * @param {string} html
  */
 function insert_log(html) {
-    let live_log = Id('live-log'),
-        log_history = Y.log_history,
+    let live_log = CacheId('live-log'),
+        log_history = Y['log_history'],
         node = CreateNode('div', html);
     InsertNodes(live_log, [node], true);
 
@@ -138,15 +185,18 @@ function insert_log(html) {
 
 /**
  * Listen to the log (or not)
+ * @param {string|number=} new_room
  */
-function listen_log() {
+function listen_log(new_room) {
     if (!socket)
         return;
-    let new_room = Y.live_log;
-    if (Y.log_auto_start && new_room == 0) {
+    if (new_room == undefined)
+        new_room = Y['live_log'];
+    if (!num_listen && Y['log_auto_start'] && new_room == 0) {
         new_room = 'all';
-        Y.live_log = 'all';
+        Y['live_log'] = 'all';
     }
+    num_listen ++;
 
     // 1) leave the previous room
     if (prev_room && prev_room != new_room) {
@@ -157,9 +207,10 @@ function listen_log() {
     // 2) enter the next room
     if (new_room && prev_room != new_room) {
         prev_room = new_room;
-        socket.emit('room', `room${prev_room}`);
-        insert_log(`<div class="win">entered: ${prev_room}</div>`);
+        socket.emit('room', `room${new_room}`);
+        insert_log(`<div class="win">entered: ${new_room}</div>`);
     }
+    CacheId('nlog').value = prev_room;
 }
 
 /**
@@ -169,12 +220,12 @@ function listen_log() {
  * @param {boolean=} cache
  */
 function log_socket(name, data, cache) {
-    if (DEV.socket) {
+    if (DEV['socket']) {
         LS(`socket/${name}:`);
         LS(data);
     }
     if (cache)
-        socket_data[Y.x][name] = data;
+        socket_data[y_x][name] = data;
 }
 
 /**
@@ -182,18 +233,18 @@ function log_socket(name, data, cache) {
  * @param {string=} text if there's no text, then just hide it
  */
 function show_banner(text) {
-    let node = Id('banner');
+    let node = CacheId('banner');
     if (text) {
         HTML(node, text);
         Show(node);
     }
-    add_timeout('banner', () => Hide(node), TIMEOUTS.banner);
+    add_timeout('banner', () => Hide(node), TIMEOUT_banner);
 }
 
 /**
  * Enable/disable twitch video + chat
- * @param {number=} dark
- * @param {string=} chat_url new chat URL
+ * @param {number?=} dark
+ * @param {string?=} chat_url new chat URL
  * @param {boolean=} only_resize
  */
 function update_twitch(dark, chat_url, only_resize) {
@@ -204,29 +255,29 @@ function update_twitch(dark, chat_url, only_resize) {
         TWITCH_CHAT = chat_url;
 
     // 1) update twitch chat IF there was a change
-    dark = Y.twitch_dark;
-    let node = Id('chat');
+    dark = Y['twitch_dark'];
+    let node = CacheId('chat');
     if (!node)
         return;
 
-    if (LOCALHOST) {
-        Y.twitch_chat = 0;
-        Y.twitch_video = 0;
+    if (LOCALHOST && 0) {
+        Y['twitch_chat'] = 0;
+        Y['twitch_video'] = 0;
     }
 
     let current = node.src,
-        src = Y.twitch_chat? `${TWITCH_CHAT}${dark? '&darkpopout': ''}`: '';
+        src = Y['twitch_chat']? `${TWITCH_CHAT}${dark? '&darkpopout': ''}`: '';
 
     if (!only_resize && current != src)
         node.src = src;
     S('#chat, #under-chat', src);
     S('#chat2, #show-chat', !src);
-    S(Id('twitch0'), src && dark);
-    S(Id('twitch1'), src && !dark);
+    S(CacheId('twitch0'), src && dark);
+    S(CacheId('twitch1'), src && !dark);
 
-    let right = Id('right'),
+    let right = CacheId('right'),
         active = _('.active', right),
-        active_name = active? active.dataset.x: '',
+        active_name = active? active.dataset['x']: '',
         has_narrow = HasClass(right, 'narrow'),
         has_wide = HasClass(right, 'wide'),
         need_narrow = (active_name == 'chat' && !src),
@@ -240,12 +291,60 @@ function update_twitch(dark, chat_url, only_resize) {
     }
 
     // 2) update twitch video IF there was a change
-    node = Id('twitch-vid');
-    current = node.src;
-    src = Y.twitch_video? TWITCH_CHANNEL: '';
+    node = CacheId('twitch-vid');
+    let channel = Y['twitch_video']? TWITCH_CHANNEL: '';
 
-    if (!only_resize && current != src)
-        node.src = src;
-    S('#hide-video, #twitch-vid', src);
-    S(Id('show-video'), !src);
+    if (!only_resize) {
+        if (!twitch_player) {
+            if (channel) {
+                let width = Min(420, VisibleWidth() - 2),
+                    height = Max(280, (width / 1.32) >> 0);
+
+                LoadLibrary('https://player.twitch.tv/js/embed/v1.js', () => {
+                    let options = {
+                            channel: TWITCH_CHANNEL,
+                            height: height,
+                            parent: ['tcec-chess.com'],
+                            width: width,
+                        },
+                        PLAYER = window['Twitch'].Player;
+                    twitch_player = new PLAYER('twitch-vid', options);
+                    window['twitch_player'] = twitch_player;
+
+                    // set the lowest bitrate by default
+                    twitch_player.addEventListener(PLAYER.ONLINE, () => {
+                        let bitrate = Infinity,
+                            group = 'auto';
+                        for (let quality of twitch_player.getQualities())
+                            if (quality.bitrate < bitrate) {
+                                bitrate = quality.bitrate;
+                                group = quality.group;
+                            }
+
+                        twitch_player.setQuality(group);
+                        twitch_player.play();
+                    });
+                });
+            }
+        }
+        else if (!channel) {
+            twitch_player.pause();
+            if (!twitch_player.isPaused())
+                add_timeout('pause', twitch_player.pause, TIMEOUT_pause);
+        }
+        else if (twitch_player.getChannel() != channel)
+            twitch_player.setChannel(channel);
+    }
+    S('#hide-video, #twitch-vid', channel);
+    S(CacheId('show-video'), !channel);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// <<
+if (typeof exports != 'undefined')
+    Assign(exports, {
+        check_socket_io: check_socket_io,
+        listen_log: listen_log,
+    });
+// >>

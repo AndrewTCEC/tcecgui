@@ -1,14 +1,15 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-06
+// @version 2021-05-02
 //
 // global variables/functions shared across multiple js files
 //
 // included after: common, engine
+// jshint -W069
 /*
 globals
-Abs, Assign, Atan, Clamp, DEFAULTS, Exp, exports, Floor, global, Hide, HTML, Id, Keys,
-location, LS, Max, Min, Pad, Pow, require, Round, save_default, save_option, show_popup, Split, Undefined, Y
+Abs, Assign, Atan, CacheId, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, Hide, HTML, IsDigit, Keys,
+LS, Max, Min, Pad, Pow, require, reset_default, Round, save_default, save_option, show_popup, Split, Undefined, Y
 */
 'use strict';
 
@@ -22,26 +23,44 @@ if (typeof global != 'undefined') {
 
 // modify those values in config.js
 let HOST_ARCHIVE,
-    LINKS = {},
-    LOCALHOST = (location.port == 8080),
     SF_COEFF_AS = [-8.24404295, 64.23892342, -95.73056462, 153.86478679],
     SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
     SF_PAWN_VALUE = 2.06,
-    TIMEOUTS = {
-        adblock: 15 * 1000,
-        banner: 30 * 1000,
-        google_ad: -1,                  // disabled
-        graph: 1 * 1000,
-        tables: 3 * 1000,
-        three: 1 * 1000,                // 3d scene
-        twitch: 5 * 1000,
-        users: 5 * 1000,
-    },
-    VERSION = '20210106b',
+    VERSION = '20210502',
     virtual_close_popups,
     xboards = {};
 
+/**
+ * @typedef {{
+ * _fixed: (number|undefined),
+ * agree: (number|undefined),
+ * fen0: (string|undefined),
+ * goal: (Array<number>|undefined),
+ * id: (number|undefined),
+ * invert: (boolean|undefined),
+ * mobil: (number|undefined),
+ * node_from: (Node|undefined),
+ * node_to: (Node|undefined),
+ * seen: (number|undefined),
+ * }} */
+let Move;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Add an eval to the history
+ * - used by check_boom
+ * @param {!Object} player
+ * @param {number} ply
+ * @param {number|string} eval_
+ */
+function add_player_eval(player, ply, eval_) {
+    if (eval_ == undefined)
+        return;
+    if (!player.evals)
+        player.evals = [];
+    player.evals[ply] = eval_;
+}
 
 /**
  * Convert centipawn to score % for AS
@@ -113,8 +132,8 @@ function close_popups() {
         virtual_close_popups('popup-fen', 'fen', {type: 'mouseleave'});
 
     // empty the content to prevent controls for still interacting with the popup (ex: SELECT)
-    HTML(Id('modal'), '');
-    Hide(Id('overlay'));
+    HTML(CacheId('modal'), '');
+    Hide(CacheId('overlay'));
 }
 
 /**
@@ -122,47 +141,47 @@ function close_popups() {
  * @param {Move} move
  */
 function fix_move_format(move) {
-    if (move._fixed || move.book)
+    if (move._fixed || move['book'])
         return;
 
     // fix eval
-    if (move.wv == undefined)
-        move.wv = move.ev;
+    if (move['wv'] == undefined)
+        move['wv'] = move['ev'];
 
     // fix move time
-    if (isNaN(move.mt) && move.mt)
-        move.mt = parse_time(move.mt) * 1000;
+    if (isNaN(move['mt']) && move['mt'])
+        move['mt'] = parse_time(move['mt']) * 1000;
 
     // fix time left
-    if (isNaN(move.tl) && move.tl)
-        move.tl = parse_time(move.tl) * 1000;
+    if (isNaN(move['tl']) && move['tl'])
+        move['tl'] = parse_time(move['tl']) * 1000;
 
     // fix speed
-    if (isNaN(move.s) && move.s) {
-        let items = move.s.split(' ');
+    if (isNaN(move['s']) && move['s']) {
+        let items = move['s'].split(' ');
         if (items.length >= 2)
-            move.s = parseFloat(items[0]) * ({k: 1000, M: 1e6}[items[1][0]] || 1);
+            move['s'] = parseFloat(items[0]) * ({k: 1000, M: 1e6}[items[1][0]] || 1);
     }
 
     // fix nodes
     // note: it's an approximation, not reliable at low values => skipped there
-    if (move.n == undefined && move.mt >= 2000)
-        move.n = Floor(move.s / move.mt * 1000 + 0.5);
+    if (move['n'] == undefined && move['mt'] >= 2000)
+        move['n'] = Floor(move['s'] / move['mt'] * 1000 + 0.5);
 
     // fix too fast speed: > 10Bnps
-    if (move.s > 1e10) {
-        move.n = '-';
-        move.s = '-';
+    if (move['s'] > 1e10) {
+        move['n'] = '-';
+        move['s'] = '-';
     }
-    else if (move.n) {
+    else if (move['n']) {
         // fix missing speed
-        if (!move.s)
-            move.s = (move.mt >= 2000)? Floor(move.n / move.mt * 1000): '-';
+        if (!move['s'])
+            move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000): '-';
         // fix insta-moves speed
-        else if (move.mt && move.mt < 2000) {
-            let speed = move.n / (move.mt + 500) * 1000;
-            if (move.s > speed * 3)
-                move.s = '-';
+        else if (move['mt'] && move['mt'] < 2000) {
+            let speed = move['n'] / (move['mt'] + 500) * 1000;
+            if (move['s'] > speed * 3)
+                move['s'] = '-';
         }
     }
 
@@ -180,22 +199,33 @@ function format_eval(value, process) {
     if (isNaN(float))
         return value;
 
-    let small_decimal = Y.small_decimal,
+    let small_decimal = Y['small_decimal'],
         text = float.toFixed(2);
 
-    if (!process || small_decimal == 'never')
+    if (!process || !small_decimal)
         return text;
 
     let items = text.split('.');
 
-    if (small_decimal != 'always') {
+    if (small_decimal != 1) {
         let abs = Abs(float);
-        if (abs < 10 && small_decimal == '>= 10')
+        if (abs < 10 && small_decimal == 10)
             return text;
-        if (abs < 100 && small_decimal == '>= 100')
+        if (abs < 100 && small_decimal == 100)
             return text;
     }
     return `<i>${items[0]}.</i><i class="smaller">${items[1]}</i>`;
+}
+
+/**
+ * Utility for FormatUnit
+ * @param {number} number
+ * @param {string=} def default value used when number is not a number
+ * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
+ * @returns {string}
+ */
+function format_unit(number, def, keep_decimal) {
+    return FormatUnit(number, def, keep_decimal, Y['SI_units']);
 }
 
 /**
@@ -220,14 +250,15 @@ function get_fen_ply(fen) {
 function get_move_ply(move) {
     if (!move)
         return -2;
-    if (move.ply != undefined && move.ply >= -1)
-        return move.ply;
-    if (!move.fen)
+    let move_ply = move['ply'];
+    if (move_ply != undefined && move_ply >= -1)
+        return move_ply;
+    if (!move['fen'])
         return -2;
 
-    let ply = get_fen_ply(move.fen);
+    let ply = get_fen_ply(move['fen']);
     if (ply >= -1) {
-        move.ply = ply;
+        move['ply'] = ply;
         return ply;
     }
     return -2;
@@ -294,39 +325,64 @@ function reset_defaults(pattern) {
  * Reset some settings if the version is too old
  */
 function reset_old_settings() {
-    let version = Undefined(Y.version, '');
+    let version = Undefined(Y['version'], '');
     if (version == VERSION) {
         save_option('version', VERSION);
         return;
     }
 
+    let keys = [];
     if (version < '20200930')
-        save_default('game_wasm', 1);
-    if (version < '20201003b') {
-        save_default('game_every', 100);
-        save_default('game_threads', 1);
-        save_default('graph_marker_color', '#299bff');
+        keys.push('game_wasm');
+    if (version < '20201003b')
+        keys.push('game_threads');
+    if (version < '20210109') {
+        Keys(DEFAULTS).filter(key => key.slice(0, 6) == 'sound_').map(key => {
+            keys.push(key);
+        });
+        keys.push('boom_volume');
     }
-    if (version < '20210101d')
-        save_default('boom_start', 20);
+    if (version < '20210109e')
+        keys.push('boom_threshold');
+    if (version < '20210127b') {
+        save_default('arrow_color_01', Y['arrow_combine_01']);
+        save_default('arrow_color_23', Y['arrow_combine_23']);
+    }
 
-    LS(`version: ${version} => ${VERSION}`);
+    let changes = [];
+    for (let key of keys)
+        for (let item of key.split(' '))
+            if (Y[item] != DEFAULTS[item]) {
+                changes.push(item);
+                reset_default(item);
+            }
+
+    LS(`version: ${version} => ${VERSION} : ${changes}`);
     save_option('version', VERSION);
     Y.new_version = version;
 }
 
 /**
  * Split a PV string into ply + array of strings
+ * - formula: (move - 1) * 2 = ply
  * @param {string} text
- * @returns {[number, string[]]}
+ * @param {boolean=} no_number remove the numbers
+ * @param {number=} def_ply default ply
+ * @returns {!{items:Array<string>, ply:number}}
  */
-function split_move_string(text) {
+function split_move_string(text, no_number, def_ply=-2) {
     if (!text)
-        return [-2, []];
+        return {items: [], ply: -2};
 
     let items = text.replace(/[.]{2,}/, ' ... ').split(' '),
-        ply = (parseInt(items[0]) - 1) * 2 + (items[1] == '...'? 1: 0);
-    return [ply, items];
+        ply = (parseInt(items[0], 10) - 1) * 2 + (items[1] == '...'? 1: 0);
+
+    if (no_number)
+        items = items.filter(item => !IsDigit(item[0]) && item != '...');
+    return {
+        items: items,
+        ply: isNaN(ply)? def_ply: ply,
+    };
 }
 
 /**
@@ -334,7 +390,7 @@ function split_move_string(text) {
  * @see https://github.com/official-stockfish/Stockfish/pull/2778
  * @param {number} cp
  * @param {number} ply
- * @returns {number[]} w,d,l
+ * @returns {!Array<number>} w,d,l
  */
 function stockfish_wdl(cp, ply) {
     let win = stockfish_win_rate_model(cp, ply),
@@ -379,15 +435,16 @@ function stoof_cp_to_score(cp) {
 // <<
 if (typeof exports != 'undefined') {
     Assign(exports, {
+        add_player_eval: add_player_eval,
         allie_cp_to_score: allie_cp_to_score,
         assign_move: assign_move,
         calculate_feature_q: calculate_feature_q,
         fix_move_format: fix_move_format,
         format_eval: format_eval,
+        format_unit: format_unit,
         get_fen_ply: get_fen_ply,
         get_move_ply: get_move_ply,
         leela_cp_to_score: leela_cp_to_score,
-        LOCALHOST: LOCALHOST,
         mix_hex_colors: mix_hex_colors,
         reset_defaults: reset_defaults,
         reset_old_settings: reset_old_settings,

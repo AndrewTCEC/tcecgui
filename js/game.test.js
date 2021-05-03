@@ -1,20 +1,20 @@
 // game.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-06
+// @version 2021-04-29
 /*
 globals
 expect, global, require, test
 */
 'use strict';
 
-let {Assign, FromTimestamp} = require('./common.js'),
-    {DEV, load_defaults, Y} = require('./engine.js'),
+let {Assign, FromTimestamp, IsArray, IsString, Keys, ParseJSON, Stringify, Undefined} = require('./common.js'),
+    {DEV, load_defaults, set_section, Y} = require('./engine.js'),
     {
         analyse_log, calculate_h2h, calculate_probability, calculate_score, calculate_seeds, check_adjudication,
-        check_boom, copy_pgn, create_boards, create_game_link, current_archive_link, extract_threads,
-        fix_header_opening, format_engine, format_fen, format_hhmmss, format_opening, format_percent, get_short_name,
-        parse_date_time, parse_pgn, parse_time_control, tour_info, update_live_eval, update_materials,
-        update_pgn, update_player_eval,
+        check_boom, check_explosion, check_explosion_boom, copy_pgn, create_boards, create_game_link, create_seek,
+        current_archive_link, extract_threads, fix_header_opening, fix_zero_moves, format_engine, format_fen,
+        format_hhmmss, format_opening, format_percent, get_short_name, parse_date_time, parse_pgn, parse_time_control,
+        tour_info, update_live_eval, update_materials, update_pgn, update_player_eval,
     } = require('./game.js'),
     {get_fen_ply, xboards} = require('./global.js'),
     {create_chart_data} = require('./graph.js'),
@@ -46,6 +46,24 @@ create_chart_data();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function init_players(ply, players, evals) {
+    evals.forEach((eval_, id) => {
+        let player = players[id];
+        Assign(player, {
+            boom_ply: -1,
+            boomed: 0,
+            eval: eval_[ply],
+            evals: [],
+            short: `P${id}`,
+        });
+        Keys(eval_).forEach(key => {
+            player.evals[key] = eval_[key];
+        });
+    });
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // analyse_log
 [
     [
@@ -60,7 +78,12 @@ create_chart_data();
             depth: 91, engine: 'Komodo 14.1', eval: 'M8', hashfull: 0, id: 1, mate: -4, nodes: 2508046, nps: 4407815,
             ply: 145, tbhits: 123007, time: 568,
             pv: 'd3c5 a8b8 c5b7 b8e8 b5a6 e8c6 a6a5 c6b6',
-            pvs: {d3c5: 'd3c5 a8b8 c5b7 b8e8 b5a6 e8c6 a6a5 c6b6'},
+            pvs: {
+                d3c5: [
+                    'd3c5 a8b8 c5b7 b8e8 b5a6 e8c6 a6a5 c6b6',
+                    'Nc5 Qb8+ Nb7 Qe8+ Ka6 Qc6+ Ka5 Qcb6#',
+                ],
+            },
         },
         'Nc5 Qb8+ Nb7 Qe8+ Ka6 Qc6+ Ka5 Qcb6#',
     ],
@@ -76,7 +99,12 @@ create_chart_data();
             depth: 77, engine: 'Stockfish 202011101829_nn-c3ca321c51c9', eval: 'M25', hashfull: 21, id: 0, mate: 13,
             nodes: 575877930, nps: 258009825, ply: 128, seldepth: 26, tbhits: 6492754, time: 2232, wdl: '1000 0 0',
             pv: 'h7g7 c5e6 g7g6 d6d7 h6h7 e6f8 g6g7 d7d6 h7h8q f8e6 g7g6 d6c5 g6e6 c5c4 e6d6 f5f4 h8c8 c4b5',
-            pvs: {h7g7: 'h7g7 c5e6 g7g6 d6d7 h6h7 e6f8 g6g7 d7d6 h7h8q f8e6 g7g6 d6c5 g6e6 c5c4 e6d6 f5f4 h8c8 c4b5'},
+            pvs: {
+                h7g7: [
+                    'h7g7 c5e6 g7g6 d6d7 h6h7 e6f8 g6g7 d7d6 h7h8q f8e6 g7g6 d6c5 g6e6 c5c4 e6d6 f5f4 h8c8 c4b5',
+                    'Rg7 Ne6 Rg6 Kd7 h7 Nf8 Rg7+ Kd6 h8=Q Ne6 Rg6 Kc5 Rxe6 Kc4 Rd6 f4 Qc8+ Kb5',
+                ],
+            },
         },
         'Rg7 Ne6 Rg6 Kd7 h7 Nf8 Rg7+ Kd6 h8=Q Ne6 Rg6 Kc5 Rxe6 Kc4 Rd6 f4 Qc8+ Kb5',
     ],
@@ -92,7 +120,12 @@ create_chart_data();
             cp: -7, depth: 27, engine: 'Demolito dev-20201019', eval: -0.07, hashfull: 194, id: 0, nodes: 1793674384,
             ply: 20, time: 16216,
             pv: 'h3f4 d8f8 e1g3 g6f5 g4f5 f8f5 d2d4 g8f8 d4d5 e6d5 c3d5 e7d6 f1h1 d6f4 e3f4 h8g6 h1e1 d7d6',
-            pvs: {h3f4: 'h3f4 d8f8 e1g3 g6f5 g4f5 f8f5 d2d4 g8f8 d4d5 e6d5 c3d5 e7d6 f1h1 d6f4 e3f4 h8g6 h1e1 d7d6'},
+            pvs: {
+                h3f4: [
+                    'h3f4 d8f8 e1g3 g6f5 g4f5 f8f5 d2d4 g8f8 d4d5 e6d5 c3d5 e7d6 f1h1 d6f4 e3f4 h8g6 h1e1 d7d6',
+                    'Nf4 Rdf8 Bg3 Bf5 Bxf5 Rxf5 d4 Rgf8 d5 exd5 Ncxd5 Bd6 Rh1 Bxf4 exf4 Ng6 Rhe1 d6',
+                ],
+            },
         },
         'Nf4 Rdf8 Bg3 Bf5 Bxf5 Rxf5 d4 Rgf8 d5 exd5 Ncxd5 Bd6 Rh1 Bxf4 exf4 Ng6 Rhe1 d6',
     ],
@@ -108,14 +141,20 @@ create_chart_data();
             cp: 226, depth: 32, eval: 2.26, engine: 'KomodoDragon 2647.00', hashfull: 145, id: 0, nodes: 3285889668,
             nps: 184279613, ply: 62, tbhits: 139607, time: 17830,
             pv: 'd1d6 e7e6 f1d1',
-            pvs: {d1d6: 'd1d6 e7e6 f1d1'},
+            pvs: {d1d6: ['d1d6 e7e6 f1d1', 'Rd6 Re6 Rfd1']},
         },
         'Rd6 Re6 Rfd1',
     ],
     [
         '2r3k1/1p2rpp1/6p1/2n3P1/p1P4P/P7/1P3PB1/3R1RK1 w - - 0 32',
         [
-            {info: {pv: 'd1d6 e7e6 f1d1 e6d6'}, name: 'KomodoDragon 2647.00'},
+            {
+                info: {
+                    pv: 'd1d6 e7e6 f1d1 e6d6',
+                    pvs: {d1d6: ['d1d6 e7e6 f1d1 e6d6', 'Rd6 Re6 Rfd1 Rxd6']},
+                },
+                name: 'KomodoDragon 2647.00',
+            },
             {name: 'Stockfish 20201225'},
         ],
         '187833610 KomodoDragon 2647.00(50): info depth 32 time 17830 nodes 3285889668 score cp 226 lowerbound nps 184279613 hashfull 145 tbhits 139607 pv d1d6 e7e6 f1d1',
@@ -124,14 +163,21 @@ create_chart_data();
             cp: 226, depth: 32, eval: 2.26, engine: 'KomodoDragon 2647.00', hashfull: 145, id: 0, nodes: 3285889668,
             nps: 184279613, ply: 62, tbhits: 139607, time: 17830,
             pv: 'd1d6 e7e6 f1d1 e6d6',
-            pvs: {d1d6: 'd1d6 e7e6 f1d1 e6d6'},
+            pvs: {d1d6: ['d1d6 e7e6 f1d1 e6d6', 'Rd6 Re6 Rfd1 Rxd6']},
         },
-        null,
+        'Rd6 Re6 Rfd1 | Rxd6',
     ],
+    // 5
     [
         '2r3k1/1p2rpp1/6p1/2n3P1/p1P4P/P7/1P3PB1/3R1RK1 w - - 0 32',
         [
-            {info: {pv: 'e8e7 d1d6 e7e6 f1d1 e6d6'}, name: 'KomodoDragon 2647.00'},
+            {
+                info: {
+                    pv: 'e8e7 d1d6 e7e6 f1d1 e6d6',
+                    pvs: {e8e7: ['e8e7 d1d6 e7e6 f1d1 e6d6', 'Re7 Rd6 Re6 Rfd1 Rxd6']},
+                },
+                name: 'KomodoDragon 2647.00',
+            },
             {name: 'Stockfish 20201225'},
         ],
         '187833610 KomodoDragon 2647.00(50): info depth 32 time 17830 nodes 3285889668 score cp 226 lowerbound nps 184279613 hashfull 145 tbhits 139607 pv d1d6 e7e6',
@@ -141,8 +187,8 @@ create_chart_data();
             nps: 184279613, ply: 62, tbhits: 139607, time: 17830,
             pv: 'd1d6 e7e6',
             pvs: {
-                e8e7: 'e8e7 d1d6 e7e6 f1d1 e6d6',
-                d1d6: 'd1d6 e7e6',
+                e8e7: ['e8e7 d1d6 e7e6 f1d1 e6d6', 'Re7 Rd6 Re6 Rfd1 Rxd6'],
+                d1d6: ['d1d6 e7e6', 'Rd6 Re6'],
             },
         },
         'Rd6 Re6',
@@ -150,7 +196,13 @@ create_chart_data();
     [
         '2r3k1/1p2rpp1/6p1/2n3P1/p1P4P/P7/1P3PB1/3R1RK1 w - - 0 32',
         [
-            {info: {ply: 60, pv: 'h2h4 e8e7 d1d6 e7e6 f1d1 e6d6'}, name: 'KomodoDragon 2647.00'},
+            {
+                info: {
+                    ply: 60, pv: 'h2h4 e8e7 d1d6 e7e6 f1d1 e6d6',
+                    pvs: {h2h4: ['h2h4 e8e7 d1d6 e7e6 f1d1 e6d6', 'h4 Re7 Rd6 Re6 Rfd1 Rxd6']},
+                },
+                name: 'KomodoDragon 2647.00',
+            },
             {name: 'Stockfish 20201225'},
         ],
         '187833610 KomodoDragon 2647.00(50): info depth 32 time 17830 nodes 3285889668 score cp 226 lowerbound nps 184279613 hashfull 145 tbhits 139607 pv d1d6 e7e6',
@@ -160,17 +212,28 @@ create_chart_data();
             nps: 184279613, ply: 62, tbhits: 139607, time: 17830,
             pv: 'd1d6 e7e6 f1d1 e6d6',
             pvs: {
-                h2h4: 'h2h4 e8e7 d1d6 e7e6 f1d1 e6d6',
-                d1d6: 'd1d6 e7e6 f1d1 e6d6',
+                h2h4: ['h2h4 e8e7 d1d6 e7e6 f1d1 e6d6', 'h4 Re7 Rd6 Re6 Rfd1 Rxd6'],
+                d1d6: ['d1d6 e7e6 f1d1 e6d6', 'Rd6 Re6 Rfd1 Rxd6'],
             },
         },
-        'Rd6 Re6 Rfd1 Rxd6',
+        'Rd6 Re6 | Rfd1 Rxd6',
     ],
     [
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         [
             {name: 'Stoofvlees II a16'},
-            {info: {ply: 53, pv: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'}, name: 'Ethereal TCEC S20 DivP'},
+            {
+                info: {
+                    ply: 53, pv: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    pvs: {
+                        b6c4: [
+                            'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                            'Nc4 Bf6 Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                        ],
+                    },
+                },
+                name: 'Ethereal TCEC S20 DivP',
+            },
         ],
         '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 155 pv h8h7',
         1,
@@ -179,8 +242,11 @@ create_chart_data();
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'h8h7',
             pvs: {
-                b6c4: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
-                h8h7: 'h8h7',
+                b6c4: [
+                    'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nc4 Bf6 Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
+                h8h7: ['h8h7', 'Rh7'],
             },
         },
         'Rh7',
@@ -189,7 +255,18 @@ create_chart_data();
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         [
             {name: 'Stoofvlees II a16'},
-            {info: {ply: 53, pv: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'}, name: 'Ethereal TCEC S20 DivP'},
+            {
+                info: {
+                    ply: 53, pv: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    pvs: {
+                        b6c4: [
+                            'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                            'Nc4 Bf6 Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                        ],
+                    },
+                },
+                name: 'Ethereal TCEC S20 DivP',
+            },
         ],
         '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 155 pv c4a3',
         1,
@@ -198,17 +275,34 @@ create_chart_data();
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
             pvs: {
-                b6c4: 'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
-                c4a3: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                b6c4: [
+                    'b6c4 g5f6 c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nc4 Bf6 Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
+                c4a3: [
+                    'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
             },
         },
-        'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+        'Nxa3 | Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
     ],
     [
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         [
             {name: 'Stoofvlees II a16'},
-            {info: {ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'}, name: 'Ethereal TCEC S20 DivP'},
+            {
+                info: {
+                    ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    pvs: {
+                        c4a3: [
+                            'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                            'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                        ],
+                    },
+                },
+                name: 'Ethereal TCEC S20 DivP',
+            },
         ],
         '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 156 pv c4a3 b1c1',
         1,
@@ -216,23 +310,40 @@ create_chart_data();
             cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 156, id: 1, nodes: 14484705179,
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
-            pvs: {c4a3: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'},
+            pvs: {
+                c4a3: [
+                    'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
+            },
         },
-        null,
+        'Nxa3 Rc1 | Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
     ],
+    // 10
     [
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         [
             {name: 'Stoofvlees II a16'},
-            {info: {ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'}, name: 'Ethereal TCEC S20 DivP'},
+            {
+                info: {
+                    ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    pvs: {
+                        c4a3: [
+                            'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                            'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                        ],
+                    },
+                },
+                name: 'Ethereal TCEC S20 DivP',
+            },
         ],
-        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 155 pv c4a3 b1b8',
+        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705178 nps 142497000 tbhits 107098 hashfull 155 pv c4a3 b1b8',
         1,
         {
-            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705179,
+            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705178,
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'c4a3 b1b8',
-            pvs: {c4a3: 'c4a3 b1b8'},
+            pvs: {c4a3: ['c4a3 b1b8', 'Nxa3 Rb8']},
         },
         'Nxa3 Rb8',
     ],
@@ -240,60 +351,99 @@ create_chart_data();
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         [
             {name: 'Stoofvlees II a16'},
-            {info: {ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'}, name: 'Ethereal TCEC S20 DivP'},
+            {
+                info: {
+                    ply: 55, pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    pvs: {
+                        c4a3: [
+                            'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                            'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                        ],
+                    },
+                },
+                name: 'Ethereal TCEC S20 DivP',
+            },
         ],
-        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 155 pv ',
+        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705177 nps 142497000 tbhits 107098 hashfull 155 pv ',
         1,
         {
-            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705179,
+            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705177,
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
-            pvs: {c4a3: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'},
+            pvs: {
+                c4a3: [
+                    'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
+            },
         },
-        null,
+        'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
     ],
     [
         '2rb2kr/q4p2/b1n1pBp1/p2pP2p/2nP3P/P4NPN/2B2P2/1R1QR1K1 b - - 7 28',
         null,
-        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705179 nps 142497000 tbhits 107098 hashfull 155 pv c4a3',
+        '219974502 Ethereal TCEC S20 DivP(59): info depth 32 seldepth 53 multipv 1 score cp -177 upperbound time 101648 nodes 14484705176 nps 142497000 tbhits 107098 hashfull 155 pv c4a3',
         1,
         {
-            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705179,
+            cp: -177, depth: 32, engine: 'Ethereal TCEC S20 DivP', eval: 1.77, hashfull: 155, id: 1, nodes: 14484705176,
             nps: 142497000, ply: 55, seldepth: 53, tbhits: 107098, time: 101648,
             pv: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
-            pvs: {c4a3: 'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7'},
+            pvs: {
+                c4a3: [
+                    'c4a3 b1c1 a3c2 c1c2 a6c4 d1d2 h8h7 h3g5 d8e7',
+                    'Nxa3 Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
+                ],
+            },
         },
-        null,
+        'Nxa3 | Rc1 Nxc2 Rxc2 Bc4 Qd2 Rh7 Nhg5 Be7',
     ],
     [
         START_FEN,
         [
             {name: 'One'},
-            {info: {ply: -1, pv: 'e2e4 e7e5 b1c3', pvs: {d2d4: 'd2d4 d7d5 g1f3', e2e4: 'e2e4 e7e5 b1c3'}}, name: 'Two'},
+            {
+                info: {
+                    ply: -1, pv: 'e2e4 e7e5 b1c3',
+                    pvs: {d2d4: ['d2d4 d7d5 g1f3', 'd4 d5 Nf3'], e2e4: ['e2e4 e7e5 b1c3', 'e4 e5 Nc3']},
+                },
+                name: 'Two',
+            },
         ],
         '1000 Two(10): info depth 3 cp 50 pv d2d4',
         1,
         {
             cp: 50, depth: 3, engine: 'Two', eval: -0.5, id: 1, ply: 0,
             pv: 'd2d4 d7d5 g1f3',
-            pvs: {d2d4: 'd2d4 d7d5 g1f3', e2e4: 'e2e4 e7e5 b1c3'},
+            pvs: {
+                d2d4: ['d2d4 d7d5 g1f3', 'd4 d5 Nf3'],
+                e2e4: ['e2e4 e7e5 b1c3', 'e4 e5 Nc3'],
+            },
         },
-        null,
+        'd4 | d5 Nf3',
     ],
     [
         START_FEN,
         [
             {name: 'One'},
-            {info: {ply: -1, pv: 'e2e4 e7e5 b1c3', pvs: {d2d4: 'd2d4 d7d5 g1f3', e2e4: 'e2e4 e7e5 b1c3'}}, name: 'Two'},
+            {
+                info: {
+                    ply: -1, pv: 'e2e4 e7e5 b1c3',
+                    pvs: {d2d4: ['d2d4 d7d5 g1f3', 'd4 d5 Nf3'], e2e4: ['e2e4 e7e5 b1c3', 'e4 e5 Nc3']},
+                },
+                name: 'Two',
+            },
         ],
         '1000 Two(10): info depth 3 cp 50 pv e2e4',
         1,
         {
             cp: 50, depth: 3, engine: 'Two', eval: -0.5, id: 1, ply: 0,
             pv: 'e2e4 e7e5 b1c3',
-            pvs: {d2d4: 'd2d4 d7d5 g1f3', e2e4: 'e2e4 e7e5 b1c3'},
+            pvs: {
+                d2d4: ['d2d4 d7d5 g1f3', 'd4 d5 Nf3'],
+                e2e4: ['e2e4 e7e5 b1c3', 'e4 e5 Nc3'],
+            },
         },
-        null,
+        'e4 | e5 Nc3',
     ],
 ].forEach(([fen, players_, line, player_id, answer, answer_san], id) => {
     test(`analyse_log:${id}`, () => {
@@ -307,11 +457,19 @@ create_chart_data();
         if (players_) {
             for (let player of players_) {
                 let info = player.info;
-                if (info && !info.pvs) {
+                if (!info)
+                    continue;
+                if (!info.pvs) {
                     let pv = info.pv;
                     if (pv)
                         info.pvs = {[pv.split(' ')[0]]: pv};
                 }
+                let pvs = info.pvs;
+                Keys(pvs).forEach(key => {
+                    let [pv, moves] = pvs[key];
+                    if (IsString(moves))
+                        pvs[key] = [pv, moves.split(' ').map(item => ({m: item}))];
+                });
             }
             players[0] = players_[0];
             players[1] = players_[1];
@@ -319,9 +477,20 @@ create_chart_data();
         main.set_fen(fen);
 
         analyse_log(line);
-        let info = players[player_id].info,
-            san_list = info.moves? info.moves.map(move => move.m).join(' '): null;
+        let info = ParseJSON(Stringify(players[player_id].info || {})),
+            pvs = info.pvs,
+            moves = info.moves,
+            san_list =
+                moves? (IsArray(moves)? moves.map(move => `${move.fail? '| ': ''}${move.m}`).join(' '): moves): null;
         delete info.moves;
+
+        if (pvs)
+            Keys(pvs).forEach(key => {
+                let pv = pvs[key];
+                if (IsArray(pv[1]))
+                    pv[1] = pv[1].map(move => move.m).join(' ');
+            });
+
         expect(info.id).toEqual(player_id);
         expect(info).toEqual(answer);
         expect(san_list).toEqual(answer_san);
@@ -438,49 +607,153 @@ create_chart_data();
 
 // check_boom
 [
-    [0, {boom_start: 0, x: 'archive'}, {boomed: 0}, [5, 5, 0.5, 0.5], [], false, 0],
-    [0, {boom_consecutive: 1, x: 'live'}, {boomed: 0}, [5, 3, 0.5, 0.5], [], false, 0],
-    [0, {}, {boomed: 0}, [5, 3, 2.5, 0.5], [], true, 3.5],
-    [0, {}, {}, [15, 5, 0.5, 0.5], [], false, 3.5],
-    [0, {}, {}, [-8, -3, -5, -0.5], [], true, -5.333],
-    [0, {}, {}, [-1, 1, -1, -0.5], [], false, -5.333],
-    [0, {}, {}, [5, 5, 5, -10], [], true, 5],
-    [0, {}, {}, [5, 5, 5, 0], [], false, 5],
-    [0, {}, {}, [-5, -5, -5, 1], [], true, -5],
-    [0, {}, {}, [8, 3, 5, 5], [], true, 5.25],
+    [12, {boom_threshold: 1.2}, [{9: 3, 10: 3, 11: 5, 12: 5.5}], 2, 0, null],
+    [11, {}, [{10: 3, 11: 5}], 2, 0, null],
+    [11, {}, [{8: 3, 9: 3, 10: 3, 11: 4.5}], 0, 1.4771, [54.824, 0.184, 0.304]],
+    [11, {}, [{8: 5, 9: 5, 10: 5, 11: 3.5}], 0, -1.3036, [58.738, 0.133, 0.240]],
+    [13, {}, [{11: 1, 12: 1.1, 13: 2.2}], 2, 0, null],
+    [13, {}, [{10: 1, 11: 1, 12: 1.1, 13: 2.2}], 0, 1.8262, [49.247, 0.275, 0.415]],
+    [13, {}, [{10: 1, 11: 1, 12: 1.1, 13: 2.2}, {10: 1, 11: 1, 12: 1.2, 13: 3.5}], 0, 1.8262, [34.427, 0.516, 0.711]],
+    [43, {}, [{35: 2.13, 36: 1.96, 37: 1.96, 38: 1.83, 39: 1.45, 40: -1.54, 43: 2.05}], 2, 0, null],
+    [40, {}, [{37: 10.55, 38: 10.53, 39: 12.44, 40: 6.5}], 0, -1.2501, [59.381, 0.116, 0.220]],
+    [41, {}, [{38: 8.37, 39: 8.53, 40: 9.36, 41: 7.69}], 2, 0, null],
     // 10
-    [0, {}, {boomed: 0}, [8, 3, 5, 5], [], true, 5.25],
-    [0, {}, {boomed: 0}, [8, 0.5, 8, 0.5], [], false, 0],
-    [0, {}, {boomed: 0}, ['M41', 0.5, 8, 0], [], false, 0],
-    [0, {}, {boomed: 0}, ['M41', 0.5, 8, 5], [], true, 47],
-    [0, {}, {boomed: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'lczero', 'lczero'], false, 0],
-    [0, {}, {boomed: 0}, [8, 5, 8, 5], ['lczero', 'x', 'lczero', 'lczero'], true, 6.5],
-    [0, {}, {boomed: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'lczero', 'y'], true, 6.5],
-    [0, {}, {boomed: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'allie', 'y'], true, 7],
-    [0, {sound_boom: 0}, {boomed: 0}, [8, 3, 5, 5], [], false, 0],
-    [0, {sound_boom: 'random'}, {boomed: 0}, [8, 3, 5, 5], [], true, 5.25],
+    [41, {}, [{38: 7.69, 39: 8.15, 40: 8.31, 41: 37.37}], 0, 1.25155, [58.982, 0.117, 0.220]],
+    [46, {}, [{38: 7.69, 39: 8.15, 40: 8.31, 41: 37.37, 45: 8.54, 46: 'M19'}], 2, 0, null],
+    [46, {}, [{40: 5.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 0, 2.5284, [40.587, 0.415, 0.588]],
+    [46, {}, [{40: 7.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 0, 1.7377, [50.570, 0.253, 0.389]],
+    [46, {}, [{40: 8.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 0, 1.3534, [57.048, 0.148, 0.259]],
+    [46, {}, [{40: 9.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 2, 0, null],
+    [46, {}, [{40: 10.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 2, 0, null],
+    [46, {}, [{40: 15.0, 41: 4.5, 45: 5.5, 46: 'M19'}], 2, 0, null],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: '-M19'}], 0, 16.7534, [20.017, 0.750, 1.000]],
+    [47, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 'M19', 47: '-M19'}], 0, 16.7534, [20.017, 0.750, 1.000]],
     // 20
-    [0, {boom_threshold: 0}, {boomed: 0}, [8, 3, 5, 5], [], false, 0],
-    [0, {boom_threshold: 2.3, boom_start: 10}, {boomed: 0}, [5, 5, 5, 0], [], false, 0],
-    [0, {boom_start: 0}, {}, [5, 5, 5, 0], [], true, 5],
-    [0, {boom_consecutive: 3}, {boomed: 0}, [5, 5, 5, 5], [], false, 0],
-    [1, {}, {}, [5, 5, 5, 5], [], false, 0],
-    [2, {}, {}, [5, 5, 5, 5], [], true, 5],
-].forEach(([ply, y, states, evals, shorts, answer, answer_boomed], id) => {
+    [47, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: '-M19', 47: -5}], 0, -2.8650, [45.874, 0.467, 0.652]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 5.0}], 2, 0, null],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 3.0}], 0, -1.4771, [56.765, 0.184, 0.304]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 2.0}], 0, -2.8188, [46.128, 0.461, 0.644]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 1.0}], 0, -4.5415, [39.703, 0.628, 0.850]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: 0.0}], 0, -6.7535, [36.556, 0.710, 0.950]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: -1.0}], 0, -8.9655, [35.515, 0.737, 0.984]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: -2.0}], 0, -10.6882, [35.218, 0.744, 0.993]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: -3.0}], 0, -12.0298, [35.111, 0.747, 0.996]],
+    [46, {}, [{40: 7.5, 41: 4.5, 45: 5.5, 46: -5.0}], 0, 13.8884, [20.070, 0.749, 0.999]],
+    // 30
+    [6, {}, [{0: 'book', 2: 'book', 4: 'book', 6: "0.92"}], 2, 0, null],
+].forEach(([ply, y, evals, answer, answer_boomed, answer_more], id) => {
     test(`check_boom:${id}`, () => {
-        DEV.boom = (id >= 27)? 1: 0;
+        DEV.boom = (id >= 31)? 3: 0;
+        let main = xboards.live,
+            players = main.players;
+        init_players(ply, players, evals);
+        main.moves.length = ply;
         Assign(Y, y);
+
+        let player = players[0],
+            result = check_boom('live', 0);
+        expect(result[0]).toEqual(answer);
+        expect(player.boomed).toBeCloseTo(answer_boomed, 3);
+        if (player.boomed)
+            expect(player.boom_ply).toEqual(ply);
+        if (answer_more) {
+            let text = result.slice(1, -1).map(x => x.toFixed(3)).join(', ');
+            expect(text).toEqual(answer_more.map(x => x.toFixed(3)).join(', '));
+        }
+    });
+});
+
+// check_explosion
+[
+    [0, 0, {explosion_threshold: 0, x: 'live'}, {exploded: 0}, [5, 5, 0.5, 0.5], [], 1, 0],
+    [0, 0, {explosion_threshold: 2.3, x: 'archive'}, {exploded: 0}, [5, 5, 0.5, 0.5], [], 2, 0],
+    [0, 0, {explosion_buildup: 1, x: 'live'}, {exploded: 0}, [5, 3, 0.5, 0.5], [], 2, 0],
+    [0, 0, {}, {exploded: 0, seens: new Set()}, [5, 3, 2.5, 0.5], [], 5, 3.5],
+    [0, 0, {}, {exploded: 0, seens: new Set([-4, -3, -2, -1])}, [5, 3, 2.5, 0.5], [], 0, 3.5],
+    [0, 0, {}, {}, [15, 5, 0.5, 0.5], [], 2, 3.5],
+    [0, 0, {}, {}, [-8, -3, -5, -0.5], [], 0, -5.333],
+    [0, 0, {}, {}, [-1, 1, -1, -0.5], [], 2, -5.333],
+    [0, 0, {}, {}, [5, 5, 5, -10], [], 0, 5],
+    [0, 0, {}, {}, [5, 5, 5, 0], [], 3, 5],
+    // 10
+    [0, 0, {}, {}, [-5, -5, -5, 1], [], 0, -5],
+    [0, 0, {}, {}, [8, 3, 5, 5], [], 0, 5.25],
+    [0, 0, {}, {exploded: 0}, [8, 3, 5, 5], [], 0, 5.25],
+    [0, 0, {}, {exploded: 0}, [8, 0.5, 8, 0.5], [], 2, 0],
+    [0, 0, {}, {exploded: 0}, ['M41', 0.5, 8, 0], [], 2, 0],
+    [0, 0, {}, {exploded: 0}, ['M41', 0.5, 8, 5], [], 0, 47],
+    [0, 0, {}, {exploded: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'lczero', 'lczero'], 2, 0],
+    [0, 0, {}, {exploded: 0}, [8, 5, 8, 5], ['lczero', 'x', 'lczero', 'lczero'], 0, 6.5],
+    [0, 0, {}, {exploded: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'lczero', 'y'], 0, 6.5],
+    [0, 0, {}, {exploded: 0}, [8, 0.5, 8, 5], ['lczero', 'x', 'allie', 'y'], 0, 7],
+    // 20
+    [0, 0, {explosion_sound: 0}, {exploded: 0}, [8, 3, 5, 5], [], 0, 5.25],
+    [0, 0, {explosion_sound: 'random'}, {exploded: 0}, [8, 3, 5, 5], [], 0, 5.25],
+    [0, 0, {explosion_threshold: 0}, {exploded: 0}, [8, 3, 5, 5], [], 1, 0],
+    [0, 0, {explosion_threshold: 2.3}, {exploded: 0}, [5, 5, 5, 0], [], 0, 5],
+    [0, 0, {}, {exploded: 0}, [5, 0, 5, 5], [], 2, 0],
+    [0, 0, {}, {}, [5, 0.1, 5, 5], [], 0, 5],
+    [0, 0, {explosion_buildup: 3}, {exploded: 0}, [5, 5, 5, 5], [], 4, 0],
+    [1, 0, {}, {}, [5, 5, 5, 5], [], 4, 0],
+    [2, 0, {}, {}, [5, 5, 5, 5], [], 0, 5],
+    [2, 1, {}, {exploded: 0}, [8, 8, 8, 8], [], 0, 8],
+    // 30
+    [2, 0, {explosion_buildup: 1}, {}, [5, 5, 5, 5], [], 3, 8],
+    [76, 0, {}, {exploded: 0}, ['10.01', '1.56', 10.92, 6.31], ['LCZero', 'Stoofvlees', 'LCZero', 'Crystal'], 0, 8.16],
+].forEach(([ply, is_boom, y, states, evals, shorts, answer, answer_boomed], id) => {
+    test(`check_explosion:${id}`, () => {
+        DEV.explode = (id >= 32)? 1: 0;
         let main = xboards.live,
             players = main.players;
         evals.forEach((eval_, id) => {
-            players[id].eval = eval_;
-            players[id].short = shorts[id] || `P${id}`;
+            Assign(players[id], {
+                eval: eval_,
+                short: Undefined(shorts[id], `P${id}`),
+            });
         });
         main.moves.length = ply;
         Assign(main, states);
+        Assign(Y, y);
+        if (y.x)
+            set_section(y.x);
 
-        expect(check_boom(Y.x)).toEqual(answer);
-        expect(main.boomed).toBeCloseTo(answer_boomed, 3);
+        expect(check_explosion('live', !!is_boom)).toEqual(answer);
+        expect(main.exploded).toBeCloseTo(answer_boomed, 3);
+    });
+});
+
+// check_explosion_boom
+[
+    [1, 11, {boom_threshold: 1.2, x: 'archive'}, 0, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 0, 0],
+    [1, 11, {x: 'live'}, 0, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 1, 1.8586],
+    [0, 11, {}, 0, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 1, 1.8586],
+    [0, 11, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 0, 0],
+    [0, 12, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 1, 1.8586],
+    [0, 12, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9}], 0, 0],
+    [1, 12, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9}], 1, 3.643],
+    [0, 13, {}, -2, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9}], 0, 0],
+    [0, 13, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9, 12: 14.5}], 0, 0],
+    [1, 13, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9, 12: 'M25'}], 0, 0],
+    [1, 13, {boom_threshold: 0.5}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9, 12: 'M25'}], 1, 1.0807],
+].forEach(([reset, ply, y, offset, mode, evals, answer, answer_boomed], id) => {
+    test(`check_explosion_boom:${id}`, () => {
+        DEV.boom = 0;
+        let main = xboards.live,
+            players = main.players;
+        init_players(ply, players, evals);
+        main.moves.length = ply;
+        Assign(Y, y);
+        if (y.x)
+            set_section(y.x);
+        if (reset)
+            main.seens.clear();
+
+        let player = players[0],
+            result = check_explosion_boom(Y.x, offset, mode);
+        if (IsArray(result))
+            result = result[0];
+        expect(result).toEqual(answer);
+        expect(player.boomed).toBeCloseTo(answer_boomed, 3);
     });
 });
 
@@ -551,7 +824,7 @@ create_chart_data();
     ],
 ].forEach(([start_fen, main_moves, board_moves, fen, answer], id) => {
     test(`copy_pgn:${id}`, () => {
-        Y.x = 'live';
+        set_section('live');
         for (let [name, moves] of [['live', main_moves], ['pv0', board_moves]]) {
             let board = xboards[name];
             board.start_fen = start_fen;
@@ -574,12 +847,26 @@ create_chart_data();
 
 // create_game_link
 [
-    [{}, 'live', 1, '', '<a class="game" href="#game=1">1</a>'],
-    [{link: 'season=18&div=l3'}, 'live', 1, '', '<a class="game" href="#div=l3&game=1&season=18">1</a>'],
-].forEach(([info, section, game, text, answer], id) => {
+    [{}, 'live', 1, '', undefined, undefined, '<a class="game" href="#game=1">1</a>'],
+    [{}, 'live', 1, '', 4, undefined, '<a class="game" href="#game=1">[1]</a>'],
+    [{}, 'live', 1, '', 1, undefined, '#game=1'],
+    [{}, 'live', 1, '', 2, undefined, ['#game=1', undefined, '<i class="game">1</i>']],
+    [{}, 'live', 1, '', 6, 'yes', ['#game=1', 'yes', '<i class="game">[1]</i>']],
+    [{link: 'season=18&div=l3'}, 'live', 1, '', 0, '', '<a class="game" href="#div=l3&game=1&season=18">1</a>'],
+].forEach(([info, section, game, text, mode, prefix, answer], id) => {
     test(`create_game_link:${id}`, () => {
         Assign(tour_info[section], info);
-        expect(create_game_link(section, game, text)).toEqual(answer);
+        expect(create_game_link(section, game, text, mode, prefix)).toEqual(answer);
+    });
+});
+
+// create_seek
+[
+    [0, 10, 'dec=x', ['', 0, '']],
+    [1, 10, 'dec=x', ['dec=x', '<i class="seek">1</i>', '10%']],
+].forEach(([value, total, data, answer], id) => {
+    test(`create_seek:${id}`, () => {
+        expect(create_seek(value, total, data)).toEqual(answer);
     });
 });
 
@@ -687,31 +974,89 @@ create_chart_data();
     });
 });
 
+// fix_zero_moves
+[
+    [{}, {}, {}],
+    [
+        {100: {wv: '250.00'}, 101: {n: 0, wv: '0.00'}},
+        {},
+        {100: {ply: 100, wv: '250.00'}, 101: {n: 0, ply: 101, wv: undefined}},
+    ],
+    [
+        {101: {n: 0, mt: 0, ply: 101, wv: '0.00'}},
+        {100: {wv: '250.00'}},
+        {101: {n: 0, mt: 0, ply: 101, wv: undefined}},
+    ],
+    [
+        {101: {n: 1e6, mt: 1000, ply: 101, wv: '0.00'}},
+        {100: {wv: '250.00'}},
+        {101: {n: 1e6, mt: 1000, ply: 101, wv: '0.00'}},
+    ],
+].forEach(([moves, main_moves, answer], id) => {
+    test(`fix_zero_moves:${id}`, () => {
+        let answer2 = [],
+            main_moves2 = [],
+            moves2 = [];
+        Keys(moves).forEach(key => {
+            moves2[key] = moves[key];
+            moves2[key].ply = +key;
+        });
+        Keys(main_moves).forEach(key => {
+            main_moves2[key] = main_moves[key];
+        });
+        fix_zero_moves(moves2, main_moves2);
+        Keys(answer).forEach(key => {
+            answer2[key] = answer[key];
+        });
+        expect(moves2).toEqual(answer2);
+    });
+});
+
 // format_engine
 [
-    ['', undefined, undefined, ''],
-    [undefined, undefined, undefined, ''],
-    ['Fire 8_beta', undefined, undefined, 'Fire <i class="version">8_beta</i>'],
-    ['LCZero v0.24-sv-t60-3010', undefined, undefined, 'LCZero <i class="version">v0.24-sv-t60-3010</i>'],
-    ['LCZero v0.25.1-svjio-t60-3972-mlh', undefined, undefined, 'LCZero <i class="version">v0.25.1-svjio-t60-3972-mlh</i>'],
-    ['LCZero v0.25.1-svjio-t60-3972-mlh', undefined, 20, 'LCZero <i class="version version-small">v0.25.1-svjio-t60-3972-mlh</i>'],
-    ['LCZero v0.26.0-sv-t60-4229-mlh', undefined, 21, 'LCZero <i class="version version-small">v0.26.0-sv-t60-4229-mlh</i>'],
-    ['Stockfish 20200407DC', undefined, undefined, 'Stockfish <i class="version">20200407DC</i>'],
-    ['StockfishNNUE 20200704-StockFiNN-0.2', undefined, 21, 'StockfishNNUE <i class="version version-small">20200704-StockFiNN-0.2</i>'],
-    ['Stoofvlees II a14', undefined, undefined, 'Stoofvlees <i class="version">II a14</i>'],
-    ['Stoofvlees II a14', true, undefined, 'Stoofvlees<div class="version">II a14</div>'],
-    ['Stoofvlees II a14', true, 1, 'Stoofvlees<div class="version version-small">II a14</div>'],
-    ['SuperBaronizer', undefined, undefined, 'SuperBaronizer'],
-].forEach(([text, multi_line, scale, answer], id) => {
+    ['', undefined, undefined, undefined, ''],
+    [undefined, undefined, undefined, undefined, ''],
+    ['Fire 8_beta', undefined, undefined, undefined, 'Fire <i class="version">8_beta</i>'],
+    ['Fire 8_beta', false, 0, true, 'Fire <i class="version">8_beta</i>'],
+    ['KomodoDragon 2671.00', false, 0, false, 'KomodoDragon <i class="version">2671.00</i>'],
+    ['KomodoDragon 2671.00', true, 0, false, 'KomodoDragon<div class="version">2671.00</div>'],
+    [
+        'KomodoDragon 2671.00', true, 0, true,
+        '<i class="nowrap">Komodo</i><i class="nowrap">Dragon</i><div class="version">2671.00</div>',
+    ],
+    ['LCZero v0.24-sv-t60-3010', undefined, 0, false, 'LCZero <i class="version">v0.24-sv-t60-3010</i>'],
+    ['LCZero v0.25.1-svjio-t60-3972-mlh', 0, 0, 0, 'LCZero <i class="version">v0.25.1-svjio-t60-3972-mlh</i>'],
+    [
+        'LCZero v0.25.1-svjio-t60-3972-mlh', false, 20, undefined,
+        'LCZero <i class="version version-small">v0.25.1-svjio-t60-3972-mlh</i>',
+    ],
+    ['LCZero v0.26.0-sv-t60-4229-mlh', 0, 21, 0, 'LCZero <i class="version version-small">v0.26.0-sv-t60-4229-mlh</i>'],
+    ['Stockfish 20200407DC', 0, 0, false, 'Stockfish <i class="version">20200407DC</i>'],
+    [
+        'StockfishNNUE 20200704-StockFiNN-0.2', false, 21, undefined,
+        'StockfishNNUE <i class="version version-small">20200704-StockFiNN-0.2</i>',
+    ],
+    ['Stoofvlees II a14', undefined, undefined, false, 'Stoofvlees <i class="version">II a14</i>'],
+    ['Stoofvlees II a14', true, undefined, false, 'Stoofvlees<div class="version">II a14</div>'],
+    ['Stoofvlees II a14', true, 1, false, 'Stoofvlees<div class="version version-small">II a14</div>'],
+    ['Stoofvlees II a14', true, -2, false, 'Stoofvlees<div class="version2">II a14</div>'],
+    ['SuperBaronizer', undefined, undefined, false, 'SuperBaronizer'],
+].forEach(([text, multi_line, scale, split, answer], id) => {
     test(`format_engine:${id}`, () => {
-        expect(format_engine(text, multi_line, scale)).toEqual(answer);
+        expect(format_engine(text, multi_line, scale, split)).toEqual(answer);
     });
 });
 
 // format_fen
 [
-    ['1r4k1/8/1P1p1pP1/p2P4/2P2P2/P4N2/5K2/4R3 w - - 0 48', '<i class="nowrap">1r4k1</i>/<i class="nowrap">8</i>/<i class="nowrap">1P1p1pP1</i>/<i class="nowrap">p2P4</i>/<i class="nowrap">2P2P2</i>/<i class="nowrap">P4N2</i>/<i class="nowrap">5K2</i>/<i class="nowrap">4R3</i> <i class="nowrap">w - - 0 48</i>'],
-    ['8/3R2r1/8/4p1k1/4P3/5K2/8/8 b - - 0 91', '<i class="nowrap">8</i>/<i class="nowrap">3R2r1</i>/<i class="nowrap">8</i>/<i class="nowrap">4p1k1</i>/<i class="nowrap">4P3</i>/<i class="nowrap">5K2</i>/<i class="nowrap">8</i>/<i class="nowrap">8</i> <i class="nowrap">b - - 0 91</i>'],
+    [
+        '1r4k1/8/1P1p1pP1/p2P4/2P2P2/P4N2/5K2/4R3 w - - 0 48',
+        '<i class="nowrap">1r4k1</i>/<i class="nowrap">8</i>/<i class="nowrap">1P1p1pP1</i>/<i class="nowrap">p2P4</i>/<i class="nowrap">2P2P2</i>/<i class="nowrap">P4N2</i>/<i class="nowrap">5K2</i>/<i class="nowrap">4R3</i> <i class="nowrap">w - - 0 48</i>',
+    ],
+    [
+        '8/3R2r1/8/4p1k1/4P3/5K2/8/8 b - - 0 91',
+        '<i class="nowrap">8</i>/<i class="nowrap">3R2r1</i>/<i class="nowrap">8</i>/<i class="nowrap">4p1k1</i>/<i class="nowrap">4P3</i>/<i class="nowrap">5K2</i>/<i class="nowrap">8</i>/<i class="nowrap">8</i> <i class="nowrap">b - - 0 91</i>',
+    ],
 ].forEach(([fen, answer], id) => {
     test(`format_fen:${id}`, () => {
         expect(format_fen(fen)).toEqual(answer);
@@ -720,10 +1065,10 @@ create_chart_data();
 
 // format_hhmmss
 [
-    [null, '00:00:00'],
-    [NaN, 'aN:aN:aN'],
-    [Infinity, 'Infinityd, aN:aN:aN'],
-    ['', '00:00:00'],
+    [null, '-'],
+    [NaN, '-'],
+    [Infinity, '-'],
+    ['', '-'],
     [0, '00:00:00'],
     [31, '00:00:31'],
     [314, '00:05:14'],
@@ -761,7 +1106,7 @@ create_chart_data();
 // format_percent
 [
     [null, '0%'],
-    [NaN, 'NaN%'],
+    [NaN, '-'],
     [Infinity, 'Infinity%'],
     ['', '0%'],
     [0, '0%'],
@@ -1856,6 +2201,43 @@ create_chart_data();
             ],
         },
     ],
+    [
+        `
+        [FEN "2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31"]
+        [Setup "1"]
+
+        31. Qd2c2 {d=20, sd=49, pd=Bh6, mt=32075, tl=1490098, s=142545, n=15759193, pv=Qd2c2 f5 Bc1 Bxc1 Qdxc1 Nf6 f3 Bc6 Qg2 O-O Ne2 Bd7 h4 Be6 Ra3 Nh5 Qa2 fxe4 dxe4 Qeb7 Rb3 Qbd7 Rd3 Qcb7 O-O Bh3 Qf2 Bxf1 Qfxf1 Qxe4 fxe4, tb=0, h=0.0, ph=50.0, wv=0.52, R50=48, Rd=-11, Rr=-1000, mb=+0+0-1+1+0,}
+        `,
+        15,
+        {
+            Headers: {
+                FEN: '2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31',
+                Setup: '1',
+            },
+            Moves: [{
+                R50: 48, Rd: -11, Rr: -1000, d: 20, h: '0.0', m: 'Q2c2', mb: '+0+0-1+1+0', mt: 32075, n: 15759193,
+                pd: 'Bh6', ph: '50.0', ply: 60,
+                pv: '31. Q2c2 f5 32. Bc1 Bxc1 33. Qdxc1 Nf6 34. f3 Bc6 35. Qg2 O-O 36. Ne2 Bd7 37. h4 Be6 38. Ra3 Nh5 39. Qa2 fxe4 40. dxe4 Qeb7 41. Rb3 Qbd7 42. Rd3 Qcb7 43. O-O Bh3 44. Qf2 Bxf1 45. Qfxf1 Qxe4 46. fxe4',
+                s: 142545, sd: 49, tb: 0, tl: 1490098, wv: '0.52',
+            }],
+        },
+    ],
+    [
+        `
+        [FEN "2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31"]
+        [Setup "1"]
+
+        31. Qd2c2 {d=20, pv=, sd=49,}
+        `,
+        15,
+        {
+            Headers: {
+                FEN: '2qqk1nr/1b2qp1p/3p2pb/2p1p3/2P1P3/2RP2P1/1B1Q1P1P/1Q1QK1NR w Kk - 2 31',
+                Setup: '1',
+            },
+            Moves: [{d: 20, m: 'Q2c2', ply: 60, pv: '', sd: 49}],
+        },
+    ],
 ].forEach(([data, mode, answer], id) => {
     test(`parse_pgn:${id}`, () => {
         if (answer.Moves) {
@@ -1870,8 +2252,8 @@ create_chart_data();
 
 // parse_time_control
 [
-    ['900+5', [`15'+5"`, {tc: 900, tc2: 5, tc3: 0}]],
-    ['40/900', [`40/900'`, {tc: 900, tc2: 0, tc3: 40}]],
+    ['900+5', {dico: {tc: 900, tc2: 5, tc3: 0}, text: `15'+5"`}],
+    ['40/900', {dico: {tc: 900, tc2: 0, tc3: 40}, text: `40/900'`}],
 ].forEach(([value, answer], id) => {
     test(`parse_time_control:${id}`, () => {
         expect(parse_time_control(value)).toEqual(answer);
@@ -2039,6 +2421,8 @@ create_chart_data();
 ].forEach(([states, section, data, answer], id) => {
     test(`update_player_eval:${id}`, () => {
         Assign(Y, states);
+        if (states.x)
+            set_section(states.x);
         expect(update_player_eval(section, data)).toEqual(answer);
     });
 });

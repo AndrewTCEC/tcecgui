@@ -1,27 +1,28 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-04
+// @version 2021-03-11
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
 // contains global vars but the script will be imported in a function => they become local
 //
 // included after: common
+// jshint -W069
 /*
 globals
-_, A, Abs, AnimationFrame, Assign, Attrs, cancelAnimationFrame, Ceil, Clamp, Class, Clear, clearInterval, clearTimeout,
-CreateNode,
-DefaultFloat, DefaultInt, document, DownloadObject, E, Events, exports, From, global, Hide, history, HTML, Id, IsArray,
-IsDigit, IsFloat, IsObject, IsString, Keys,
-LoadLibrary, localStorage, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Parent, ParseJSON, PD, Pow,
-QueryString, require, Resource,
-Safe, ScrollDocument, SetDefault, setInterval, setTimeout, Show, Sign, SP, Stringify, Style, TEXT, Title, Undefined,
-Upper, Visible, WebSocket, window
+_, A, Abs, AnimationFrame, Assign, Attrs, C, CacheId, cancelAnimationFrame, Ceil, Clamp, Class, Clear, clearInterval,
+clearTimeout, CreateNode,
+DefaultFloat, DefaultInt, document, DownloadObject, E, Events, exports, Floor, From, global, HasClass, Hide, history,
+HTML, Input, IS_NODE, IsArray, IsDigit, IsFloat, IsFunction, IsObject, IsString, Keys,
+LoadLibrary, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Parent, ParseJSON, PD, Pow, QueryString,
+require, Resource,
+S, Safe, ScrollDocument, SetDefault, setInterval, setTimeout, Show, Sign, SP, Stringify, Style, TextHTML, Title,
+Undefined, Upper, Visible, VisibleHeight, VisibleWidth, WebSocket, window
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined' && typeof require != 'undefined') {
     ['common'].forEach(key => {
         Object.assign(global, require(`./${key}.js`));
     });
@@ -33,13 +34,18 @@ let __PREFIX = '_',
     animation,
     api = {},
     api_times = {},
+    AUTO_ON_OFF = ['auto', 'on', 'off'],
+    change_queue,
+    click_target,
+    context_areas = {},
+    context_target,
     DEFAULTS = {
-        language: '',
-        theme: '',
+        'language': '',
+        'theme': '',
     },
     DEV = {},
     DEV_NAMES = {
-        d: 'debug',
+        'd': 'debug',
     },
     device = {},
     drag,
@@ -47,8 +53,14 @@ let __PREFIX = '_',
     drag_scroll = 3,
     drag_target,
     drag_type,
+    FONTS = {
+        '': {
+            '': 615,
+        },
+    },
     full_scroll = {x: 0, y: 0},
     full_target,
+    HIDES = {},
     HOST = '',
     ICONS = {},
     KEY_TIMES = {},
@@ -56,69 +68,102 @@ let __PREFIX = '_',
     LANGUAGES = {},
     // only if they're different from the first 2 letters, ex: it:ita is not necessary
     LANGUAGES_23 = {
-        es: 'spa',
-        ja: 'jpn',
-        pl: 'pol',
-        sv: 'swe',
+        'es': 'spa',
+        'ja': 'jpn',
+        'pl': 'pol',
+        'sv': 'swe',
     },
+    last_scroll = 0,
     libraries = {},
+    LINKS = {},
+    LOCALHOST = (typeof location == 'object') && location.port == 8080,
+    localStorage = (IS_NODE || window).localStorage,
     MAX_HISTORY = 20,
     me = {},
-    // &1:no import, &2:no export
+    // &1:no import/export, &2:no change setting, &4:update Y but no localStorage
     NO_IMPORTS = {
-        import_settings: 2,
-        language: 1,
-        preset: 1,
+        'import_settings': 2,
+        'language': 1,
+        'password': 2,
+        'preset': 1,
+        'seen': 1,
     },
     NO_TRANSLATES = {
         '#': 1,
     },
     ON_OFF = ['on', 'off'],
+    PANES = {},
     ping = 0,
     pong = 0,
+    POPUP_ADJUSTS = {},
+    popup_classes = new Set(),
     QUERY_KEYS = {
         '': '?',
-        hash: '#',
+        'hash': '#',
     },
     scroll_target,
     socket,
     socket_fail = 0,
     STATE_KEYS = {},
+    TAB_NAMES = {},
     THEMES = [''],
+    TIMEOUT_activate = 500,                             // activate tabs in populate_areas
     TIMEOUT_adjust = 250,
+    TIMEOUT_preset = LOCALHOST? 60: 3600 * 2,
     TIMEOUT_touch = 0.5,
-    TIMEOUT_translate = 3600 * 2,
+    TIMEOUT_translate = LOCALHOST? 60: 3600 * 2,
     timers = {},
+    TITLES = {},
     touch_done = 0,                                     // time when the touch was released
-    TOUCH_ENDS = {mouseleave: 1, mouseup: 1, touchend: 1},
+    TOUCH_ENDS = {
+        'mouseleave': 1,
+        'mouseup': 1,
+        'touchend': 1,
+    },
     touch_last = {x: 0, y: 0},
     touch_moves = [],
-    TOUCH_MOVES = {mousemove: 1, touchmove: 2},
+    TOUCH_MOVES = {
+        'mousemove': 1,
+        'touchmove': 2,
+    },
     touch_now,
     touch_scroll = {x: 0, y: 0},
     touch_speed = {x: 0, y: 0},
     touch_start,
-    TOUCH_STARTS = {mousedown: 1, mouseenter: 1, touchstart: 2},
+    TOUCH_STARTS = {
+        'mousedown': 1,
+        'mouseenter': 1,
+        'touchstart': 2,
+    },
     TRANSLATE_SPECIALS = {},
     translates = {},
     TRANSLATES = {},
     TYPES = {},
     // virtual functions, can be assigned
+    virtual_change_setting_special,
     virtual_check_hash_special,
+    virtual_click_tab,
     virtual_drag_done,
+    virtual_hide_areas,
     virtual_import_settings,
     virtual_logout,
+    virtual_populate_areas_special,
     virtual_rename_option,
     virtual_reset_settings_special,
     virtual_sanitise_data_special,
     virtual_set_combo_special,
+    virtual_set_modal_events_special,
     virtual_socket_message,
     virtual_socket_open,
-    WS = WebSocket,
+    WS = (typeof WebSocket != 'undefined')? WebSocket: null,
     X_SETTINGS = {},
     Y = {},                                             // params
     y_index = -1,
-    y_states = [];
+    y_states = [],
+    y_x = '';
+
+/** @typedef {{x:number, y:number}} */
+let Vector2;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,7 +173,7 @@ let __PREFIX = '_',
 /**
  * Add a timeout / interval
  * @param {string} name
- * @param {function} func function to be called after the timer
+ * @param {Function} func function to be called after the timer
  * @param {number} timer milliseconds <0: does nothing, =0: executes directly, >0: timer
  * @param {boolean=} is_interval
  */
@@ -139,14 +184,24 @@ function add_timeout(name, func, timer, is_interval) {
 
     if (timer)
         timers[name] = [
-            is_interval? setInterval(func, timer): setTimeout(func, timer),
+            is_interval? setInterval(func, timer): setTimeout(() => {delete timers[name]; func();}, timer),
             is_interval? 1: 0,
         ];
     else
         func();
-    if (DEV.frame) {
+    if (DEV['frame']) {
         LS(`add_timeout: ${name} : ${timer} : ${is_interval}`);
         LS(timers);
+    }
+}
+
+/**
+ * Cancel the animation
+ */
+function cancel_animation() {
+    if (!isNaN(animation)) {
+        cancelAnimationFrame(/** @type {number} */(animation));
+        animation = null;
     }
 }
 
@@ -165,14 +220,14 @@ function clear_timeout(name) {
         clearTimeout(timer[0]);
 
     delete timers[name];
-    if (DEV.frame)
+    if (DEV['frame'])
         LS(`clear_timeout: ${name} : ${timer}`);
 }
 
 /**
  * Create a field for a table value
  * @param {string} text
- * @returns {string[]} field, value
+ * @returns {!Array<string>} field, value
  */
 function create_field_value(text) {
     let field = text,
@@ -189,6 +244,16 @@ function create_field_value(text) {
     // startTime => start_time
     field = Lower(field.replace(/([a-z])([A-Z])/g, (_match, p1, p2) => `${p1}_${p2}`));
     return [field.replace(/[{}]/g, '').replace(/[_() ./#-]+/g, '_').replace(/^_+|_+$/, ''), text];
+}
+
+/**
+ * Set the current section
+ * @param {string} section
+ */
+function set_section(section) {
+    y_x = section;
+    if (IS_NODE)
+        IS_NODE.y_x = y_x;
 }
 
 // SETTINGS
@@ -209,13 +274,88 @@ function add_history() {
 }
 
 /**
+ * Change a setting
+ * @param {string} name
+ * @param {string|number=} value
+ * @param {boolean=} close close the popup
+ */
+function change_setting(name, value, close) {
+    let old_value = Y[name];
+
+    if (value != undefined) {
+        // TODO: clamp the value if min/max are defined
+        if ('fi'.includes(TYPES[name]) && !isNaN(value))
+            value *= 1;
+
+        let no_import = NO_IMPORTS[name] || 0;
+        if (!(no_import & 2)) {
+            if (no_import & 4)
+                Y[name] = value;
+            else
+                save_option(name, value);
+        }
+    }
+
+    // holding down a key => skip
+    if (KEYS[38] || KEYS[40]) {
+        change_queue = [name, value, close];
+        return;
+    }
+    change_queue = null;
+
+    if (virtual_change_setting_special && virtual_change_setting_special(name, value, close))
+        return;
+
+    switch (name) {
+    case 'language':
+        // load a language file?
+        if (value == 'zzz') {
+            if (old_value == 'eng')
+                old_value = 'fra';
+            _('select[name="language"]').value = old_value;
+            save_option(name, old_value);
+
+            let file = CacheId('file');
+            Attrs(file, {'data-x': name});
+            file.click();
+            break;
+        }
+        else if (value == 'eng' || translates['_lan'] == value)
+            translate_nodes('body');
+        else if (value != 'eng')
+            api_translate_get();
+        break;
+    case 'theme':
+        update_theme([value]);
+        break;
+    }
+}
+
+/**
+ * Destroy a popup content + style
+ * @param {Node} node
+ * @param {number} &1:html, &2:style
+ */
+function destroy_popup(node, flag) {
+    if (flag & 1)
+        HTML(node, '');
+    if (flag & 2)
+        Style(node, [['height', 'unset'], ['transform', 'unset'], ['width', 'unset']]);
+}
+
+/**
  * Export settings
  * @param {string} name
  */
 function export_settings(name) {
-    let object = Assign(
-        {}, ...Keys(Y).filter(key => !NO_IMPORTS[key] && key[0] != '_').sort().map(key => ({[key]: Y[key]}))
-    );
+    Assign(Y, {
+        '_dpr': Floor(window.devicePixelRatio * 1000 + 0.5) / 1000,
+        '_height': window.innerHeight,
+        '_width': window.innerWidth,
+        '_zoom': Floor(window.outerWidth / window.innerWidth * 1000 + 0.5) / 1000,
+    });
+    let keys = Keys(Y).filter(key => !NO_IMPORTS[key]).sort((a, b) => Lower(a).localeCompare(Lower(b))),
+        object = Assign({}, ...keys.map(key => ({[key]: Y[key]})));
     DownloadObject(object, `${name}.json`, 0, '  ');
 }
 
@@ -231,12 +371,15 @@ function get_float(name, def) {
 
 /**
  * Local Storage - get int/bool
+ * + keep the string when fails to convert
  * @param {string} name
  * @param {number|boolean} def also used if the value cannot be converted to an `int`
- * @returns {number|boolean}
+ * @param {boolean=} force force int, otherwise keep the string
+ * @returns {number|boolean|string}
  */
-function get_int(name, def) {
-    let value = DefaultInt(get_string(name), def);
+function get_int(name, def, force) {
+    let text = get_string(name),
+        value = DefaultInt(text, force? def: (text || def));
     if (typeof(def) == 'boolean')
         value = !!value;
     return value;
@@ -246,7 +389,7 @@ function get_int(name, def) {
  * Local Storage - get an object
  * @param {string} name
  * @param {*=} def
- * @returns {Object}
+ * @returns {*}
  */
 function get_object(name, def) {
     let text = get_string(name);
@@ -258,7 +401,7 @@ function get_object(name, def) {
 /**
  * Local Storage - get string
  * @param {string} name
- * @param {string} def
+ * @param {string=} def
  * @returns {string}
  */
 function get_string(name, def) {
@@ -268,8 +411,8 @@ function get_string(name, def) {
 
 /**
  * Guess the types
- * @param {Object} settings
- * @param {string[]=} keys
+ * @param {!Object} settings
+ * @param {Array<string>=} keys
  */
 function guess_types(settings, keys) {
     if (!keys)
@@ -278,20 +421,28 @@ function guess_types(settings, keys) {
     keys.forEach(key => {
         let type,
             def = DEFAULTS[key],
-            def_type = typeof(def);
+            def_type = typeof(def),
+            setting = settings[key];
 
         if (def_type == 'boolean')
             type = 'b';
-        else if (def_type == 'object')
+        else if (def_type == 'object' && def != undefined)
             type = 'o';
-        else if (def_type == 'string')
+        else if (def_type == 'string') {
             type = 's';
+            // auto, on, off => i
+            if (IsArray(setting)) {
+                let first = setting[0],
+                    is_array = IsArray(first);
+                if (is_array && first.length && first.includes(ON_OFF[1]))
+                    type = 'i';
+            }
+        }
         else if (IsFloat(def))
             type = 'f';
         // integer default could still be a float type
         else {
-            let setting = settings[key],
-                obj_type = typeof(setting);
+            let obj_type = typeof(setting);
 
             if (IsArray(setting)) {
                 let first = setting[0],
@@ -306,11 +457,15 @@ function guess_types(settings, keys) {
                     case 'text':
                         type = 's';
                         break;
+                    case 'list':
+                        type = 'u';
+                        break;
                     default:
                         type = 'o';
                     }
                 }
-                else if (first.length == 2 && first[0] == ON_OFF[0] && first[1] == ON_OFF[1])
+                // contains 'off'?
+                else if (first.length && first.includes(ON_OFF[1]))
                     type = 'i';
 
                 if (!type && is_array) {
@@ -344,17 +499,22 @@ function guess_types(settings, keys) {
 
 /**
  * Import settings from an object
- * @param {Object} data
+ * @param {*} data
  * @param {boolean=} reset
  */
 function import_settings(data, reset) {
-    Keys(data).forEach(key => {
+    if (!IsObject(data))
+        return;
+
+    Keys(/** @type {!Object} */(data)).forEach(key => {
         if (!NO_IMPORTS[key])
             save_option(key, data[key]);
     });
 
     if (reset)
         reset_settings();
+    if (virtual_import_settings)
+        virtual_import_settings();
 }
 
 /**
@@ -380,6 +540,8 @@ function load_defaults() {
         case 's':
             value = get_string(key, def);
             break;
+        case 'u':
+            return;
         default:
             LS(`unknown type: ${key} : ${def}`);
         }
@@ -388,8 +550,7 @@ function load_defaults() {
     });
 
     // use browser language
-    if (!Y.language)
-        guess_browser_language();
+    guess_browser_language();
 }
 
 /**
@@ -402,7 +563,7 @@ function load_preset(name) {
     if (name == 'default settings')
         reset_settings(true);
     else {
-        Resource(`preset/${name}.json`, (code, data) => {
+        Resource(`preset/${name}.json?v=${Ceil(Now() / TIMEOUT_preset)}`, (code, data) => {
             if (code != 200)
                 return;
             import_settings(data, true);
@@ -413,7 +574,7 @@ function load_preset(name) {
 /**
  * Merge settings
  * + updates DEFAULTS and TYPES
- * @param {Object} x_settings
+ * @param {!Object} x_settings
  */
 function merge_settings(x_settings) {
     Keys(x_settings).forEach(name => {
@@ -421,7 +582,7 @@ function merge_settings(x_settings) {
 
         // audio: { ... }
         if (IsObject(value)) {
-            let exists = SetDefault(X_SETTINGS, name, {});
+            let exists = /** @type {!Object} */(SetDefault(X_SETTINGS, name, {}));
             Assign(exists, value);
             X_SETTINGS[name] = Assign({}, ...Keys(exists).map(key => ({[key]: exists[key]})));
         }
@@ -431,27 +592,59 @@ function merge_settings(x_settings) {
     });
 
     // update defaults
+    // + skip undefined values
     Keys(X_SETTINGS).forEach(name => {
         let settings = X_SETTINGS[name];
-        if (IsObject(settings)) {
-            let keys = Keys(settings).filter(key => key[0] != '_' && IsObject(settings[key]));
-            Assign(DEFAULTS, Assign({}, ...keys.map(key => ({[key]: settings[key][1]}))));
+        if (!IsObject(settings))
+            return;
 
-            // update types
-            guess_types(settings, keys);
-        }
+        let dico = {},
+            sub_settings = {};
+
+        Keys(settings).forEach(key => {
+            if (key[0] == '_')
+                return;
+            let setting = settings[key];
+            if (!IsObject(setting))
+                return;
+
+            // support {_value: [...]}
+            if (setting['_value'])
+                setting = setting['_value'];
+
+            // support {_multi: 2, a: [...], b: [...]}
+            if (setting['_multi'] && !setting['_main']) {
+                Keys(setting).forEach(sub_key => {
+                    if (sub_key[0] == '_')
+                        return;
+                    let sub = setting[sub_key];
+                    if (sub[1] != undefined)
+                        dico[sub_key] = sub[1];
+                    sub_settings[sub_key] = sub;
+                });
+            }
+            else {
+                if (setting[1] != undefined)
+                    dico[key] = setting[1];
+                sub_settings[key] = setting;
+            }
+        });
+
+        // update defaults + types
+        Assign(DEFAULTS, dico);
+        guess_types(sub_settings, Keys(dico));
     });
 }
 
 /**
  * Utility for creating settings
- * @param {number} def
+ * @param {number|string} def
  * @param {number} min
  * @param {number} max
  * @param {number=} step
  * @param {Object=} options
  * @param {string=} help
- * @returns {[Object, number]}
+ * @returns {!Array<*>}
  */
 function option_number(def, min, max, step=1, options={}, help='') {
     return [Assign({max: max, min: min, step: step, type: 'number'}, options), def, help];
@@ -461,7 +654,7 @@ function option_number(def, min, max, step=1, options={}, help='') {
  * Parse DEV
  */
 function parse_dev() {
-    let text = Y.dev || '';
+    let text = Y['dev'] || '';
     Clear(DEV);
 
     for (let i = 0, length = text.length; i < length; i ++) {
@@ -493,7 +686,7 @@ function parse_dev() {
         }
     }
 
-    if (DEV.debug)
+    if (DEV['debug'])
         LS(DEV);
 }
 
@@ -506,8 +699,21 @@ function remove_storage(name) {
 }
 
 /**
+ * Reset a default value
+ * + remove it from localStorage
+ * @param {string} name
+ * @returns {*} default value
+ */
+function reset_default(name) {
+    let value = DEFAULTS[name];
+    Y[name] = value;
+    remove_storage(name);
+    return value;
+}
+
+/**
  * Reset to the default/other settings
- * @param {boolean} is_default
+ * @param {boolean=} is_default
  */
 function reset_settings(is_default) {
     if (is_default) {
@@ -528,11 +734,12 @@ function restore_history(dir) {
     if (!y_copy)
         return;
     y_index += dir;
-    let data = JSON.parse(y_copy);
-    Assign(Y, data);
+    let data = ParseJSON(y_copy);
+    if (!IsObject(data))
+        return;
 
-    if (virtual_import_settings)
-        virtual_import_settings(data, true);
+    Assign(Y, /** @type {!Object} */(data));
+    import_settings(data, true);
 }
 
 /**
@@ -550,8 +757,9 @@ function sanitise_data() {
 
         if (type == 'f')
             Y[key] = DefaultFloat(value, def);
+        // new: allow int to be string sometimes
         else if (type == 'i')
-            Y[key] = DefaultInt(value, def);
+            Y[key] = DefaultInt(value, value);
     });
 
     if (virtual_sanitise_data_special)
@@ -561,11 +769,16 @@ function sanitise_data() {
 /**
  * Save a Y value + to Local Storage if different from default, otherwise removes it
  * @param {string} name
- * @param {*} value value for the name, undefined to save Y[name]
+ * @param {*=} value value for the name, undefined to save Y[name]
  */
 function save_default(name, value) {
-    if (value === undefined)
+    if (value === undefined) {
         value = Y[name];
+        if (value === undefined) {
+            value = DEFAULTS[name];
+            Y[name] = value;
+        }
+    }
     else
         Y[name] = value;
     if (value == DEFAULTS[name])
@@ -577,7 +790,7 @@ function save_default(name, value) {
 /**
  * Save a Y value + to Local Storage
  * @param {string} name
- * @param {*} value value for the name, undefined to save Y[name]
+ * @param {*=} value value for the name, undefined to save Y[name]
  */
 function save_option(name, value) {
     if (value === undefined)
@@ -605,6 +818,583 @@ function save_storage(name, value) {
     localStorage.setItem(`${__PREFIX}${name}`, value);
 }
 
+/**
+ * Show/hide popup
+ * @param {string=} name
+ * @param {?(boolean|string)=} show
+ * @param {Object} obj
+ * @param {boolean=} obj.adjust only change its position
+ * @param {number=} obj.bar_x width of the scrollbar
+ * @param {boolean=} obj.center place the popup in the center of the screen
+ * @param {string=} obj.class_ extra class
+ * @param {number=} obj.event 0 to disable set_modal_events
+ * @param {string=} obj.html 0 to skip => keep the current HTML
+ * @param {string=} obj.id id of the element that us used for adjust
+ * @param {boolean=} obj.instant popup appears instantly
+ * @param {number=} obj.margin_y
+ * @param {number=} obj.offset mouse offset from the popup
+ * @param {string=} obj.node_id popup id
+ * @param {boolean=} obj.overlay dark overlay is used behind the popup
+ * @param {string=} obj.setting
+ * @param {number=} obj.shadow 0:none, 1:normal, 2:light
+ * @param {Node=} obj.target element that was clicked
+ * @param {Array<number>=} obj.xy
+ */
+function show_popup(name, show, {
+        adjust, bar_x=20, center, class_, event=1, html='', id, instant=true, margin_y=0, node_id, offset=[0, 0],
+        overlay, setting, shadow=1, target, xy}={}) {
+    // remove the red rectangle
+    if (!adjust)
+        set_draggable();
+    else if (device.iphone)
+        return;
+
+    // if clicked on home-form => make sure to reset click_target
+    let is_toggle = (show == 'toggle');
+    if (is_toggle || show == undefined)
+        click_target = null;
+
+    // find the modal
+    let node = click_target || CacheId(node_id || 'modal');
+    if (!node)
+        return;
+
+    let dataset = node.dataset,
+        data_id = dataset['id'],
+        data_name = dataset['name'],
+        is_modal = (node.id == 'modal'),
+        popup_adjust = POPUP_ADJUSTS[name] || POPUP_ADJUSTS[data_id || data_name];
+    if (adjust && !popup_adjust)
+        adjust = false;
+    if (center == undefined)
+        center = dataset['center'] || '';
+
+    // smart toggle
+    if (is_toggle)
+        show = (data_id != (id || name) || !HasClass(node, 'popup-show') || (xy && xy + '' != dataset['xy']));
+
+    if (!adjust && overlay != undefined)
+        S(CacheId('overlay'), show && overlay);
+
+    if (show || adjust) {
+        let px = 0,
+            py = 0,
+            win_x = VisibleWidth() - 8,
+            win_y = VisibleHeight(),
+            x = 0,
+            x2 = 0,
+            y = 0,
+            y2 = 0;
+
+        if (show)
+            click_target = Parent(target, {class_: 'popup', self: true});
+
+        // create the html
+        switch (name) {
+        case 'options':
+            if (!xy)
+                context_target = null;
+            html = show_settings(setting, {xy: xy});
+            break;
+        default:
+            let link = LINKS[name];
+            if (link)
+                html = create_url_list(LINKS[name]);
+            break;
+        }
+
+        if (show) {
+            destroy_popup(node, 2);
+            if (html !== 0)
+                HTML(node, html);
+            // focus?
+            let focus = _('[data-f]', node);
+            if (focus)
+                focus.focus();
+        }
+        else {
+            id = data_id;
+            name = data_name;
+        }
+
+        Class(node, 'settings', !!(name == 'options' && (adjust || setting)));
+        translate_nodes(node);
+        update_svg();
+
+        if (is_modal) {
+            // make sure the popup remains inside the window
+            let height = node.clientHeight,
+                width = node.clientWidth;
+
+            // center?
+            if (center) {
+                x = win_x / 2 - width / 2;
+                y = win_y / 2 - height / 2;
+            }
+            else {
+                let target = CacheId(id),
+                    rect = target? target.getBoundingClientRect(): null;
+
+                // align the popup with the target, if any
+                if (adjust) {
+                    // &1:adjust &2:top &4:right &8:bottom &16:left & 32:vcenter &64:hcenter
+                    if (rect && popup_adjust > 1) {
+                        if (popup_adjust & 2)
+                            y = rect.top;
+                        if (popup_adjust & 4)
+                            x = rect.right;
+                        if (popup_adjust & 8)
+                            y = rect.bottom;
+                        if (popup_adjust & 16)
+                            x = rect.left;
+                        if (popup_adjust & 32)
+                            y = (rect.top + rect.bottom) / 2;
+                        if (popup_adjust & 64)
+                            x = (rect.left + rect.right) / 2;
+                        xy = [x, y];
+                    }
+                    else if (!xy) {
+                        let item = dataset['xy'];
+                        if (item)
+                            xy = item.split(',').map(item => item * 1);
+                    }
+
+                    let data_margin = dataset['my'];
+                    if (data_margin)
+                        margin_y = data_margin * 1;
+                }
+
+                // xy[2] => can align to the rect.right
+                if (xy) {
+                    x = xy[0];
+                    y = xy[1];
+                    x2 = xy[2] || x;
+                    y2 = xy[3] || y;
+                }
+                else if (name && !px && rect)
+                    [x, y, x2, y2] = [rect.left, rect.bottom, rect.right, rect.top];
+            }
+
+            x += offset[0];
+            y += offset[1];
+
+            // align left doesn't work => try align right, and if not then center
+            if (x + width > win_x - bar_x) {
+                if (x2 >= win_x - bar_x)
+                    x2 = win_x - bar_x;
+
+                if (x2 - width > 0) {
+                    px = -100;
+                    x = Max(0, x2 - offset[0]);
+                }
+                else {
+                    px = -50;
+                    x = Max(0, win_x / 2 - offset[0]);
+                }
+            }
+            // same for y
+            if (y + height + margin_y > win_y) {
+                if (y2 >= win_y - 1)
+                    y2 = win_y - 1;
+
+                if (y2 < win_y && y2 - height > 0) {
+                    py = -100;
+                    y = Max(0, y2 - offset[1]);
+                }
+                else {
+                    py = -50;
+                    y = Max(0, win_y / 2 - offset[1]);
+                }
+            }
+
+            dataset['center'] = center || '';
+            dataset['my'] = margin_y || '';
+            dataset['xy'] = xy || '';
+            x += full_scroll.x;
+            y += full_scroll.y;
+            Style(node, [['transform', `translate(${px}%, ${py}%) translate(${x}px, ${y}px)`]]);
+        }
+    }
+
+    if (!adjust) {
+        if (is_modal) {
+            if (instant != undefined)
+                Class(node, 'instant', instant);
+
+            // update classes
+            let removes = [...popup_classes].filter(item => item != class_).map(item => ` -${item}`).join(''),
+                sclass = class_? ` ${class_}`: '';
+            Class(node, `popup-show popup-enable${sclass}${removes}`, !!show);
+            if (class_)
+                popup_classes.add(class_);
+
+            // remember which popup it is, so if we click again on the same id => it closes it
+            dataset['id'] = show? (id || ''): '';
+            dataset['name'] = show? name: '';
+            if (!show)
+                destroy_popup(node, 3);
+        }
+        if (show) {
+            dataset['ev'] = event;
+            let height = 'unset',
+                width = 'unset';
+            if (popup_adjust) {
+                if (popup_adjust & 128)
+                    height = '100%';
+                if (popup_adjust & 256)
+                    width = '100%';
+            }
+            Style(node, [['height', height], ['width', width]]);
+
+            // shadow
+            Class(node, `${shadow == 0? '': '-'}shadow0 ${shadow == 2? '': '-'}shadow2`);
+        }
+        else {
+            dataset['center'] = '';
+            dataset['my'] = '';
+            dataset['xy'] = '';
+        }
+
+        set_modal_events(node);
+        Show(node);
+    }
+}
+
+/**
+ * Show a settings page
+ * @param {string} name
+ * @param {Object} obj
+ * @param {number=} obj.flag &1:title &2:OK
+ * @param {string=} obj.grid_class
+ * @param {string=} obj.item_class
+ * @param {string=} obj.title
+ * @param {boolean=} obj.unique true if the dialog comes from a contextual popup, otherwise from main options
+ * @param {boolean=} obj.xy
+ * @returns {string} html
+ */
+function show_settings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={}) {
+    let settings = name? (X_SETTINGS[name] || []): X_SETTINGS,
+        class_ = settings['_class'] || '',
+        keys = Keys(settings),
+        lines = [`<grid class="${grid_class}${class_? ' ': ''}${class_}">`],
+        parent_id = get_drop_id(context_target).id,
+        prefix = settings['_prefix'],
+        split = settings['_split'],
+        suffix = settings['_suffix'];
+
+    flag = /** @type {number} */(Undefined(flag, settings['_flag']) || 0);
+
+    // set multiple columns
+    if (split) {
+        let new_keys = [],
+            offset = split;
+        keys = keys.filter(key => (key != '_split' && !settings[key]['_pop']));
+
+        for (let i = 0; i < split; i ++) {
+            new_keys.push(keys[i]);
+            if (keys[i][0] == '_')
+                new_keys.push('');
+            else {
+                new_keys.push(keys[offset] || '');
+                offset ++;
+            }
+        }
+        keys = new_keys;
+    }
+
+    if (!(flag & 1)) {
+        if (parent_id)
+            lines.push(`<div class="item2 span" data-set="-1">${parent_id}</div>`);
+        else if (name) {
+            if (!title)
+                title = settings['_title'] || `${Title(name).replace(/_/g, ' ')}${settings['_same']? '': ' options'}`;
+            lines.push(
+                `<div class="item-title span" data-set="${unique? -1: ''}" data-n="${name}" data-t="${title}"></div>`);
+        }
+    }
+
+    keys.forEach(key => {
+        if (!key && split) {
+            lines.push('<div></div>');
+            return;
+        }
+
+        // only in popup
+        let setting = settings[key];
+        if (setting['_pop'])
+            return;
+
+        // extra _keys: class, color, flag, on, span, value
+        let sclass = setting['_class'],
+            scolor = setting['_color'],
+            sextra = setting['_extra'],
+            sflag = setting['_flag'],
+            sid = setting['_id'],
+            slabel = setting['_label'],
+            smain = setting['_main'],                   // use the main key
+            smulti = setting['_multi'],
+            son = setting['_on'],
+            sset = setting['_set'],
+            sspan = setting['_span'],
+            ssvg = setting['_svg'],
+            ssyn = setting['_syn'] || '',               // ~2
+            stitle = setting['_title'],
+            svalue = setting['_value'];
+        if (sflag && sflag & flag)
+            return;
+        if (son && !son())
+            return;
+        if (svalue != undefined)
+            setting = svalue;
+
+        // separator
+        if (key[0] == '_') {
+            if (parseInt(key[1], 10))
+                lines.push(`<hr${split? '': ' class="span"'}>`);
+            return;
+        }
+
+        // link or list
+        let clean = key,
+            data = setting[0],
+            fourth = setting[4],
+            is_string = IsString(data)? ` name="${key}"`: '',
+            more_class = (split || (data && !is_string) || smulti)? '': ' span',
+            more_data = data? '': ` data-set="${sset || key}"`,
+            string_digit = is_string? data * 1: 0,
+            third = setting[3],
+            title = setting[2] || stitle,
+            y_key = Y[key];
+
+        // only in popup2?
+        if (!xy && (string_digit & 4))
+            return;
+
+        if (sclass)
+            more_class = ` ${sclass}`;
+        else if (sspan)
+            more_class = ' item-title span';
+        sid = sid? ` data-id="${sid}"`: '';
+
+        if (IsFunction(third) && !third())
+            return;
+        if (IsFunction(fourth))
+            y_key = fourth();
+
+        // only contextual actions?
+        if (title && title[0] == '!') {
+            if (!parent_id)
+                return;
+            title = title.slice(1);
+        }
+
+        // remove prefix and suffix
+        if (clean.length == 2 && IsDigit(clean[1]))
+            clean = '';
+        else {
+            if (suffix && clean.slice(-suffix.length) == suffix)
+                clean = clean.slice(0, -suffix.length);
+            if (prefix && clean.slice(0, prefix.length) == prefix)
+                clean = clean.slice(prefix.length);
+        }
+
+        // TODO: improve that part, it can be customised better
+        if (string_digit & 2)
+            scolor = '#f00';
+        let label = slabel? slabel: `${Title(clean).replace(/_/g, ' ')}${ssyn}`,
+            style = scolor? `${(Y['theme'] == 'dark')? ' class="tshadow"': ''} style="color:${scolor}"`: '',
+            title2 = title? `data-t="${title}" data-t2="title"`: '';
+
+        // price [min/max]
+        if (sextra) {
+            if (!sextra.includes('{'))
+                sextra = `{${sextra}}`;
+            label = `{${label}} [<i class='nowrap'>${sextra}</i>]`;
+        }
+
+        if (!smulti || !sclass || !sclass.includes('span')) {
+            lines.push(
+                `<a${is_string} class="${item_class}${more_class}${title === 0? ' off': ''}"${more_data}${title2}>`
+                    + (ssvg? `<i class="icon" data-svg="${ssvg}"></i>`: '')
+                    + `<i${sid} data-t="${label}"${style}></i>`
+                    + ((setting == '')? ' ...': '')
+                + '</a>'
+            );
+        }
+
+        if (is_string)
+            return;
+
+        // multi data? ex: center min-max
+        let datas = smulti? setting: {[key]: data},
+            id = -1,
+            main_key = key;
+
+        Keys(datas).forEach(key => {
+            // a) get data info
+            let data = datas[key];
+            if (!data || key[0] == '_')
+                return;
+            id ++;
+
+            // multi
+            if (smulti) {
+                title = data[2];
+                third = data[3];
+                fourth = data[4];
+                data = data[0] || data || {};
+                data['class'] = `multi${smulti}`;
+                y_key = Y[key];
+
+                if (IsFunction(third) && !third())
+                    return;
+                if (IsFunction(fourth))
+                    y_key = fourth();
+            }
+
+            // b) create element
+            let iclass = sclass? ` ${sclass}`: '';
+
+            if (IsArray(data)) {
+                if (data == ON_OFF)
+                    lines.push(
+                        `<vert class="fcenter fastart${iclass}">`
+                            + `<input name="${key}" type="checkbox" ${y_key? 'checked': ''}>`
+                        + '</vert>'
+                    );
+                else
+                    lines.push(
+                        `<vert class="fcenter${iclass}">`
+                        + `<select name="${key}">`
+                            + data.map(option => {
+                                let splits = (option + '').split('='),
+                                    value = Undefined({'off': 0, 'on': 1}[option], option);
+                                if (splits.length > 1) {
+                                    option = splits[1];
+                                    value = splits[0];
+                                }
+                                let selected = (y_key == value)? ' selected': '';
+                                return `<option value="${value}"${selected} data-t="${option}"></option>`;
+                            }).join('')
+                        + '</select>'
+                        + '</vert>'
+                    );
+                return;
+            }
+
+            let auto = data.auto || '',
+                class_ = data['class'] || '',
+                focus = data.focus || '',
+                holder = data.text || '',
+                type = data.type || '';
+            class_ = ` class="setting${class_? ' ': ''}${class_}"`;
+            if (focus)
+                focus = ` data-f="${focus}"`;
+
+            // title
+            title = title || data.title;
+            if (title)
+                title = ` title="${translate_expression(title)}"`;
+
+            if (id == 0)
+                lines.push(smulti? `<hori class="faround${iclass}">`: `<vert class="fcenter${iclass}">`);
+
+            // c) placeholder + autocomplete
+            if (holder)
+                holder = ` data-t="${data.text}" data-t2="placeholder"`;
+            if (auto)
+                auto = ` autocomplete="${auto}"`;
+
+            let found = true;
+            switch (type) {
+            case 'area':
+                lines.push(`<textarea name="${key}"${class_}${holder}${auto}${focus}${title}>${y_key}</textarea>`);
+                break;
+            case 'info':
+            case 'upper':
+                lines.push(`<div class="${type}" name="${key}" data-t="${data.text || ''}${title}"></div>`);
+                break;
+            case 'link':
+                if (data.text)
+                    lines.push(`<input name="${key}" type="text"${class_}${holder} value=""${focus}${title}>`);
+                lines.push('<label for="file" data-t="Choose file"></label>');
+                Attrs(CacheId('file'), {'data-x': key});
+                break;
+            case 'list':
+                lines.push([
+                    '<hori class="w100">',
+                    data.list.map(item => {
+                        let parts = item.split('='),
+                            name = parts[0],
+                            title = parts[1]? ` title="${name}"`: '';
+                        return `<a class="item item3" name="${key}_${name}"${title} data-t="${parts[1] || name}"></a>`;
+                    }).join(''),
+                    '</hori>',
+                ].join(''));
+                break;
+            case 'number':
+                lines.push(`<input name="${key}" type="${type}"${class_} min="${data.min}" max="${data.max}" step="${data.step || 1}"${holder} value="${y_key}"${focus}${title}>`);
+                break;
+            default:
+                found = false;
+            }
+
+            if (found) {
+            }
+            else if (type)
+                lines.push(`<input name="${key}" type="${type}"${class_}${holder}${auto} value="${y_key}"${focus}${title}>`);
+            // dictionary / string
+            else {
+                let keys = Keys(data).filter(item => item[0] != '_' && item != 'class');
+                if (keys.length) {
+                    lines.push(
+                        `<select name="${key}"${focus}>`
+                            + Keys(data).map(value => {
+                                let option = data[value],
+                                    selected = (Y[key] == value)? ' selected': '';
+                                return `<option value="${value}"${selected} data-t="${option}"></option>`;
+                            }).join('')
+                        + '</select>'
+                    );
+                }
+                // string
+                else {
+                    let class_ = item_class,
+                        iname = key;
+                    if (data['_class'])
+                        class_ = `${class_} ${data['_class']}`;
+                    if (smain)
+                        iname = `${main_key}_${iname}`;
+                    lines.push(`<a class="${class_}" name="${iname}" data-t="${Title(key).replace(/_/g, ' ')}"></a>`);
+                }
+            }
+
+            if (!smulti || id == smulti - 1)
+                lines.push(smulti? '</hori>': '</vert>');
+        });
+    });
+
+    // -1 to close the popup
+    if (!(flag & 2)) {
+        if (parent_id && !(flag & 4) && (Y['join_next'] || Y['drag_and_drop'])) {
+            let context_area = context_areas[parent_id] || {};
+            lines.push(
+                `<hori class="span">`
+                    + `<div class="item2" data-set="-1" data-t="ok"></div>`
+                    + `<div class="item2${context_area[1]? ' active': ''}" data-t="join next"></div>`
+                    + `<div class="item2" data-t="hide"></div>`
+                + '</hori>'
+            );
+        }
+        else if (name)
+            lines.push(
+                `<a class="item item-title span" data-set="-1" data-t="${settings['_cancel']? 'CANCEL': 'OK'}"></a>`);
+    }
+
+    lines.push('</grid>');
+    return lines.join('');
+}
+
 // TRANSLATIONS
 ///////////////
 
@@ -612,19 +1402,28 @@ function save_storage(name, value) {
  * Resize text if it's too long
  * @param {string} text
  * @param {number} resize maximum size
+ * @param {string=} class_ class to use
  * @returns {string} the resized text
  */
-function resize_text(text, resize)
-{
-    if (!text || resize < 1 || !IsString(text))
+function resize_text(text, resize, class_='resize') {
+    if (!text || resize < 1)
         return text;
 
-    let len = text.length;
-    if (Upper(text) == text)
-        len *= 3/2;
+    let len;
+    if (IsString(text)) {
+        len = text.length;
+        if (Upper(text) == text)
+            len *= 4/3;
+        else if (text.includes('='))
+            len += 0.5;
+    }
+    else {
+        text += '';
+        len = text.length;
+    }
 
     if (len > resize)
-        text = `<span class="resize">${text}</span>`;
+        text = `<span class="${class_}">${text}</span>`;
     return text;
 }
 
@@ -635,7 +1434,7 @@ function resize_text(text, resize)
  */
 function set_text(node, text) {
     Attrs(node, {'data-t': text});
-    TEXT(node, translate_expression(text));
+    TextHTML(node, translate_expression(text));
 }
 
 /**
@@ -646,10 +1445,10 @@ function set_text(node, text) {
 function translate(text) {
     if (!text)
         return text;
-    if (DEV.translate)
+    if (DEV['translate'])
         TRANSLATES[text] = '';
 
-    if (Y.language == 'eng')
+    if (Y['language'] == 'eng')
         return text.includes('{')? null: text.split('~')[0];
 
     // mode
@@ -706,25 +1505,31 @@ function translate_expression(text) {
     // 3) translate [...]
     if (text.includes('['))
         text = text.replace(/\[(.*?)\]/g, (_match, p1) => TRANSLATE_SPECIALS[p1] || `[${p1}]`);
+
+    // 4) Animations|geschwindigkeit
+    if (text.includes('|')) {
+        let middle = text.split('|').map(part => `<i class="nowrap">${part}</i>`).join('');
+        text = `<i class="breakall">${middle}</i>`;
+    }
     return text;
 }
 
 /**
  * Translate a single node
  * - resolve all data-t, data-t2=target, data-tr=resize
- * @param {Node} node
+ * @param {Node=} node
  */
 function translate_node(node) {
     // 1) skip?
     if (!node)
         return;
-    let text = node.dataset.t;
+    let text = node.dataset['t'];
     if (text == undefined)
         return;
 
     // 2) translate
     let tag = node.tagName,
-        target = node.dataset.t2,
+        target = node.dataset['t2'],
         translated = translate_expression(text);
 
     if (!target)
@@ -736,20 +1541,22 @@ function translate_node(node) {
     if (target)
         node.setAttribute(target, translated);
     else {
-        let resize = node.dataset.tr;
+        let resize = node.dataset['tr'];
         if (resize)
-            translated = resize_text(translated, parseInt(resize));
-        TEXT(node, translated);
+            translated = resize_text(translated, parseInt(resize, 10));
+        TextHTML(node, translated);
     }
 }
 
 /**
  * Translate nodes
  * - resolve all data-t, data-t2=target, data-tr=resize
- * @param {string|Node=} parent CSS selector or node
+ * @param {string|Node?} parent CSS selector or node
  */
 function translate_nodes(parent) {
     parent = _(parent);
+    if (!parent)
+        return;
     E('[data-t]', translate_node, parent);
     translate_node(parent);
 }
@@ -761,7 +1568,7 @@ function translate_nodes(parent) {
  * Create a canvas for a texture
  * @param {number} width
  * @param {number=} height
- * @returns {Object}
+ * @returns {!Object}
  */
 function create_canvas(width, height) {
     let canvas = document.createElement('canvas'),
@@ -788,15 +1595,14 @@ function create_svg_icon(name) {
 
 /**
  * Fill a combo filter
- * @param {string} letter, ex: m=mode, v=view ... or a selector; null => get the HTML
- * @param {string[]} values list of values for the combo, default to [DEFAULTS[letter]]
+ * @param {string?} letter, ex: m=mode, v=view ... or a selector; null => get the HTML
+ * @param {Array<string>|Object<string, string>=} values list of values for the combo, default to [DEFAULTS[letter]]
  * @param {string=} select the value to be selected, default to Y[letter]
  * @param {Object=} dico used to name the values, ex: 01 => cheater
  * @param {boolean=} no_translate don't translate the options
  * @returns {string} the selected value, or the HTML
  */
-function fill_combo(letter, values, select, dico, no_translate)
-{
+function fill_combo(letter, values, select, dico, no_translate) {
     dico = Undefined(dico, {});
 
     if (letter != null) {
@@ -808,15 +1614,15 @@ function fill_combo(letter, values, select, dico, no_translate)
 
     // {be: 'Belgium', fr: 'France'}
     if (!IsArray(values) && IsObject(values)) {
-        dico = values;
-        values = Keys(values);
+        dico = /** @type {!Object} */(values);
+        values = Keys(dico);
     }
 
     let found = 'all',
         group = false,
         lines = [];
 
-    for (let value_ of values) {
+    for (let value_ of /** @type {!Array<string|number>} */(values)) {
         let selected,
             items = (value_ + '').split('='),
             text = items.slice(-1)[0],
@@ -886,7 +1692,7 @@ function letter_selector(letter) {
  * Set a combo value
  * @param {string} letter combo letter: g, m, t, c, f + special cases: n, o, s
  * @param {string} value
- * @param {boolean|string=} [save=true] save in memory, if string: use this for saving, ex: #classes => class
+ * @param {boolean|string=} save in memory, if string: use this for saving, ex: #classes => class
  */
 function set_combo_value(letter, value, save=true) {
     // n, o, s special cases
@@ -908,7 +1714,7 @@ function set_combo_value(letter, value, save=true) {
     // save in memory
     if (save) {
         if (IsString(save))
-            letter = save;
+            letter = /** @type {string} */(save);
 
         if (Y[letter] !== value) {
             Y[letter] = value;
@@ -921,22 +1727,24 @@ function set_combo_value(letter, value, save=true) {
 
 /**
  * Update the theme
- * @param {string[]=} themes if null, will use Y.theme
- * @param {function=} callback
+ * @param {Array<string>=} themes if null, will use Y.theme
+ * @param {Function=} callback
  * @param {number=} version CSS version, use Now() to force reload
+ * @returns {boolean} true if the theme was changed
  */
 function update_theme(themes, callback, version=1) {
-    let parent = Id('extra-style');
+    let parent = CacheId('extra-style');
     if (!parent)
-        return;
+        return false;
     if (!themes)
-        themes = [Y.theme];
+        themes = [Y['theme']];
 
     // default theme is skipped because it's already loaded
     if (themes[0] == THEMES[0])
         themes = themes.slice(1);
 
-    let children = A('link', parent),
+    let changes = 0,
+        children = A('link', parent),
         links = themes.map(theme => `css/${theme}.css?v=${version}`),
         num_child = children.length,
         num_theme = themes.length,
@@ -948,27 +1756,35 @@ function update_theme(themes, callback, version=1) {
             base_href = child.href.split('/').slice(-1)[0].split('.')[0],
             theme = themes[i];
 
-        if (base_href != theme)
+        if (base_href != theme) {
             child.setAttribute('href', links[i]);
+            changes ++;
+        }
     }
 
     // 2) remove extra links
     if (num_child > num_theme) {
+        changes ++;
         for (let i = num_theme; i < num_child; i ++)
             children[i].removeAttribute('href');
     }
     // 3) add extra links
     else if (num_child < num_theme) {
+        changes ++;
         for (let i = num_child; i < num_theme; i ++) {
-            let child = CreateNode('link', null, {href: links[i], rel: 'stylesheet'});
+            let child = CreateNode('link', null, {'href': links[i], rel: 'stylesheet'});
             parent.appendChild(child);
         }
     }
+
+    if (!changes)
+        return false;
 
     // post-process
     update_svg();
     if (callback)
         callback();
+    return true;
 }
 
 /**
@@ -977,11 +1793,11 @@ function update_theme(themes, callback, version=1) {
  */
 function update_svg(parent) {
     E('[data-svg]', node => {
-        let name = node.dataset.svg,
+        let name = node.dataset['svg'],
             image = create_svg_icon(name);
         if (image) {
             HTML(node, image);
-            delete node.dataset.svg;
+            delete node.dataset['svg'];
         }
     }, parent);
 }
@@ -994,10 +1810,15 @@ function update_svg(parent) {
  * @param {boolean=} no_special
  */
 function check_hash(no_special) {
-    let string = QueryString({key: 'hash'}),
+    let string = /** @type {!Object} */(QueryString({key: 'hash'})),
         dico = Assign({}, ...Keys(string).map(key => ({[key]: (string[key] == 'undefined')? undefined: string[key]})));
     Assign(Y, dico);
     sanitise_data();
+    parse_dev();
+
+    // section
+    if (dico['x'] != undefined)
+        set_section(dico['x']);
 
     if (!no_special && virtual_check_hash_special)
         virtual_check_hash_special(dico);
@@ -1031,15 +1852,19 @@ function detect_device() {
  */
 function guess_browser_language() {
     let indices = Assign({}, ...Keys(LANGUAGES).map(lan => ({[lan.slice(0, 2)]: lan}))),
-        languages = [...[navigator.language], ...navigator.languages];
+        languages = [...[navigator.language], ...(navigator.languages || [])];
     Assign(indices, LANGUAGES_23);
+
     for (let lan of languages) {
         lan = lan.split('-')[0];
         let index = indices[lan];
-        if (index) {
-            Y.language = index;
-            break;
-        }
+        if (!index)
+            continue;
+
+        if (!Y['language'])
+            Y['language'] = index;
+        DEFAULTS['language'] = index;
+        break;
     }
 }
 
@@ -1049,20 +1874,20 @@ function guess_browser_language() {
  */
 function is_fullscreen() {
     let full = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
-    full_target = full? Id('body'): null;
+    full_target = full? CacheId('body'): null;
     return full;
 }
 
 /**
  * Load a library only once
  * @param {string} url
- * @param {function=} callback
+ * @param {Function=} callback
  * @param {Object=} extra
  */
 function load_library(url, callback, extra) {
     if (!libraries[url])
         LoadLibrary(url, () => {
-            if (DEV.load)
+            if (DEV['load'])
                 LS(`loaded: ${url}`);
             libraries[url] = Now();
             if (callback)
@@ -1074,16 +1899,16 @@ function load_library(url, callback, extra) {
 
 /**
  * Push history state if it changed
- * @param {Object} query
+ * @param {Object=} query
  * @param {boolean=} replace replace the state instead of pushing it
  * @param {string=} query_key
  * @param {string=} go change URL location
- * @returns {Object|boolean} dictionary of changes, or null if empty
+ * @returns {Object} dictionary of changes, or null if empty
  */
-function push_state(query, replace, query_key='hash', go=null) {
+function push_state(query, replace, query_key='hash', go=undefined) {
     query = query || {};
     let changes = [],
-        state_keys = STATE_KEYS[Y.x] || STATE_KEYS._ || [],
+        state_keys = STATE_KEYS[y_x] || STATE_KEYS['_'] || [],
         new_state = Assign({}, ...state_keys.filter(x => query[x] || Y[x]).map(x =>
             ({[x]: Undefined(query[x], Y[x])})
         )),
@@ -1103,7 +1928,7 @@ function push_state(query, replace, query_key='hash', go=null) {
         url = `${QUERY_KEYS[query_key]}${url}`;
         let exist = location[query_key];
         if (exist == url)
-            return;
+            return null;
         if (replace)
             history.replaceState(new_state, '', url);
         else
@@ -1124,7 +1949,7 @@ function set_cursor(cursor='') {
 
 /**
  * Toggle full screen mode
- * @param {function} callback
+ * @param {Function=} callback
  */
 function toggle_fullscreen(callback) {
     let full = is_fullscreen();
@@ -1159,7 +1984,7 @@ function check_sockets() {
         let ready = socket? socket.readyState: WS.CLOSED;
         if (ready == WS.OPEN) {
             socket.send(Uint8Array.of(0));
-            if (DEV.socket)
+            if (DEV['socket'])
                 LS('ping');
             ping = now;
         }
@@ -1174,7 +1999,7 @@ function check_sockets() {
 function init_websockets() {
     if (socket && socket.readyState <= WS.OPEN)
         return;
-    if (DEV.socket)
+    if (DEV['socket'])
         LS('init websockets');
 
     socket = new WS(`ws${location.protocol == 'https:'? 's': ''}://${location.host}/api/`);
@@ -1194,7 +2019,7 @@ function init_websockets() {
         pong = Now(true);
         let vector = new Uint8Array(message.data);
         if (vector[0] == 0) {
-            if (DEV.socket)
+            if (DEV['socket'])
                 LS(`pong: ${pong - ping}`);
         }
         else if (virtual_socket_message)
@@ -1219,13 +2044,13 @@ function socket_error(text) {
 
 /**
  * Send data to a socket
- * @param {Object} data
- * @returns {boolean}
+ * @param {!Object} data
+ * @returns {boolean?}
  */
 function socket_send(data) {
     if (!socket || socket.readyState != WS.OPEN)
         return false;
-    let success;
+    let success = null;
     try {
         socket.send(Stringify(data));
         success = true;
@@ -1241,11 +2066,11 @@ function socket_send(data) {
 
 /**
  * Add a touch move
- * @param {Object} change
+ * @param {Vector2} change
  * @param {number} stamp
  * @param {number=} ratio_x
  * @param {number=} ratio_y
- * @returns {number[]} deltas
+ * @returns {!Array<number>} deltas
  */
 function add_move(change, stamp, ratio_x=1, ratio_y=1) {
     if (!drag)
@@ -1264,16 +2089,29 @@ function cannot_click() {
     if (Now(true) < touch_done + TIMEOUT_touch)
         return true;
     let active = document.activeElement;
-    if (active && {INPUT: 1, TEXTAREA: 1}[active.tagName])
+    if (active && {'INPUT': 1, 'TEXTAREA': 1}[active.tagName])
         return active;
     return false;
 }
 
 /**
- * Finished touching which means we cannot click for a bit
+ * Check if we can't right click to popup
+ * @returns {boolean}
  */
-function done_touch() {
-    touch_done = Now(true);
+function cannot_popup() {
+    let is_control = KEYS[17],
+        cannot = !Undefined(Y['popup_right_click'], 1) || is_control;
+    if (cannot && is_control)
+        KEYS[17] = 0;
+    return cannot;
+}
+
+/**
+ * Finished touching which means we cannot click for a bit
+ * @param {number=} delta
+ */
+function done_touch(delta=0) {
+    touch_done = Now(true) + delta;
 }
 
 /**
@@ -1288,7 +2126,7 @@ function get_area(node) {
 /**
  * Get the changed touches + stamp
  * @param {Event} e
- * @returns {*[]} [changed_touches, stamp]
+ * @returns {!Array<Vector2>}
  */
 function get_changed_touches(e) {
     let touches = e.changedTouches || e.touches;
@@ -1296,19 +2134,19 @@ function get_changed_touches(e) {
         touches = [...touches].map(touch => ({x: touch.clientX, y: touch.clientY}));
     else
         touches = [{x: e.clientX, y: e.clientY}];
-    return [touches, e.timeStamp];
+    return touches;
 }
 
 /**
  * Render the inertial scrolling
  */
 function render_scroll() {
-    if (!Y.scroll_inertia)
+    let ratio = Y['scroll_inertia'];
+    if (!ratio)
         return;
 
     let now = Now(true),
-        delta = Min(33, (now - touch_now) * 1000),
-        ratio = Y.scroll_inertia;
+        delta = Min(33, (now - touch_now) * 1000);
 
     touch_scroll.x -= touch_speed.x * delta;
     touch_scroll.y -= touch_speed.y * delta;
@@ -1336,7 +2174,7 @@ function render_scroll() {
  */
 function scroll_adjust(target, max_delta, depth=0) {
     if (max_delta == undefined)
-        max_delta = Y.wheel_adjust;
+        max_delta = Y['wheel_adjust'];
 
     let keys = target? [target]: Keys(ANCHORS),
         max_allowed = 100,
@@ -1391,7 +2229,7 @@ function scroll_adjust(target, max_delta, depth=0) {
         diff = max_delta,
         diff3 = diff;
     for (let [priority, key, delta1, delta2, top, bottom] of deltas) {
-        if (DEV.ui)
+        if (DEV['ui'])
             LS(`${priority} : ${key} : ${delta1} : ${delta2} : ${top} : ${bottom}`);
         if (delta2 != undefined && Abs(delta2) < max_delta) {
             y2 = bottom;
@@ -1458,7 +2296,7 @@ function set_scroll() {
     if (full_target) {
         full_scroll.x = Clamp(full_scroll.x, 0, full_target.clientWidth - window.innerWidth);
         full_scroll.y = Clamp(full_scroll.y, 0, full_target.clientHeight - window.innerHeight);
-        Style(full_target, `transform:translate(${-full_scroll.x}px,${-full_scroll.y}px)`);
+        Style(full_target, [['transform', `translate(${-full_scroll.x}px,${-full_scroll.y}px)`]]);
     }
 }
 
@@ -1475,18 +2313,20 @@ function stop_drag() {
 /**
  * Handle a touch/mouse event
  * @param {Event} e
- * @returns {Object[]}
+ * @returns {{change:Vector2, error:number, stamp:number}}
  */
 function touch_event(e) {
-    let [changes, stamp] = get_changed_touches(e),
+    let changes = get_changed_touches(e),
         change = changes[0],
         error = -1,
-        length = changes.length;
+        length = changes.length,
+        stamp = e.timeStamp;
 
     // multiple inputs => keep the one closer to the previous input
     if (length > 1) {
         if (drag) {
-            let best_x, best_y;
+            let best_x = 0,
+                best_y = 0;
             for (let touch of changes) {
                 let dx = (touch.x - touch_last.x),
                     dy = (touch.y - touch_last.y),
@@ -1516,7 +2356,11 @@ function touch_event(e) {
         error = dx * dx + dy * dy;
     }
 
-    return [change, stamp, error];
+    return {
+        change: change,
+        error: error,
+        stamp: stamp,
+    };
 }
 
 /**
@@ -1528,10 +2372,12 @@ function touch_event(e) {
  */
 function touch_handle(e, full, prevent_default) {
     if (full == undefined)
-        full = is_fullscreen();
+        full = !!is_fullscreen();
 
     let buttons = e.buttons,
-        [change, stamp] = touch_event(e),
+        event = touch_event(e),
+        change = event.change,
+        stamp = event.stamp,
         target = e.target,
         type = e.type,
         type5 = type.slice(0, 5),
@@ -1551,22 +2397,23 @@ function touch_handle(e, full, prevent_default) {
 
         clear_timeout('touch_end');
 
-        drag_target = Parent(target, {class_: 'scroller', self: true, tag: 'div'});
+        drag_target = Parent(/** @type {Node} */(target), {class_: 'scroller', self: true, tag: 'div'});
         if (drag_target && !full_target) {
             // maybe the object is already fully visible?
             // TODO: limit x and y directions individually
-            let child = drag_target.firstElementChild,
-                child_height = child.clientHeight,
-                child_width = child.clientWidth;
-
-            if (child_height <= drag_target.clientHeight && child_width <= drag_target.clientWidth)
-                return;
+            let child = drag_target.firstElementChild;
+            if (child) {
+                let child_height = child.clientHeight,
+                    child_width = child.clientWidth;
+                if (child_height <= drag_target.clientHeight && child_width <= drag_target.clientWidth)
+                    return;
+            }
         }
 
         drag = [change, stamp];
         drag_type = type5;
         touch_last = change;
-        touch_moves = [];
+        touch_moves.length = 0;
         touch_now = Now(true);
         touch_speed = {x: 0, y: 0};
         touch_start = touch_now;
@@ -1633,7 +2480,7 @@ function touch_handle(e, full, prevent_default) {
             if (virtual_drag_done)
                 virtual_drag_done(sumx, sumy, touch_speed);
 
-            cancelAnimationFrame(animation);
+            cancel_animation();
             if (drag_target || full_target || scroll_target)
                 animation = AnimationFrame(render_scroll);
         }
@@ -1673,11 +2520,58 @@ function wheel_event(e, full) {
 /////
 
 /**
+ * Activate tabs after populating the areas
+ */
+function activate_tabs() {
+    E('.tabs', (node, id) => {
+        let tabs = From(A('.tab', node)),
+            actives = tabs.filter(node => HasClass(node, 'active'));
+
+        // few tabs => show full label
+        if (tabs.length < 4)
+            for (let tab of tabs) {
+                let dataset = tab.dataset;
+                dataset['t'] = dataset['label'] || dataset['abbr'];
+            }
+
+        add_timeout(`active:${id}`, () => {
+            virtual_click_tab(actives.length? actives[0]: tabs[0]);
+        }, node.id == 'table-tabs'? TIMEOUT_activate: 0);
+    });
+}
+
+/**
+ * Add font + sizes
+ * @param {string} font
+ * @param {!Object} sizes sizes when font-size = 1280px
+ */
+function add_font(font, sizes) {
+    let widths = /** @type {!Object} */(SetDefault(FONTS, font, {}));
+    Assign(widths, sizes);
+}
+
+/**
+ * Calculate the text width in px
+ * @param {string} text
+ * @param {string=} font
+ * @returns {number}
+ */
+function calculate_text_width(text, font) {
+    let default_width = FONTS[''][''],
+        width = 0,
+        widths = FONTS[font] || {};
+
+    for (let char of text.split(''))
+        width += widths[char] || widths[''] || default_width;
+    return width;
+}
+
+/**
  * Create an array of pages
  * @param {number} num_page
  * @param {number} page
  * @param {number} extra
- * @returns {number[]}
+ * @returns {!Array<number>}
  */
 function create_page_array(num_page, page, extra) {
     if (num_page < 2)
@@ -1715,7 +2609,7 @@ function create_page_array(num_page, page, extra) {
 
 /**
  * Create an URL list
- * @param {Object} dico {key:value, ...}
+ * @param {!Object} dico {key:value, ...}
  * - value is string => URL is created unless empty string
  * - otherwise insert separator
  * @returns {string}
@@ -1778,7 +2672,7 @@ function create_url_list(dico) {
  * @param {number=} my mouse y
  */
 function draw_rectangle(node, orient, mx, my) {
-    let rect_node = Id('rect');
+    let rect_node = CacheId('rect');
     if (!node) {
         Hide(rect_node);
         return;
@@ -1805,27 +2699,271 @@ function draw_rectangle(node, orient, mx, my) {
         }
     }
 
-    Style(rect_node, `left:${x}px;height:${y2 - y1}px;top:${y1}px;width:${w}px`);
+    Style(rect_node, [['left', `${x}px`], ['height', `${y2 - y1}px`], ['top', `${y1}px`], ['width', `${w}px`]]);
     Show(rect_node);
 }
 
 /**
+ * Find an element in areas
+ * @param {string} name
+ * @returns {{area: (Array<string|number>|undefined), id: number, key: (string|undefined)}}
+ */
+function find_area(name) {
+    let areas = Y['areas'];
+    for (let key of Keys(areas)) {
+        let vector = areas[key];
+        for (let i = 0; i < vector.length; i ++)
+            if (vector[i][0] == name)
+                return {area: vector[i], id: i, key: key};
+    }
+    return {id: -1};
+}
+
+/**
  * Get the drag and drop id
- * @param {Node} target
- * @returns {[Node, string]}
+ * @param {Node|EventTarget} target
+ * @returns {{id:string, node:Node?}}
  */
 function get_drop_id(target) {
-    let parent = Parent(target, {class_: 'drag|drop', self: true});
-    return [parent, parent? (parent.id || parent.dataset.x): null];
+    let parent = Parent(/** @type {Node} */(target), {class_: 'drag|drop', self: true});
+    return {
+        id: parent? (parent.id || parent.dataset['x']): null,
+        node: parent,
+    };
+}
+
+/**
+ * Move a pane left or right, swapping it with another
+ * @param {Node} node
+ * @param {number} dir <<[-3] <[-1] >[1] >>[3]
+ */
+function move_pane(node, dir) {
+    // 1) gather pane info
+    let areas = Y['areas'],
+        index = -1,
+        panes = Keys(PANES)
+            .filter(pane => Y[`min_${pane}`] > 0 || Y[`max_${pane}`] > 0)
+            .map((pane, id) => {
+                if (pane == node.id)
+                    index = id;
+                return [pane, [...areas[`${pane}0`]]];
+            }),
+        num_pane = panes.length,
+        orders = panes.map(pane => pane[0]);
+
+    // 2) move pane, but skip if already where it should be
+    if ((dir == -3 && !index) || (dir == 3 && index == num_pane - 1))
+        return;
+
+    let pane = panes.splice(index, 1)[0],
+        target = (dir == -3)? 0: (dir == 3)? num_pane - 1: index + dir;
+    if (target < 0 || target >= num_pane)
+        return;
+    panes.splice(target, 0, pane);
+
+    // 3) update sizes
+    let dico = {};
+    panes.forEach((pane, id) => {
+        let order = orders[id];
+        dico[`max_${order}`] = Y[`max_${pane[0]}`];
+        dico[`min_${order}`] = Y[`min_${pane[0]}`];
+    });
+    Assign(Y, dico);
+    for (let order of orders) {
+        save_option(`max_${order}`);
+        save_option(`min_${order}`);
+    }
+
+    // 4) update areas
+    let new_areas = Assign({}, ...panes.map((pane, id) => ({[`${orders[id]}0`]: pane[1]})));
+    Assign(areas, new_areas);
+    populate_areas();
+}
+
+/**
+ * Populate areas
+ * @param {boolean=} activate activate the tabs
+ */
+function populate_areas(activate) {
+    let areas = Y['areas'] || {},
+        default_areas = DEFAULTS['areas'],
+        section = y_x,
+        hides = Assign({}, HIDES[section]);
+
+    if (virtual_hide_areas)
+        virtual_hide_areas(hides);
+
+    // 1) count existing
+    Keys(areas).forEach(key => {
+        for (let vector of areas[key])
+            context_areas[vector[0]] = vector;
+    });
+
+    // 2) process all areas
+    Keys(areas).forEach(key => {
+        let parent = CacheId(key);
+        if (!parent)
+            return;
+
+        // a) add missing defaults
+        for (let vector of default_areas[key])
+            if (!context_areas[vector[0]])
+                areas[key].push(vector);
+
+        // b) check if we already have the correct order, if yes then skip
+        let prev_tab, tabs,
+            children = parent.children,
+            child = children[0],
+            child_id = 0,
+            error = '',
+            sorder = areas[key].filter(item => (item[2] & 1)).map(item => item[0]).join(' ');
+
+        for (let [id, tab, show] of areas[key]) {
+            let node = CacheId(id);
+            if (!node)
+                continue;
+
+            let is_tab;
+            if (tab || prev_tab) {
+                if (show & 1) {
+                    if (!prev_tab || !tabs) {
+                        tabs = child;
+                        // check if in the tabs and in the right order
+                        if (!HasClass(child, 'tabs')) {
+                            error = 'tabs';
+                            break;
+                        }
+                        let torder = From(tabs.children).map(sub => sub.dataset['x']).join(' ');
+                        if (!sorder.includes(torder))
+                            error = `sub: ${sorder} : ${torder}`;
+
+                        child_id ++;
+                        child = children[child_id];
+                    }
+
+                    is_tab = true;
+                    prev_tab = tab;
+                }
+                show = show & 2;
+            }
+            else
+                tabs = null;
+
+            if (!child || child.id != id) {
+                error = `id=${id}`;
+                break;
+            }
+            else if (!is_tab) {
+                let is_show = ((show & 1) && !hides[id])? true: false,
+                    visible = Visible(child);
+
+                if (is_show != visible) {
+                    error = `vis=${id}`;
+                    break;
+                }
+            }
+
+            child_id ++;
+            child = children[child_id];
+        }
+
+        if (!error) {
+            if (child)
+                error = `last=${child.id}`;
+            else
+                return;
+        }
+        if (DEV['ui']) {
+            LS(key, `populate ${key} : ${error}`);
+            LS(child);
+        }
+
+        // c) restructure the panel => this will cause the chat to reload too
+        // remove tabs
+        E('.tabs', node => {
+            node.remove();
+        }, parent);
+
+        // add children + create tabs
+        let exist = 0;
+        prev_tab = 0;
+        tabs = null;
+        for (let vector of areas[key]) {
+            let no_tab,
+                [id, tab, show] = vector,
+                node = CacheId(id);
+            if (!node)
+                continue;
+
+            if (tab || prev_tab) {
+                if (show & 1) {
+                    if (!prev_tab || !tabs) {
+                        tabs = CreateNode('horis', '', {'class': 'tabs', 'style': exist? 'margin-top:1em': ''});
+                        parent.appendChild(tabs);
+                        exist ++;
+                    }
+
+                    let text = id.split('-');
+                    text = text.slice(-text.length + 1).join('-');
+                    text = TAB_NAMES[text] || Title(text);
+
+                    let dico = {
+                            'class': `tab drop${(show & 2)? ' active': ''}`,
+                            'data-abbr': text,
+                            'data-label': HTML('.label', undefined, node) || '',
+                            'data-x': id,
+                        },
+                        title = TITLES[text];
+
+                    if (title)
+                        Assign(dico, {
+                            'data-t': title,
+                            'data-t2': 'title',
+                        });
+
+                    tabs.appendChild(CreateNode('div', `<i data-t="${text}"></i>`, dico));
+                    prev_tab = tab;
+                }
+                show = show & 2;
+            }
+            // no tab => show label under the graph
+            else
+                no_tab = true;
+
+            if (!tab) {
+                prev_tab = 0;
+                tabs = null;
+            }
+
+            parent.appendChild(node);
+            S(node, show & 1);
+            S('.label', no_tab, node);
+
+            context_areas[id] = vector;
+            if (show & 1)
+                exist ++;
+        }
+    });
+
+    // 3) activate tabs
+    if (activate)
+        activate_tabs();
+
+    save_option('areas');
+    translate_nodes('body');
+    set_draggable();
+
+    if (virtual_populate_areas_special)
+        virtual_populate_areas_special();
 }
 
 /**
  * Set some elements to be draggable or not
  */
 function set_draggable() {
-    let drag = !!Y.drag_and_drop;
-    Attrs('.drag, .drop', {draggable: drag});
-    Hide(Id('rect'));
+    let drag = !!Y['drag_and_drop'];
+    Attrs('.drag, .drop', {'draggable': drag});
+    Hide(CacheId('rect'));
     Class('.area', '-dragging');
 }
 
@@ -1835,9 +2973,13 @@ function set_draggable() {
 /**
  * Get translations
  * @param {boolean=} force
- * @param {function=} callback
+ * @param {Function=} callback
+ * @param {Object=} custom_data provide translations directly
  */
-function api_translate_get(force, callback) {
+function api_translate_get(force, callback, custom_data) {
+    /**
+     * @param {Object=} data
+     */
     function _done(data) {
         if (data) {
             translates = data;
@@ -1850,11 +2992,17 @@ function api_translate_get(force, callback) {
             callback();
     }
 
+    // 0) custom data
+    if (custom_data) {
+        _done(custom_data);
+        return;
+    }
+
     // 1) cached?
-    let language = Y.language,
+    let language = Y['language'],
         now = Now();
     if (!force)
-        if (language == 'eng' || (translates._lan == language && now < (api_times.translate || 0) + TIMEOUT_translate)) {
+        if (language == 'eng' || (translates['_lan'] == language && now < (api_times.translate || 0) + TIMEOUT_translate)) {
             _done();
             return;
         }
@@ -1875,23 +3023,116 @@ function api_translate_get(force, callback) {
 
 function set_engine_events() {
     Events(window, 'mousedown touchstart', () => {
-        cancelAnimationFrame(animation);
+        cancel_animation();
     });
 
     // iframe support: scroll going to opposite expected way => stop the animation
     Events(window, 'scroll', () => {
+        last_scroll = Now(true);
         if (Abs(touch_speed.x) <= 0.03 && Abs(touch_speed.y) <= 0.03)
             return;
         let y = ScrollDocument(),
             sign = Sign(y - touch_scroll.y);
         if (sign && sign != -Sign(touch_speed.y)) {
-            if (animation) {
-                cancelAnimationFrame(animation);
-                animation = null;
-            }
+            cancel_animation();
             stop_drag();
         }
     });
+}
+
+/**
+ * Used when showing a modal
+ * @param {Node=} parent
+ */
+function set_modal_events(parent) {
+    // settings events
+    parent = parent || CacheId('modal');
+    if (parent.dataset['ev'] == 0)
+        return;
+
+    // click on item => toggle if possible
+    C('.item', function() {
+        // button
+        let name = this.name;
+        if (name || HasClass(this, 'item-title')) {
+            click_target = Parent(this, {class_: 'popup', self: true});
+            change_setting(name, undefined, (this.dataset['set'] == '-1' || HasClass(this, 'span'))? 2: 0);
+            return;
+        }
+
+        // input + select
+        let next = this.nextElementSibling;
+        if (!next)
+            return;
+        next = _('input, select', next);
+        if (!next)
+            return;
+        switch (next.tagName) {
+        case 'INPUT':
+            if (next.type == 'checkbox') {
+                next.checked = !next.checked;
+                change_setting(next.name, next.checked * 1);
+            }
+            break;
+        case 'SELECT':
+            if (next.options.length == 2) {
+                next.selectedIndex ^= 1;
+                change_setting(next.name, next.value);
+            }
+            break;
+        }
+    }, parent);
+    C('.item2', function() {
+        let name = this.dataset['t'];
+        change_setting(name? name.replace(/ /g, '_'): name);
+    }, parent);
+
+    // right click on item => reset to default
+    Events('.item', 'contextmenu', function(e) {
+        if (cannot_popup())
+            return;
+        let next = this.nextElementSibling;
+        if (next) {
+            E('input, select, textarea', node => {
+                let name = node.name,
+                    def = DEFAULTS[name];
+                if (def == undefined)
+                    return;
+                if (node.type == 'checkbox')
+                    node.checked = def? true: false;
+                else
+                    node.value = def;
+                save_option(name, def);
+                change_setting(name, def);
+            }, next);
+        }
+        PD(e);
+        SP(e);
+    }, parent);
+
+    // inputs
+    Events('input, select, textarea', 'change', function() {
+        done_touch();
+        change_setting(this.name, (this.type == 'checkbox')? this.checked * 1: this.value);
+    }, {}, parent);
+    //
+    Input('input, select, textarea', function() {
+        done_touch();
+        change_setting('');
+    }, parent);
+    //
+    C('input, select, textarea', function() {
+        if (cannot_click())
+            return;
+        change_setting('');
+    }, parent);
+    //
+    C('div[name]', function() {
+        change_setting(this.getAttribute('name'));
+    }, parent);
+
+    if (virtual_set_modal_events_special)
+        virtual_set_modal_events_special();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1899,31 +3140,59 @@ function set_engine_events() {
 // <<
 if (typeof exports != 'undefined') {
     Object.assign(exports, {
+        activate_tabs: activate_tabs,
+        add_font: add_font,
         add_history: add_history,
         add_timeout: add_timeout,
+        AUTO_ON_OFF: AUTO_ON_OFF,
+        calculate_text_width: calculate_text_width,
+        cannot_click: cannot_click,
+        cannot_popup: cannot_popup,
         clear_timeout: clear_timeout,
         create_field_value: create_field_value,
         create_page_array: create_page_array,
+        create_svg_icon: create_svg_icon,
         create_url_list: create_url_list,
         DEFAULTS: DEFAULTS,
         DEV: DEV,
         DEV_NAMES: DEV_NAMES,
         device: device,
+        done_touch: done_touch,
+        find_area: find_area,
+        FONTS: FONTS,
+        get_float: get_float,
+        get_int: get_int,
+        get_object: get_object,
+        get_string: get_string,
         guess_types: guess_types,
+        HIDES: HIDES,
+        ICONS: ICONS,
         import_settings: import_settings,
+        KEYS: KEYS,
         LANGUAGES: LANGUAGES,
         load_defaults: load_defaults,
+        LOCALHOST: LOCALHOST,
         me: me,
         merge_settings: merge_settings,
+        move_pane: move_pane,
         NO_IMPORTS: NO_IMPORTS,
         ON_OFF: ON_OFF,
         option_number: option_number,
+        PANES: PANES,
         parse_dev: parse_dev,
+        populate_areas: populate_areas,
+        POPUP_ADJUSTS: POPUP_ADJUSTS,
+        reset_default: reset_default,
         reset_settings: reset_settings,
+        resize_text: resize_text,
         restore_history: restore_history,
         sanitise_data: sanitise_data,
         save_default: save_default,
         save_option: save_option,
+        set_section: set_section,
+        show_settings: show_settings,
+        socket: socket,
+        TAB_NAMES: TAB_NAMES,
         THEMES: THEMES,
         timers: timers,
         translate: translate,

@@ -1,6 +1,6 @@
 // graph.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-12-27
+// @version 2021-01-10
 //
 /*
 globals
@@ -10,7 +10,9 @@ expect, global, require, test,
 
 let {Assign, Keys} = require('./common.js'),
     {Y} = require('./engine.js'),
-    {calculate_win, chart_data, check_first_num, clamp_eval, fix_labels, invert_eval} = require('./graph.js');
+    {
+        calculate_win, chart_data, check_first_num, clamp_eval, fix_labels, invert_eval, scale_boom,
+    } = require('./graph.js');
 
 global.xboards = {
     live: {
@@ -115,9 +117,14 @@ global.xboards = {
 
 // clamp_eval
 [
-    ['', 0],
+    [undefined, undefined],
+    [null, undefined],
+    ['', undefined],
+    ['-', undefined],
+    ['book', undefined],
     [NaN, 128],
     [Infinity, 128],
+    [-Infinity, -128],
     [-5.2, -5.2],
     [-19, -19],
     [3.14, 3.14],
@@ -132,6 +139,8 @@ global.xboards = {
     ['-M#33', -128],
     ['#18', 128],
     ['#-18', -128],
+    ['M19', 128],
+    ['-M19', -128],
 ].forEach(([eval_, answer], id) => {
     test(`clamp_eval:${id}`, () => {
         expect(clamp_eval(eval_)).toEqual(answer);
@@ -167,5 +176,46 @@ global.xboards = {
 ].forEach(([eval_, answer], id) => {
     test(`invert_eval:${id}`, () => {
         expect(invert_eval(eval_)).toEqual(answer);
+    });
+});
+
+// scale_boom
+[
+    [undefined, undefined],
+    [null, undefined],
+    ['', undefined],
+    ['-', undefined],
+    ['book', undefined],
+    [0, 0],
+    [1, 2.211992169285951],
+    [2, 3.9346934028736658],
+    [3, 5.276334472589853],
+    [4, 6.321205588285577],
+    [5, 7.1349520313980985],
+    [6, 7.768698398515702],
+    [7, 8.262260565495549],
+    [8, 8.646647167633873],
+    [9, 8.946007754381357],
+    [10, 9.179150013761012],
+    [15, 9.764822541439909],
+    [50, 9.99996273346828],
+    ['M19', 9.999999999999874],
+    ['-M19', -9.999999999999874],
+    [Infinity, 9.999999999999874],
+    [-Infinity, -9.999999999999874],
+    ['hello', 9.999999999999874],
+    ['-hello', -9.999999999999874],
+    [255, 10],
+    [-255, -10],
+    [-15, -9.764822541439909],
+    [-1, -2.211992169285951],
+].forEach(([x, answer], id) => {
+    test(`scale_boom:${id}`, () => {
+        let clamp = clamp_eval(x),
+            result = scale_boom(clamp);
+        if (isNaN(result))
+            expect(result).toEqual(answer);
+        else
+            expect(result).toBeCloseTo(answer, 5);
     });
 });

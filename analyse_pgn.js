@@ -1,27 +1,31 @@
 // analyse_pgn.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-03
+// @version 2021-02-05
 /*
 globals
-Buffer, console, process, require
+process, require
 */
 'use strict';
 
 let fs = require('fs'),
     glob = require('glob'),
     unzipper = require('unzipper'),
-    {Assign, DefaultInt, Floor, FormatUnit, Keys, LS, Max, Now, Pad, SetDefault} = require('./js/common'),
-    {fix_move_format} = require('./js/global'),
-    {extract_threads, parse_pgn} = require('./js/game');
+    {
+        Assign, DefaultInt, Floor, FormatUnit, FromTimestamp, IsDigit, Keys, LS, Max, Now, Pad, SetDefault,
+    } = require('./js/common.js'),
+    {fix_move_format} = require('./js/global.js'),
+    {extract_threads, parse_pgn} = require('./js/game.js');
 
-let OPTIONS = {},
+let engine_check = 'LCZero 0.27.0d-Tilps-dje-magic_JH.94-100',
+    OPTIONS = {},
     REPLACES = {
         bonus: 'Bonus',
         cup: 'Cup ',
         s: 'Season ',
     },
     skipped_keys = {},
-    synonyms = {};
+    synonyms = {},
+    worsts = [];
 
 // ANALYSE STATS
 ////////////////
@@ -157,7 +161,14 @@ function get_pgn_stats(data, origin) {
         // add synonym
         let name2 = [name, event, threads, gpus].map(item => item || '').join('|');
         if (threads)
-            synonyms[`${name}|${event}`] = name2;
+            synonyms[`${name}|${event}`] = name2.replace(' copy', '');
+
+        if (name == engine_check) {
+            moves.forEach((move, mi) => {
+                if (move.s < 50000 && move.mt > 60000)
+                    worsts.push([headers.Round, mi, 1 + mi / 2, move.m, move.s, move.mt]);
+            });
+        }
 
         if (OPTIONS.discover && !median[id]) {
             LS(`${origin} : ${headers.Round} : ${headers.GameStartTime} : ${name2} : ${median[id]} : ${average[id]}`);
@@ -188,7 +199,7 @@ function merge_stats(result) {
             stats = result[key];
 
         // no threads => resolve synonym
-        if (!splits[2]) {
+        if (!splits[2] || splits[0].includes(' copy')) {
             let name_key = splits.slice(0, 2).join('|'),
                 synonym = synonyms[name_key];
             if (synonym) {
@@ -227,6 +238,12 @@ function merge_stats(result) {
         sort_engine = OPTIONS.engine,
         sort_event = OPTIONS.event,
         spaces = maxs.map(max => create_spaces(max));
+
+    // skip 40StockfishClassical 202007311012
+    keys = keys.filter(key => {
+        LS(key, IsDigit(key[0]), IsDigit(key[1]) && key.includes('Stockfish'));
+        return !IsDigit(key[0]) || !IsDigit(key[1]) || !key.includes('Stockfish');
+    });
 
     keys.sort((a, b) => {
         let sa = a.split('|'),
@@ -275,6 +292,15 @@ function merge_stats(result) {
             return prefix + line;
         }).join('\n');
 
+    // 5) worsts
+    if (worsts.length) {
+        worsts.sort((a, b) => a[4] - b[4]);
+        LS('   round      ply     move      san      nps       ms');
+        for (let worst of worsts) {
+            let vector = worst.map(item => (item + '').padStart(8));
+            LS(vector.join(' '));
+        }
+    }
     return text;
 }
 
@@ -282,7 +308,7 @@ function merge_stats(result) {
  * Open a file and process it
  * @param {string} filename
  * @param {Object} result
- * @param {function} callback
+ * @param {Function} callback
  */
 function open_file(filename, result, callback) {
     let ext = filename.split('.').slice(-1)[0],
@@ -339,16 +365,29 @@ function open_file(filename, result, callback) {
 /**
  * Show the results
  * @param {Object} result
- * @param {string[]} filenames
+ * @param {Array<string>} filenames
  */
 function done(result, filenames) {
-    let text = merge_stats(result),
+    let [day] = FromTimestamp(),
+        text = merge_stats(result),
         lines = [
             '```',
             filenames.map(name => name.split(/[/\\]/).slice(-1)[0]).sort().join(', '),
             text,
             '```',
         ].join('\n');
+
+    text = [
+        `Updated on ${day}`,
+        '',
+        'How nps is calculated for each game:',
+        '- nps = total nodes / total time, so, moves with a long thinking time have a lot of impact',
+        "- the last 20% moves are discarded because they're less relevant (too many transpositions)",
+        '- the interquartile range (IQR) is used to remove outliers => adds a lot of stability',
+        "- moves with very low thinking time or nodes are not counted because they're very noisy",
+        '',
+        text,
+    ].join('\n');
 
     LS(lines);
     fs.writeFile('analyse_pgn.txt', text, () => {

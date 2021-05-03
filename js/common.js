@@ -1,13 +1,12 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-05
+// @version 2021-02-19
 //
 // utility JS functions used in all the sites
-// no state is being required
 //
 /*
 globals
-console, document, exports, FormData, location, navigator, Node, requestAnimationFrame, window, XMLHttpRequest
+console, document, exports, FormData, global, location, navigator, Node, requestAnimationFrame, screen, window, XMLHttpRequest
 */
 'use strict';
 
@@ -15,9 +14,10 @@ console, document, exports, FormData, location, navigator, Node, requestAnimatio
 ////////////
 
 let Abs = Math.abs,
-    AnimationFrame = (callback, direct) => (direct? callback(): requestAnimationFrame(callback)),
     Assign = Object.assign,
     Atan = Math.atan,
+    CACHE_COUNTS = {},
+    CACHE_IDS = {},
     Ceil = Math.ceil,
     Cos = Math.cos,
     // dummy object
@@ -32,6 +32,8 @@ let Abs = Math.abs,
         },
         clientHeight: 0,
         dataset: {},
+        getAttribute: () => undefined,
+        getAttributeNS: () => undefined,
         getBoundingClientRect: () => ({bottom: 0, height: 0, left: 0, right: 0, top: 0, width: 0}),
         offsetHeight: 0,
         removeAttribute: () => 0,
@@ -50,16 +52,17 @@ let Abs = Math.abs,
     Exp = Math.exp,
     Floor = Math.floor,
     From = Array.from,
-    GLOBAL = (typeof global != 'undefined'),
+    IS_NODE = (typeof global != 'undefined')? global: null,
     IsArray = Array.isArray,
     IsFloat = value => (Number.isFinite(value) && !Number.isInteger(value)),
     IsFunction = value => (typeof(value) == 'function'),
     IsObject = value => (value != null && typeof(value) == 'object'),
     IsString = value => (typeof(value) == 'string'),
     Keys = Object.keys,
+    Log = Math.log,
     Log10 = Math.log10,
     Lower = text => text.toLowerCase(),
-    LS = console.log,
+    LS = console.log.bind(console),
     Max = Math.max,
     Min = Math.min,
     NAMESPACE_SVG = 'http://www.w3.org/2000/svg',
@@ -72,7 +75,7 @@ let Abs = Math.abs,
     Sin = Math.sin,
     SP = e => e.stopPropagation(),
     Sqrt = Math.sqrt,
-    Stringify = JSON.stringify,
+    Stringify = JSON.stringify.bind(JSON),
     Tanh = Math.tanh,
     Upper = text => text.toUpperCase();
 
@@ -82,47 +85,42 @@ let Abs = Math.abs,
 ////////////////////////////
 /**
  * Find 1 node
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string|Element|EventTarget} sel CSS selector or node
  * @param {Node=} parent parent node, document by default
  * @returns {Node} found node
- * @example
- * _('input')      // get the first <input> nodes
- * _('a', node)    // get the first link inside the node
  */
 function _(sel, parent) {
-    if (!sel) return;
+    if (!sel)
+        return null;
     if (IsObject(sel))
-        return sel;
-    return (parent || document).querySelector(sel);
+        return /** @type {Node} */(sel);
+    return (parent || document).querySelector(/** @type {string} */(sel));
 }
 
 /**
  * Find multiple nodes
- * @param {string|Node[]} sel CSS selector OR list of nodes
- * @param {Node=} parent parent node, document by default
- * @returns {Node[]} found nodes
- * @example
- * A('input')       // get all the <input> nodes
- * A('a', node)     // get all the links inside the node
+ * @param {string|Array<Node>} sel CSS selector OR list of nodes
+ * @param {Node|Object=} parent parent node, document by default
+ * @returns {!Array<Node>} found nodes
  */
 function A(sel, parent) {
-    if (!sel) return;
-    if (IsObject(sel) && sel.length)
-        return sel;
+    if (!sel)
+        return [];
+    if (IsArray(sel))
+        return /** @type {!Array<Node>} */(sel);
     return (parent || document).querySelectorAll(sel);
 }
 
 /**
  * Execute a function on multiple nodes
- * @param {string|Node[]} sel CSS selector OR list of nodes
- * @param {function} callback (node, index=, array=)
+ * @param {string|Array<Node>} sel CSS selector OR list of nodes
+ * @param {Function} callback (node, index=, array=)
  * @param {Node=} parent
- * @example
- * E('input[type=text]', node => {LS(node)})     // print all the text <input> nodes
  */
 function E(sel, callback, parent) {
-    if (!sel) return;
-    if (IsObject(sel) && sel.length)
+    if (!sel)
+        return;
+    if (IsArray(sel))
         sel.forEach(callback);
     else
         A(sel, parent).forEach(callback);
@@ -130,14 +128,17 @@ function E(sel, callback, parent) {
 
 /**
  * Get an element by ID
- * @param {string|Node} id
+ * @param {Node|string} id
  * @param {Node=} parent parent node, document by default
- * @returns {Node=}
+ * @returns {Node}
  */
 function Id(id, parent) {
-    if (!id) return;
+    if (!id)
+        return null;
     if (IsObject(id))
-        return id;
+        return /** @type {Node} */(id);
+    if (IS_NODE)
+        return (parent || document).querySelector(`#${id}`);
     return (parent || document).getElementById(id);
 }
 
@@ -145,12 +146,13 @@ function Id(id, parent) {
 /////////////////////////
 /**
  * Change attributes
- * @param {string|Node} sel CSS selector or node
- * @param {Object} attrs attribute to change
+ * @param {Node|string} sel CSS selector or node
+ * @param {!Object} attrs attribute to change
  * @param {Node=} parent
  */
 function Attrs(sel, attrs, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         Keys(attrs).forEach(key => {
             let value = attrs[key];
@@ -162,7 +164,7 @@ function Attrs(sel, attrs, parent) {
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         Keys(attrs).forEach(key => {
             let value = attrs[key];
             if (value == undefined)
@@ -175,12 +177,13 @@ function Attrs(sel, attrs, parent) {
 
 /**
  * Change attributes
- * @param {string|Node} sel
- * @param {Object} attrs
+ * @param {Node|string} sel
+ * @param {!Object} attrs
  * @param {Node=} parent
  */
 function AttrsNS(sel, attrs, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         Keys(attrs).forEach(key => {
             let value = attrs[key];
@@ -192,7 +195,7 @@ function AttrsNS(sel, attrs, parent) {
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         Keys(attrs).forEach(key => {
             let value = attrs[key];
             if (value == undefined)
@@ -205,102 +208,171 @@ function AttrsNS(sel, attrs, parent) {
 
 /**
  * Click event on nodes
- * @param {string|Node} sel CSS selector or node
- * @param {function} callback (event)
+ * @param {Node|string} sel CSS selector or node
+ * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * C('img', function() {LS(this.src)})  // print the URL of the image being clicked
  */
 function C(sel, callback, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.onclick = callback;
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.onclick = callback;
     }, parent);
 }
 
 /**
- * Add / remove classes
- * @param {string|Node} sel CSS selector or node
- * @param {string} class_ 'add +also_add -remove ^toggle'
- * @param {boolean=} [add=true] true for normal behavior (default), otherwise invert all - and +
- * @param {Node=} parent
- * @example
- * Class('img', 'dn')               // hide every image
- * Class('img', '-dn')              // restore every image
- * Class('img', '^dn')              // toggle every image
- * Class('img', '-dn +underline')   // multiple classes can be combined
+ * Get and update an id
+ * @param {Node|string} id
+ * @param {Node=} parent parent node, document by default
+ * @returns {Node}
  */
-function Class(sel, class_, add=true, parent=null) {
-    if (!sel) return;
+function CacheId(id, parent) {
+    // CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
+    if (CACHE_IDS[id])
+        return CACHE_IDS[id];
+    let node = Id(id, parent);
+    if (node)
+        CACHE_IDS[id] = node;
+    return node;
+}
 
+/**
+ * Add / remove classes
+ * @param {Node|string} sel CSS selector or node
+ * @param {Array<*>|string} classes [['dn', flag=]], flag:0=add, 1=remove, 2=toggle
+ * @param {boolean|number=} add true for normal behavior (default), otherwise invert all - and +
+ * @param {Node?=} parent
+ */
+function Class(sel, classes, add=true, parent=null) {
+    if (!sel)
+        return;
+
+    // string
+    if (IsString(classes)) {
+        classes = /** @type {string} */(classes);
+        if (IsObject(sel)) {
+            let list = sel.classList;
+            classes.split(' ').forEach(item => {
+                if (!item)
+                    return;
+                let first = item.substr(0, 1),
+                    right = item.substr(1);
+                if (first == '-') {
+                    if (add)
+                        list.remove(right);
+                    else
+                        list.add(right);
+                }
+                else if (first == '+') {
+                    if (add)
+                        list.add(right);
+                    else
+                        list.remove(right);
+                }
+                else if (first == '^')
+                    list.toggle(right);
+                else if (add)
+                    list.add(item);
+                else
+                    list.remove(item);
+            });
+            return;
+        }
+        //
+        E(/** @type {string} */(sel), node => {
+            let list = node.classList;
+            classes.split(' ').forEach(item => {
+                if (!item)
+                    return;
+                let first = item.substr(0, 1),
+                    right = item.substr(1);
+                if (first == '-') {
+                    if (add)
+                        list.remove(right);
+                    else
+                        list.add(right);
+                }
+                else if (first == '+') {
+                    if (add)
+                        list.add(right);
+                    else
+                        list.remove(right);
+                }
+                else if (first == '^')
+                    list.toggle(right);
+                else if (add)
+                    list.add(item);
+                else
+                    list.remove(item);
+            });
+        }, parent);
+        return;
+    }
+
+    // array
     if (IsObject(sel)) {
+        classes = /** @type {Array<*>} */(classes);
         let list = sel.classList;
-        class_.split(' ').forEach(item => {
-            if (!item)
-                return;
-
-            let first = item.substr(0, 1),
-                right = item.substr(1);
-            if (first == '-') {
+        for (let [name, flag] of classes) {
+            if (!name)
+                continue;
+            // add
+            if (!flag) {
                 if (add)
-                    list.remove(right);
+                    list.add(name);
                 else
-                    list.add(right);
+                    list.remove(name);
             }
-            else if (first == '+') {
+            // remove
+            else if (flag > 0) {
                 if (add)
-                    list.add(right);
+                    list.remove(name);
                 else
-                    list.remove(right);
+                    list.add(name);
             }
-            else if (first == '^')
-                list.toggle(right);
-            else if (add)
-                list.add(item);
+            // toggle
             else
-                list.remove(item);
-        });
+                list.toggle(name);
+        }
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         let list = node.classList;
-        class_.split(' ').forEach(item => {
-            if (!item)
-                return;
-
-            let first = item.substr(0, 1),
-                right = item.substr(1);
-            if (first == '-') {
+        for (let [name, flag] of classes) {
+            if (!name)
+                continue;
+            // add
+            if (!flag) {
                 if (add)
-                    list.remove(right);
+                    list.add(name);
                 else
-                    list.add(right);
+                    list.remove(name);
             }
-            else if (first == '+') {
+            // remove
+            else if (flag > 0) {
                 if (add)
-                    list.add(right);
+                    list.remove(name);
                 else
-                    list.remove(right);
+                    list.add(name);
             }
-            else if (first == '^')
-                list.toggle(right);
-            else if (add)
-                list.add(item);
+            // toggle
             else
-                list.remove(item);
-        });
+                list.toggle(name);
+        }
     }, parent);
 }
 
 /**
  * Check if a list contains a pattern, using ^, $, *
- * @param {string[]} list
+ * @param {!Array<string>} list
  * @param {string} pattern
  * @returns {boolean}
  */
@@ -339,12 +411,10 @@ function Contain(list, pattern) {
  * + set its HTML
  * + set its attributes
  * @param {string} tag
- * @param {string=} html
+ * @param {string?=} html
  * @param {Object=} attrs
- * @param {Object[]=} children
+ * @param {Array<Node>=} children
  * @returns {Node} created node
- * @example
- * node = CreateNode('li', '<span>new comment</span>')  // <li><span>new comment</span></li>
  */
 function CreateNode(tag, html, attrs, children) {
     let node = document.createElement(tag);
@@ -366,7 +436,7 @@ function CreateNode(tag, html, attrs, children) {
  * Create an SVG node
  * @param {string} type
  * @param {Object=} attrs
- * @param {Object[]=} children
+ * @param {Array<Node>=} children
  * @returns {Node} created node
  */
 function CreateSVG(type, attrs, children) {
@@ -387,17 +457,18 @@ function CreateSVG(type, attrs, children) {
  * Handle any events on nodes
  * + mouseenter => will use node.addEventListener('mouseenter', callback)
  * + !mouseenter => will use node.onmouseenter = callback
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string|Window} sel CSS selector or node
  * @param {string} events
- * @param {function} callback
- * @param {Object=} options
+ * @param {Function} callback
+ * @param {!AddEventListenerOptions|boolean=} options
  * @param {Node=} parent
  * @example
  * Events(window, 'resize', e => {LS(e)});      // window.addEventListener('resize', function ...)
  * Events(window, '!resize', e => {LS(e)});     // window.onresize = function ...
  */
 function Events(sel, events, callback, options, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
 
     let direct;
     if (events.slice(0, 1) == '!') {
@@ -417,7 +488,7 @@ function Events(sel, events, callback, options, parent) {
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         events.split(' ').forEach(event => {
             if (direct)
                 node[`on${event}`] = callback;
@@ -429,7 +500,7 @@ function Events(sel, events, callback, options, parent) {
 
 /**
  * Check if a node has a class
- * @param {string|Node} node CSS selector or node
+ * @param {Node|string} node CSS selector or node
  * @param {string} class_ can be multiple classes separated by spaces
  * @returns {boolean}
  */
@@ -437,26 +508,26 @@ function HasClass(node, class_) {
     if (IsString(node))
         node = _(node);
     if (!node)
-        return;
+        return false;
 
     return node.classList && node.classList.contains(class_);
 }
 
 /**
  * Check if a node has all classes
- * @param {string|Node} node CSS selector or node
- * @param {string} class_ can be multiple classes separated by spaces, with +/- and ^$* patterns
+ * @param {Node|string} node CSS selector or node
+ * @param {string} classes can be multiple classes separated by spaces, with +/- and ^$* patterns
  * @returns {boolean}
  */
 function HasClasses(node, classes) {
     if (IsString(node))
         node = _(node);
     if (!node)
-        return;
+        return false;
 
     let list = node.classList;
     if (!list)
-        return;
+        return false;
 
     // match all classes, ex: 'visible -shown'
     for (let item of classes.split(' ')) {
@@ -480,21 +551,19 @@ function HasClasses(node, classes) {
 /**
  * Hide nodes
  * + handle dn
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent
- * @example
- * Hide('body')     // hide the body
- * Hide('a')        // hide all links
  */
 function Hide(sel, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.classList.remove('dn');
         sel.style.display = 'none';
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.classList.remove('dn');
         node.style.display = 'none';
     }, parent);
@@ -502,45 +571,43 @@ function Hide(sel, parent) {
 
 /**
  * Get / set HTML
- * @param {string|Node} sel CSS selector or node
- * @param {string=} html
+ * @param {Node|string} sel CSS selector or node
+ * @param {string|number=} html
  * @param {Node=} parent
  * @returns {string} html of the first matched node
- * @example
- * HTML(document.documentElement)       // get the HTML of the whole page
- * HTML('a')                            // get the HTML of the first link
- * HTML('a', '<strong>hello</strong>')  // replace the content of all links
  */
 function HTML(sel, html, parent) {
-    if (!sel) return;
+    if (!sel)
+        return '';
     if (IsObject(sel)) {
-        if (html !== undefined && html != sel.innerHTML)
-            sel.innerHTML = html;
+        if (html !== undefined) {
+            html += '';
+            if (html != sel.innerHTML)
+                sel.innerHTML = html;
+            return html;
+        }
         return sel.innerHTML;
     }
     //
+    if (html === undefined) {
+        let node = _(sel, parent);
+        return node? node.innerHTML: '';
+    }
+    html += '';
     let result;
-    E(sel, node => {
-        if (html !== undefined && html != node.innerHTML)
+    E(/** @type {string} */(sel), node => {
+        if (html != node.innerHTML)
             node.innerHTML = html;
-        // FUTURE: use ?? operator
-        if (result == undefined)
-            result = node.innerHTML;
+        if (result === undefined)
+            result = html;
     }, parent);
-    return result;
+    return result || '';
 }
 
 /**
  * Compute the index of the node (how many siblings are before it)
- * @param {string|Node} node CSS selector or node
+ * @param {Node|string} node CSS selector or node
  * @returns {number} computed index
- * @example
- * <tr>
- *     <td id="first"></td>
- *     <td id="second"></td>
- * </tr>
- * Index(Id('first'))       // 1
- * Index(Id('second'))      // 2
  */
 function Index(node) {
     if (IsString(node))
@@ -558,68 +625,64 @@ function Index(node) {
 
 /**
  * Input event on nodes
- * @param {string|Node} sel CSS selector or node
- * @param {function} callback (event)
+ * @param {Node|string} sel CSS selector or node
+ * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * Input('input[sb-field=username]', e => {LS(e)})   // username is being modified
  */
 function Input(sel, callback, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.oninput = callback;
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.oninput = callback;
     }, parent);
 }
 
 /**
  * Insert nodes into a parent
- * @param {string|Node} parent
- * @param {Node[]} nodes
- * @param {boolean=} preprend should the nodes be preprended or appended?
- * @example
- * InsertNodes(#chat', nodes, true)     // preprend
+ * @param {Node|string} parent
+ * @param {!Array<Node>} nodes
+ * @param {boolean=} prepend should the nodes be preprended or appended?
  */
-function InsertNodes(parent, nodes, preprend) {
+function InsertNodes(parent, nodes, prepend) {
     if (IsString(parent))
         parent = _(parent);
     if (!parent)
         return;
 
-    for (let node of nodes) {
-        let child = parent.firstChild;
-        if (child && preprend)
+    let child = parent.firstChild;
+    for (let node of nodes)
+        if (prepend && child)
             parent.insertBefore(node, child);
         else
             parent.appendChild(node);
-    }
 }
 
 /**
  * Find a parent node by tagName and class
- * @param {string|Node} node CSS selector or node
- * @param {string=} attrs
- * @param {string=} class_ 'live-pv|xmoves'
- * @param {boolean=} self true => the parent can be the node itself
- * @param {string=} tag 'a div'
- * @returns {Node=} parent node or null or undefined
- * @example
- * Parent(node, {attrs: 'id=ok', tag: 'div')        // find a parent with tag <div> and whose ID='ok'
- * Parent(node, {attrs: 'id=ok', tag: 'a div')      // find a parent with tag <a> or <div> and whose ID='ok'
+ * @param {Node|string|EventTarget} node CSS selector or node
+ * @param {Object} obj
+ * @param {string=} obj.attrs
+ * @param {string=} obj.class_ 'live-pv|xmoves'
+ * @param {boolean=} obj.self true => the parent can be the node itself
+ * @param {string=} obj.tag 'a div'
+ * @returns {Node} parent node or null or undefined
  */
 function Parent(node, {tag, class_, attrs, self}={}) {
     if (IsString(node))
         node = _(node);
     if (!node)
-        return;
+        return null;
 
     let aitems = attrs? attrs.split(' '): [],
         citems = class_? class_.split(' '): [],
-        parent = node,
+        parent = /** @type {Node} */(node),
         tags = tag? tag.split(' '): null;
 
     for (let depth = 0; ; depth ++) {
@@ -677,21 +740,20 @@ function Parent(node, {tag, class_, attrs, self}={}) {
 
 /**
  * Change properties
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {string} prop property to change
  * @param {string|boolean=} value value to set
  * @param {Node=} parent
- * @example
- * Prop('input', 'checked', true)       // check the button
  */
 function Prop(sel, prop, value, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel[prop] = value;
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node[prop] = value;
     }, parent);
 }
@@ -699,25 +761,21 @@ function Prop(sel, prop, value, parent) {
 /**
  * Show / hide nodes
  * + handle dn
- * @param {string|Node} sel CSS selector or node
- * @param {boolean=} show true to show the node
+ * @param {Node|string} sel CSS selector or node
+ * @param {*=} show true to show the node
  * @param {Node=} parent
- * @param {string=} [mode=''] value to use for node.display, by default '' but could be block
- * @example
- * S('a')                       // hide all links
- * S('a', true)                 // show all links
- * S('a', true, null, 'block')  // show all links with display=block
- * S('a', true, null, 'none')   // hide all links
+ * @param {string=} mode to use for node.display, by default '' but could be block
  */
 function S(sel, show, parent, mode='') {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.classList.remove('dn');
         sel.style.display = show? mode: 'none';
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.classList.remove('dn');
         node.style.display = show? mode: 'none';
     }, parent);
@@ -725,7 +783,7 @@ function S(sel, show, parent, mode='') {
 
 /**
  * Safe _
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent parent node, document by default
  * @returns {Node|Object} found node or {}
  */
@@ -735,7 +793,7 @@ function Safe(sel, parent) {
 
 /**
  * Safe Id
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent parent node, document by default
  * @returns {Node|Object} found node or {}
  */
@@ -745,20 +803,25 @@ function SafeId(sel, parent) {
 
 /**
  * Scroll the document to the top
- * @param {string|number=} top if undefined then returns the scrollTop value
+ * @param {Node|string|number=} top if undefined then returns the scrollTop value
  * @param {boolean=} smooth
  * @param {number=} offset
- * @returns {number}
+ * @returns {number|undefined}
  */
 function ScrollDocument(top, smooth, offset=0) {
     let scroll = document.scrollingElement;
     if (top != undefined) {
         // top can be a selector too
         if (isNaN(top)) {
-            top = _(top);
+            top = _(/** @type {Node|string} */(top));
             if (!top)
                 return;
-            top = top.offsetTop;
+            let value = 0;
+            while (top) {
+                value += top.offsetTop;
+                top = top.offsetParent;
+            }
+            top = value;
         }
         if (smooth) {
             window.scrollTo({top: Max(0, top + offset), behavior: 'smooth'});
@@ -772,22 +835,20 @@ function ScrollDocument(top, smooth, offset=0) {
 /**
  * Show nodes
  * + handle dn
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent
- * @param {string=} [mode=''] value to use for node.display, by default '' but could be block
- * @example
- * Show('body')     // show the body
- * Show('a')        // show all links
+ * @param {string=} mode to use for node.display, by default '' but could be block
  */
 function Show(sel, parent, mode='') {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.classList.remove('dn');
         sel.style.display = mode;
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.classList.remove('dn');
         node.style.display = mode;
     }, parent);
@@ -795,176 +856,311 @@ function Show(sel, parent, mode='') {
 
 /**
  * Change the style of nodes
- * @param {string|Node} sel CSS selector or node
- * @param {string} style
- * @param {boolean=} [add=true] true to set/add the style, otherwise remove it
- * @param {Node=} parent
- * @example
- * Style(document.documentElement, 'opacity:0.1')   // make the page almost transparent
- * Style('a', 'opacity:0.5')                        // set the opacity of all links
- * Style('a', 'opacity', false)                     // remove the opacity from all links
+ * @param {Node|string} sel CSS selector or node
+ * @param {Array<*>|string} styles [['font-size', 10, flag=]], flag:0=add, 1=remove, 2=toggle
+ * @param {boolean=} add to set/add the style, otherwise remove it
+ * @param {Node?=} parent
  */
-function Style(sel, style, add=true, parent=null) {
-    if (!sel) return;
+function Style(sel, styles, add=true, parent=null) {
+    if (!sel)
+        return;
 
+    // string
+    if (IsString(styles)) {
+        styles = /** @type {string} */(styles);
+        if (IsObject(sel)) {
+            let list = sel.style;
+            styles.split(/\s*;+\s*/).forEach(item => {
+                let split,
+                    first = item.substr(0, 1),
+                    right = item.substr(1);
+                if (first == '-') {
+                    split = right.split(':');
+                    if (add)
+                        list.removeProperty(split[0]);
+                    else
+                        list.setProperty(split[0], split[1]);
+                } else if (first == '+') {
+                    split = right.split(':');
+                    if (add)
+                        list.setProperty(split[0], split[1]);
+                    else
+                        list.removeProperty(split[0]);
+                } else if (first == '^') {
+                    split = right.split(':');
+                    if (list.getPropertyValue(split[0]))
+                        list.removeProperty(split[0]);
+                    else
+                        list.setProperty(split[0], split[1]);
+                } else {
+                    split = item.split(':');
+                    if (add)
+                        list.setProperty(split[0], split[1]);
+                    else
+                        list.removeProperty(split[0]);
+                }
+            });
+            return;
+        }
+        //
+        E(/** @type {string} */(sel), node => {
+            let list = node.style;
+            styles.split(/\s*;+\s*/).forEach(item => {
+                let split,
+                    first = item.substr(0, 1),
+                    right = item.substr(1);
+                if (first == '-') {
+                    split = right.split(':');
+                    if (add)
+                        list.removeProperty(split[0]);
+                    else
+                        list.setProperty(split[0], split[1]);
+                } else if (first == '+') {
+                    split = right.split(':');
+                    if (add)
+                        list.setProperty(split[0], split[1]);
+                    else
+                        list.removeProperty(split[0]);
+                } else if (first == '^') {
+                    split = right.split(':');
+                    if (list.getPropertyValue(split[0]))
+                        list.removeProperty(split[0]);
+                    else
+                        list.setProperty(split[0], split[1]);
+                } else {
+                    split = item.split(':');
+                    if (add)
+                        list.setProperty(split[0], split[1]);
+                    else
+                        list.removeProperty(split[0]);
+                }
+            });
+        }, parent);
+    }
+
+    // array
     if (IsObject(sel)) {
+        styles = /** @type {Array<*>} */(styles);
         let list = sel.style;
-        style.split(/\s*;+\s*/).forEach(item => {
-            let split,
-                first = item.substr(0, 1),
-                right = item.substr(1);
-            if (first == '-') {
-                split = right.split(':');
+        for (let [name, value, flag] of styles) {
+            if (!name)
+                continue;
+            // add
+            if (!flag) {
                 if (add)
-                    list.removeProperty(split[0]);
+                    list.setProperty(name, value);
                 else
-                    list.setProperty(split[0], split[1]);
-            } else if (first == '+') {
-                split = right.split(':');
-                if (add)
-                    list.setProperty(split[0], split[1]);
-                else
-                    list.removeProperty(split[0]);
-            } else if (first == '^') {
-                split = right.split(':');
-                if (list.getPropertyValue(split[0]))
-                    list.removeProperty(split[0]);
-                else
-                    list.setProperty(split[0], split[1]);
-            } else {
-                split = item.split(':');
-                if (add)
-                    list.setProperty(split[0], split[1]);
-                else
-                    list.removeProperty(split[0]);
+                    list.removeProperty(name);
             }
-        });
+            // remove
+            else if (flag > 0) {
+                if (add)
+                    list.removeProperty(name);
+                else
+                    list.setProperty(name, value);
+            }
+            // toggle
+            else if (list.getPropertyValue(name))
+                list.removeProperty(name);
+            else
+                list.setProperty(name, value);
+        }
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         let list = node.style;
-        style.split(/\s*;+\s*/).forEach(item => {
-            let split,
-                first = item.substr(0, 1),
-                right = item.substr(1);
-            if (first == '-') {
-                split = right.split(':');
+        for (let [name, value, flag] of styles) {
+            if (!name)
+                continue;
+            // add
+            if (!flag) {
                 if (add)
-                    list.removeProperty(split[0]);
+                    list.setProperty(name, value);
                 else
-                    list.setProperty(split[0], split[1]);
-            } else if (first == '+') {
-                split = right.split(':');
-                if (add)
-                    list.setProperty(split[0], split[1]);
-                else
-                    list.removeProperty(split[0]);
-            } else if (first == '^') {
-                split = right.split(':');
-                if (list.getPropertyValue(split[0]))
-                    list.removeProperty(split[0]);
-                else
-                    list.setProperty(split[0], split[1]);
-            } else {
-                split = item.split(':');
-                if (add)
-                    list.setProperty(split[0], split[1]);
-                else
-                    list.removeProperty(split[0]);
+                    list.removeProperty(name);
             }
-        });
+            // remove
+            else if (flag > 0) {
+                if (add)
+                    list.removeProperty(name);
+                else
+                    list.setProperty(name, value);
+                break;
+            }
+            // toggle
+            else if (list.getPropertyValue(name))
+                list.removeProperty(name);
+            else
+                list.setProperty(name, value);
+        }
     }, parent);
 }
 
 /**
  * Submit event on nodes
- * @param {string|Node} sel CSS selector or node
- * @param {function} callback
+ * @param {Node|string} sel CSS selector or node
+ * @param {Function} callback
  * @param {Node=} parent
  * @example
  * Submit('body', () => {return false})    // prevent any Submit
  */
 function Submit(sel, callback, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         sel.onsubmit = callback;
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         node.onsubmit = callback;
     }, parent);
 }
 
 /**
  * Get / set the textContent of nodes
- * @param {string|Node} sel CSS selector or node
- * @param {string=} text
+ * @param {Node|string} sel CSS selector or node
+ * @param {string|number=} text
  * @param {Node=} parent
  * @returns {string}
- * @example
- * TEXT('title')                    // get the title of the page
- * TEXT(document.documentElement)   // get the text of the whole page
- * TEXT('a', 'hello')               // replace the content of all links
  */
 function TEXT(sel, text, parent) {
-    if (!sel) return;
+    if (!sel)
+        return '';
     if (IsObject(sel)) {
-        if (text !== undefined)
-            sel.innerHTML = text;
+        if (text !== undefined) {
+            text += '';
+            if (!sel.childElementCount) {
+                let child = sel.firstChild;
+                if (!child)
+                    sel.appendChild(document.createTextNode(text));
+                else if (child.nodeType == 3)
+                    child.nodeValue = text;
+                else if (sel.innerHTML != text)
+                    sel.textContent = text;
+            }
+            else if (sel.innerHTML != text)
+                 sel.textContent = text;
+            return text;
+        }
         return sel.textContent.trim();
     }
     //
+    if (text === undefined) {
+        let node = _(sel, parent);
+        return node? node.textContent.trim(): '';
+    }
+    text += '';
     let result;
-    E(sel, node => {
-        if (text !== undefined)
-            node.innerHTML = text;
-        // FUTURE: use ?? operator
+    E(/** @type {string} */(sel), node => {
+        if (!node.childElementCount) {
+            let child = node.firstChild;
+            if (!child)
+                node.appendChild(document.createTextNode(text));
+            else if (child.nodeType == 3)
+                child.nodeValue = text;
+            else if (node.innerHTML != text)
+                node.textContent = text;
+        }
+        else if (node.innerHTML != text)
+            node.textContent = text;
         if (result === undefined)
-            result = node.textContent.trim();
+            result = text;
     }, parent);
-    return result;
+    return result || '';
+}
+
+/**
+ * Get / set TEXT/HTML of nodes
+ * @param {Node|string} sel CSS selector or node
+ * @param {string|number=} text
+ * @param {Node=} parent
+ * @returns {string}
+ */
+function TextHTML(sel, text, parent) {
+    if (!sel)
+        return '';
+    if (IsObject(sel)) {
+        if (text !== undefined) {
+            text += '';
+            if (!sel.childElementCount && !text.includes('<')) {
+                let child = sel.firstChild;
+                if (!child)
+                    sel.appendChild(document.createTextNode(text));
+                else if (child.nodeType == 3)
+                    child.nodeValue = text;
+                else if (sel.innerHTML != text)
+                    sel.textContent = text;
+                return text;
+            }
+            else if (sel.innerHTML != text)
+                sel.innerHTML = text;
+            return text;
+        }
+        return sel.textContent.trim();
+    }
+    //
+    if (text === undefined) {
+        let node = _(sel, parent);
+        return node? node.textContent.trim(): '';
+    }
+    text += '';
+    let is_html = (text.includes('<')),
+        result;
+    E(/** @type {string} */(sel), node => {
+        if (!is_html && !node.childElementCount) {
+            let child = node.firstChild;
+            if (!child)
+                node.appendChild(document.createTextNode(text));
+            else if (child.nodeType == 3)
+                child.nodeValue = text;
+            else if (node.innerHTML != text)
+                node.textContent = text;
+        }
+        else if (node.innerHTML != text)
+            node.innerHTML = text;
+        if (result === undefined)
+            result = text;
+    }, parent);
+    return result || '';
 }
 
 /**
  * Toggle nodes
  * + handle dn
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent
- * @example
- * Toggle('a')      // toggle all links
  */
 function Toggle(sel, parent) {
-    if (!sel) return;
+    if (!sel)
+        return;
     if (IsObject(sel)) {
         S(sel, !Visible(sel));
         return;
     }
     //
-    E(sel, node => {
+    E(/** @type {string} */(sel), node => {
         S(node, !Visible(node));
     }, parent);
 }
 
 /**
  * Quick check if all nodes are visible
- * @param {string|Node} sel CSS selector or node
+ * @param {Node|string} sel CSS selector or node
  * @param {Node=} parent
- * @returns {boolean} true if ALL nodes are visible
- * @example
- * Visible('body')  // true
- * Visible('.dn')   // false
+ * @returns {boolean?} true if ALL nodes are visible
  */
 function Visible(sel, parent) {
-    if (!sel) return;
+    if (!sel)
+        return null;
     if (IsObject(sel)) {
         if (sel.classList.contains('dn'))
             return false;
         return sel.style.display != 'none' && sel.style.visibility != 'hidden';
     }
     //
-    let nodes = A(sel, parent);
+    let nodes = A(/** @type {string} */(sel), parent);
     if (!nodes.length)
         return false;
     for (let node of nodes) {
@@ -979,21 +1175,31 @@ function Visible(sel, parent) {
 // NON-NODE FUNCTIONS
 /////////////////////
 /**
+ * Utility for requestAnimationFrame
+ * @param {Function} callback
+ * @param {boolean=} direct
+ * @returns {number|*}
+ */
+function AnimationFrame(callback, direct) {
+    return direct? callback(): requestAnimationFrame(() => callback());
+}
+
+/**
  * Convert an WASM vector to JS vector
- * @param {Object|*[]} vector
- * @returns {Object[]}
+ * @param {Object|Array<*>} vector
+ * @returns {!Array<*>}
  */
 function ArrayJS(vector) {
     if (vector.size)
         vector = Array(vector.size()).fill(0).map((_, id) => vector.get(id));
-    return vector;
+    return /** @type {!Array<*>} */(vector);
 }
 
 /**
  * Choose a random element in an array
- * @param {*[]} array
+ * @param {!Array<*>} array
  * @param {number} length
- * @returns {*[]}
+ * @returns {*}
  */
 function Choice(array, length) {
     return array[Floor(Random() * (length || array.length))];
@@ -1011,12 +1217,14 @@ function Choice(array, length) {
  * @returns {number} clamped number
  */
 function Clamp(number, min, max, min_set) {
-    return (number < min)? (Number.isFinite(min_set)? min_set: min): (number > max? max: number);
+    return (number < min)?
+        (Number.isFinite(/** @type {number} */(min_set))? /** @type {number} */(min_set): min)
+    : (number > max? max: number);
 }
 
 /**
  * Remove all properties of an object
- * @param {Object} dico
+ * @param {!Object} dico
  * @returns {Object}
  */
 function Clear(dico) {
@@ -1030,7 +1238,7 @@ function Clear(dico) {
  * Copy text to the clipboard
  * - must be called from an event callback
  * @param {string} text
- * @param {function=} callback
+ * @param {Function=} callback
  */
 function CopyClipboard(text, callback) {
     if (navigator.clipboard)
@@ -1042,7 +1250,7 @@ function CopyClipboard(text, callback) {
     else {
         let node = CreateNode('input');
         node.value = text;
-        Style(node, `left:-9999px;position:absolute`);
+        Style(node, [['left', '-9999px'], ['position', 'absolute']]);
         document.body.appendChild(node);
         node.select();
         if (document.execCommand)
@@ -1075,8 +1283,8 @@ function DateOffset(offset) {
  * @returns {number}
  */
 function DefaultFloat(value, def) {
-    if (Number.isFinite(value))
-        return value;
+    if (Number.isFinite(/** @type {number} */(value)))
+        return /** @type {number} */(value);
     value = parseFloat(value);
     return isNaN(value)? def: value;
 }
@@ -1084,19 +1292,19 @@ function DefaultFloat(value, def) {
 /**
  * Default int conversion
  * @param {string|number} value
- * @param {number} def default value when the value is not a valid number
- * @returns {number}
+ * @param {number|string|boolean} def default value when the value is not a valid number
+ * @returns {number|string|boolean}
  */
 function DefaultInt(value, def) {
-    if (Number.isInteger(value))
-        return value;
-    value = parseInt(value);
+    if (Number.isInteger(/** @type {number} */(value)))
+        return /** @type {number} */(value);
+    value = parseInt(value, 10);
     return isNaN(value)? def: value;
 }
 
 /**
  * Download a JSON object
- * @param {Object} object
+ * @param {Object|string} object
  * @param {string} name output filename
  * @param {number=} mode 0:JSON, 1:binary, 2:text
  * @param {string=} space JSON space for pretty output
@@ -1108,15 +1316,24 @@ function DownloadObject(object, name, mode, space) {
     if (mode == 1)
         text = object;
     else {
-        let json = (mode == 2)? object: Stringify(object, null, space),
-            type_ = (mode == 2)? 'plain': 'json';
+        let json, type_;
+        if (mode == 2) {
+            if (!IsString(object))
+                return;
+            json = object;
+            type_ = 'plain';
+        }
+        else {
+            json = Stringify(object, null, space);
+            type_ = 'json';
+        }
         // add a newline to formatted JSON
         if (space && json.slice(-1) != '\n')
             json += '\n';
-        text = `data:text/${type_};charset=utf-8,${encodeURIComponent(json)}`;
+        text = `data:text/${type_};charset=utf-8,${encodeURIComponent(/** @type {string} */(json))}`;
     }
 
-    node.setAttribute('href', text);
+    node.setAttribute('href', /** @type {string} */(text));
     node.setAttribute('download', name);
      // required for firefox
     document.body.appendChild(node);
@@ -1126,21 +1343,21 @@ function DownloadObject(object, name, mode, space) {
 
 /**
  * Format a vector or float ...
- * @param {Object} vector
+ * @param {*} vector
  * @param {string=} sep
  * @param {number=} align
- * @returns {string}
+ * @returns {string?}
  */
-function Format(vector, sep=', ', align=null) {
+function Format(vector, sep=', ', align=undefined) {
     // null, undefined
     if (vector == null)
-        return vector;
+        return null;
     // [1, 2, 3]
     if (IsArray(vector))
         return vector.map(value => Format(IsArray(value)? value[0]: value, sep, align)).join(sep);
     // Set()
     else if (vector instanceof Set)
-        return vector.size;
+        return vector.size + '';
     // dict or quaternion, vector3, ...
     else if (vector instanceof Object) {
         let items = [];
@@ -1153,18 +1370,18 @@ function Format(vector, sep=', ', align=null) {
     }
 
     // float, int, text ...
-    return FormatFloat(vector, align);
+    return FormatFloat(/** @type {number|string} */(vector), align);
 }
 
 /**
  * Format a float
- * @param {number} text
+ * @param {number|string} text
  * @param {number=} align
  * @returns {string}
  */
 function FormatFloat(text, align) {
     if (IsFloat(text))
-        text = text.toFixed(3);
+        text = /** @type {number} */(text).toFixed(3);
     if (text === '-0.000' || text === '0.000')
         text = '0';
 
@@ -1173,20 +1390,20 @@ function FormatFloat(text, align) {
         if (text.length < align)
             text = ('        ' + text).slice(-align);
     }
-    return text;
+    return text + '';
 }
 
 /**
  * Format a number:
  * - B: billion, M: million, K: thousand
  * - NaN => n/a
- * @param {number} number
+ * @param {number|string} number
  * @param {string=} def default value used when number is not a number
  * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
- * @returns {number}
+ * @param {boolean=} is_si use SI units
+ * @returns {string}
  */
-function FormatUnit(number, def, keep_decimal)
-{
+function FormatUnit(number, def, keep_decimal, is_si=true) {
     let unit = '';
 
     if (isNaN(number)) {
@@ -1194,7 +1411,7 @@ function FormatUnit(number, def, keep_decimal)
             return def;
 
         // isNaN will return true for 'hello', but Number.isNaN won't
-        if (Number.isNaN(number))
+        if (Number.isNaN(/** @type {number} */(number)))
             number = 'N/A';
         else
             number = `${number}`;
@@ -1204,7 +1421,7 @@ function FormatUnit(number, def, keep_decimal)
     else {
         if (number >= 1e9) {
             number /= 1e8;
-            unit = 'B';
+            unit = is_si? 'G': 'B';
         }
         else if (number >= 1e6) {
             number /= 1e5;
@@ -1228,7 +1445,7 @@ function FormatUnit(number, def, keep_decimal)
 /**
  * Extract the hours, minutes, seconds and 1/100th of seconds from a time in seconds
  * @param {number} time
- * @returns {number[]} hours, mins, secs, cs
+ * @returns {!Array<number>} hours, mins, secs, cs
  */
 function FromSeconds(time) {
     let secs = Floor(time),
@@ -1244,8 +1461,8 @@ function FromSeconds(time) {
 
 /**
  * Convert stamp to date
- * @param {number} stamp timestamp in seconds
- * @returns {string[]} [date, time] string
+ * @param {number=} stamp timestamp in seconds
+ * @returns {!Array<string>} [date, time] string
  */
 function FromTimestamp(stamp) {
     if (!stamp)
@@ -1289,7 +1506,7 @@ function HashText(text) {
  * @param {string} color
  * @param {boolean=} get_string
  * @param {number=} alpha
- * @returns {string|number[]}
+ * @returns {string|Array<number>}
  */
 function Hex2RGB(color, get_string, alpha) {
     let off = (color[0] == '#')? 1: 0,
@@ -1331,7 +1548,7 @@ function IsDigit(char) {
 /**
  * Load a library
  * @param {string} url
- * @param {function=} callback
+ * @param {Function=} callback
  * @param {Object=} extra
  * @example
  * LoadLibrary('./script/3d.js')
@@ -1344,8 +1561,35 @@ function LoadLibrary(url, callback, extra) {
 }
 
 /**
+ * Merge 2 objects recursively
+ * @param {!Object} dico
+ * @param {!Object} extras
+ * @param {number=} flag &1:replace existing values, &2:remove a key with "undefined", &4:copy object
+ * @returns {!Object}
+ */
+function Merge(dico, extras, flag=1) {
+    Keys(extras).forEach(key => {
+        let extra = extras[key];
+        if (extra == undefined) {
+            if (flag & 2)
+                delete dico[key];
+        }
+        else if (IsObject(extra)) {
+            let source = dico[key];
+            if (IsObject(source))
+                Merge(source, extra, flag);
+            else if ((flag & 1) || dico[key] == undefined)
+                dico[key] = (flag & 4)? {...extra}: extra;
+        }
+        else if ((flag & 1) || dico[key] == undefined)
+            dico[key] = extra;
+    });
+    return dico;
+}
+
+/**
  * Get the timestamp in seconds
- * @params {boolean=} as_float get seconds as float instead of int
+ * @param {boolean=} as_float get seconds as float instead of int
  * @returns {number} seconds
  * @example
  * Now(true)    // 1573706158.324 = sec
@@ -1371,8 +1615,8 @@ function Pad(value, size=2, pad='00') {
 /**
  * Try to parse JSON data
  * @param {string} text
- * @param {Object=} def
- * @returns {Object}
+ * @param {*=} def
+ * @returns {*}
  */
 function ParseJSON(text, def) {
     let json;
@@ -1387,16 +1631,16 @@ function ParseJSON(text, def) {
 
 /**
  * URL get query string, ordered + keep/discard/replace some elements
- * @param {Object=} discard list of keys to discard
- * @param {Object=} keep list of keys to keep
- * @param {string=} query use this url instead of location[key]
- * @param {Object=} replaces add or replace items
- * @param {string=} key hash, search
- * @param {boolean=} string true to have a sorted string, otherwise get a sorted object
+ * @param {Object} obj
+ * @param {Object=} obj.discard list of keys to discard
+ * @param {Object=} obj.keep list of keys to keep
+ * @param {string=} obj.query use this url instead of location[key]
+ * @param {Object=} obj.replaces add or replace items
+ * @param {string=} obj.key hash, search
+ * @param {boolean=} obj.string true to have a sorted string, otherwise get a sorted object
  * @returns {string|Object} result object or string
  */
-function QueryString({discard, keep, key='search', replace, query, string}={})
-{
+function QueryString({discard, keep, key='search', replace, query, string}={}) {
     let dico = {},
         items = query? query.split('&'): (key? location[key].slice(1).split('&'): []),
         vector = [];
@@ -1423,7 +1667,7 @@ function QueryString({discard, keep, key='search', replace, query, string}={})
         return vector.join('&');
     }
 
-    // {'language': 'eng', 'section': '1'}
+    // {language: 'eng', section: '1'}
     Keys(dico).forEach(key => {
         vector.push([key, dico[key]]);
     });
@@ -1463,12 +1707,13 @@ function RandomSpread(range) {
 /**
  * Load a resource
  * @param {string} url
- * @param {function} callback (status, text, xhr)
- * @param {*=} content
- * @param {string=} form add the content to a new FormData
- * @param {Object=} headers
- * @param {string=} method GET, POST
- * @param {string=} type arraybuffer, blob, document, json, text
+ * @param {Function} callback (status, text, xhr)
+ * @param {Object} obj
+ * @param {*=} obj.content
+ * @param {string=} obj.form add the content to a new FormData
+ * @param {Object=} obj.headers
+ * @param {string=} obj.method GET, POST
+ * @param {string=} obj.type arraybuffer, blob, document, json, text
  * @example
  * // get the context of the file
  * Resource('./fragment.frag', (status, text) => {LS(text)}, {type: 'text'})
@@ -1505,7 +1750,7 @@ function Resource(url, callback, {content=null, form, headers={}, method='GET', 
 
 /**
  * Same as Python's set_default
- * @param {Object} dico
+ * @param {!Object} dico
  * @param {string} key
  * @param {*} def
  * @returns {*} dico[key]
@@ -1523,7 +1768,7 @@ function SetDefault(dico, key, def) {
  * Smart split, tries with | and if not found, then with ' '
  * @param {string} text
  * @param {string=} char
- * @returns {string[]}
+ * @returns {!Array<string>}
  */
 function Split(text, char) {
     if (!text)
@@ -1548,12 +1793,34 @@ function Title(text) {
 
 /**
  * This can be replaced by the ?? operator in the future
- * @param {*} value
- * @param {*} def
- * @returns {*}
+ * @param {?} value
+ * @param {?} def
+ * @returns {?}
  */
 function Undefined(value, def) {
     return (value === undefined || Number.isNaN(value))? def: value;
+}
+
+/**
+ * Get the visible height
+ * - screen.height might be 0 on node.js
+ * @returns {number}
+ */
+function VisibleHeight() {
+    let screen_height = screen.height,
+        window_height = window.innerHeight;
+    return screen_height? Min(screen_height, window_height): window_height;
+}
+
+/**
+ * Get the visible width
+ * - screen.width might be 0 on node.js
+ * @returns {number}
+ */
+function VisibleWidth() {
+    let screen_width = screen.width,
+        window_width = window.innerWidth;
+    return screen_width? Min(screen_width, window_width): window_width;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1568,13 +1835,18 @@ if (typeof exports != 'undefined') {
         ArrayJS: ArrayJS,
         Assign: Assign,
         Atan: Atan,
+        Attrs: Attrs,
+        AttrsNS: AttrsNS,
         C: C,
+        CACHE_IDS: CACHE_IDS,
+        CacheId: CacheId,
         Clamp: Clamp,
         Class: Class,
         Clear: Clear,
         Contain: Contain,
         CopyClipboard: CopyClipboard,
         CreateNode: CreateNode,
+        CreateSVG: CreateSVG,
         DefaultFloat: DefaultFloat,
         DefaultInt: DefaultInt,
         E: E,
@@ -1587,14 +1859,16 @@ if (typeof exports != 'undefined') {
         From: From,
         FromSeconds: FromSeconds,
         FromTimestamp: FromTimestamp,
-        GLOBAL: GLOBAL,
         HashText: HashText,
         Hex2RGB: Hex2RGB,
         Hide: Hide,
         HTML: HTML,
         Id: Id,
+        Index: Index,
+        InsertNodes: InsertNodes,
         InvalidEmail: InvalidEmail,
         InvalidPhone: InvalidPhone,
+        IS_NODE: IS_NODE,
         IsArray: IsArray,
         IsDigit: IsDigit,
         IsFloat: IsFloat,
@@ -1602,30 +1876,41 @@ if (typeof exports != 'undefined') {
         IsObject: IsObject,
         IsString: IsString,
         Keys: Keys,
+        Log: Log,
         Lower: Lower,
         LS: LS,
         Max: Max,
+        Merge: Merge,
         Min: Min,
+        NAMESPACE_SVG: NAMESPACE_SVG,
         Now: Now,
         Pad: Pad,
+        Parent: Parent,
         ParseJSON: ParseJSON,
         PI: PI,
         Pow: Pow,
-        RandomInt: RandomInt,
+        Prop: Prop,
         QueryString: QueryString,
+        RandomInt: RandomInt,
         Round: Round,
         S: S,
         Safe: Safe,
         SafeId: SafeId,
         SetDefault: SetDefault,
+        Show: Show,
         Sign: Sign,
         Split: Split,
         Stringify: Stringify,
         Style: Style,
+        TEXT: TEXT,
+        TextHTML: TextHTML,
         Title: Title,
+        Toggle: Toggle,
         Undefined: Undefined,
         Upper: Upper,
         Visible: Visible,
+        VisibleHeight: VisibleHeight,
+        VisibleWidth: VisibleWidth,
     });
 }
 // >>

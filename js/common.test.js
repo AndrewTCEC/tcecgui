@@ -1,6 +1,6 @@
 // common.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-10-31
+// @version 2021-02-19
 //
 /*
 globals
@@ -9,12 +9,93 @@ expect, require, test
 'use strict';
 
 let {
-    Clamp, Clear, Contain, DefaultFloat, DefaultInt, Format, FormatFloat, FormatUnit, FromSeconds, FromTimestamp,
-    HashText, Hex2RGB, InvalidEmail, InvalidPhone, IsDigit, IsFloat, IsObject, IsString, Pad, ParseJSON, PI,
-    QueryString, SetDefault, Split, Title, Undefined,
+    _, A, Attrs, CACHE_IDS, CacheId, Clamp, Class, Clear, Contain, CreateNode, DefaultFloat, DefaultInt, E, Format,
+    FormatFloat, FormatUnit, From, FromSeconds, FromTimestamp, HashText, Hex2RGB, Hide, HTML, Id, Index, InsertNodes,
+    InvalidEmail, InvalidPhone, IsDigit, IsFloat, IsObject, IsString, Keys, Merge, Pad, Parent, ParseJSON, PI, Prop,
+    QueryString, S, SetDefault, Show, Split, Style, TEXT, TextHTML, Title, Toggle, Undefined, Visible, VisibleHeight,
+    VisibleWidth,
 } = require('./common.js');
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// _
+[
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '', null],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '#link', null],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '#name', '<div id="name">N</div>'],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', 'a', '<a href="#">L1</a>'],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '.link', '<a class="link">L2</a>'],
+].forEach(([html, sel, answer], id) => {
+    test(`_:${id}`, () => {
+        let soup = CreateNode('div', html),
+            node = _(sel, soup);
+        expect(node? node.outerHTML: node).toEqual(answer);
+    });
+});
+
+// A
+[
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '', []],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '#link', []],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '#name', ['<div id="name">N</div>']],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>',
+        'a',
+        ['<a href="#">L1</a>', '<a class="link">L2</a>'],
+    ],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '.link', ['<a class="link">L2</a>']],
+].forEach(([html, sel, answer], id) => {
+    test(`A:${id}`, () => {
+        let soup = CreateNode('div', html),
+            nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
+    });
+});
+
+// Attrs
+[
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>',
+        '*',
+        {id: 'new'},
+        ['<div id="new">N</div>', '<a href="#" id="new">L1</a>', '<a class="link" id="new">L2</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>',
+        'a',
+        {href: 'www'},
+        ['<a href="www">L1</a>', '<a class="link" href="www">L2</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>',
+        '#name',
+        {'data-t': 'Welcome!', href: 'www'},
+        ['<div id="name" data-t="Welcome!" href="www">N</div>'],
+    ],
+].forEach(([html, sel, attrs, answer], id) => {
+    test(`Attrs:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Attrs(sel, attrs, soup);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
+    });
+});
+
+// CacheId
+[
+    ['<a id="one">one</a><i id="two">2</i>', 'zero', [], null],
+    ['<a id="one">one</a><i id="two">2</i>', 'one', ['one'], '<a id="one">one</a>'],
+    ['<a id="one">one</a><i id="two">2</i>', 'one', ['one'], '<a id="one">one</a>'],
+    ['<a id="one">one</a><i id="two">2</i>', 'two', ['one', 'two'], '<i id="two">2</i>'],
+    ['<a id="one">one</a><i id="two">2</i>', 'zero', ['one', 'two'], null],
+].forEach(([html, sel, answer, answer_nodes], id) => {
+    test(`CacheId:${id}`, () => {
+        let soup = CreateNode('div', html),
+            node = CacheId(sel, soup);
+        expect(Keys(CACHE_IDS)).toEqual(answer);
+        expect(node? node.outerHTML: node).toEqual(answer_nodes);
+    });
+});
 
 // Clamp
 [
@@ -26,6 +107,36 @@ let {
 ].forEach(([number, min, max, min_set, answer], id) => {
     test(`Clamp:${id}`, () => {
         expect(Clamp(number, min, max, min_set)).toEqual(answer);
+    });
+});
+
+// Class
+[
+    // string
+    ['<i class="book">N</i>', 'i', '', undefined, 'book'],
+    ['<i class="book">N</i>', 'i', '-book', undefined, ''],
+    ['<i class="book">N</i>', 'i', '^book', undefined, ''],
+    ['<i class="book">N</i>', 'i', '^book', true, ''],
+    ['<i class="book">N</i>', 'i', '^book', false, ''],
+    ['<i class="book">N</i>', 'i', 'book -fail', true, 'book'],
+    ['<i class="book">N</i>', 'i', 'book -fail', false, 'fail'],
+    ['<i class="book">N</i>', 'i', 'real +turn', undefined, 'book real turn'],
+    ['<i class="book">N</i>', 'i', 'real ^turn ^book', undefined, 'real turn'],
+    // array
+    ['<i class="book">N</i>', 'i', [], undefined, 'book'],
+    ['<i class="book">N</i>', 'i', [['book', 1]], undefined, ''],
+    ['<i class="book">N</i>', 'i', [['book', -1]], undefined, ''],
+    ['<i class="book">N</i>', 'i', [['book', -1]], true, ''],
+    ['<i class="book">N</i>', 'i', [['book', -1]], false, ''],
+    ['<i class="book">N</i>', 'i', [['book'], ['fail', true]], true, 'book'],
+    ['<i class="book">N</i>', 'i', [['book'], ['fail', 1]], false, 'fail'],
+    ['<i class="book">N</i>', 'i', [['real'], ['turn', 0]], undefined, 'book real turn'],
+    ['<i class="book">N</i>', 'i', [['real'], ['turn', false], ['book', -1]], undefined, 'real turn'],
+].forEach(([html, sel, classes, add, answer], id) => {
+    test(`Class:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Class(sel, classes, add, soup);
+        expect(From(_(sel, soup).classList).join(' ')).toEqual(answer);
     });
 });
 
@@ -49,6 +160,18 @@ let {
 ].forEach(([list, pattern, answer], id) => {
     test(`Contain:${id}`, () => {
         expect(Contain(list, pattern)).toEqual(answer);
+    });
+});
+
+// CreateNode
+[
+    ['i', null, {}, '<i></i>'],
+    ['i', 'hello', {}, '<i>hello</i>'],
+    ['a', 'Bxc3', {class: 'real dn', 'data-i': 46}, '<a class="real dn" data-i="46">Bxc3</a>'],
+].forEach(([tag, html, attrs, answer], id) => {
+    test(`CreateNode:${id}`, () => {
+        let node = CreateNode(tag, html, attrs);
+        expect(node.outerHTML).toEqual(answer);
     });
 });
 
@@ -82,6 +205,22 @@ let {
     });
 });
 
+// E
+[
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '*', 'NL1L2'],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', 'a', 'L1L2'],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '#name', 'N'],
+].forEach(([html, sel, answer], id) => {
+    test(`E:${id}`, () => {
+        let soup = CreateNode('div', html),
+            text = '';
+        E(sel, node => {
+            text += TEXT(node);
+        }, soup);
+        expect(text).toEqual(answer);
+    });
+});
+
 // Format
 [
     [[-1, 1, PI], undefined, undefined, '-1, 1, 3.142'],
@@ -106,41 +245,43 @@ let {
 
 // FormatUnit
 [
-    [1000000000, undefined, undefined, '1B'],
-    [1000000000, undefined, true, '1.0B'],
-    [1000000, undefined, undefined, '1M'],
-    [10000, undefined, undefined, '10k'],
-    [1000, undefined, undefined, '1000'],
-    [100, undefined, undefined, '100'],
-    [100, undefined, true, '100.0'],
-    [7841319402, undefined, undefined, '7.8B'],
-    [58335971.81109362, undefined, undefined, '58.3M'],
-    [58335971, undefined, undefined, '58.3M'],
-    ['58335971', undefined, undefined, '58.3M'],
-    [318315, undefined, undefined, '318.3k'],
-    [1259, undefined, undefined, '1.2k'],
-    [1000, undefined, undefined, '1000'],
-    [1000, undefined, true, '1000.0'],
-    [725.019, undefined, undefined, '725'],
-    [NaN, undefined, undefined, 'N/A'],
-    [NaN, undefined, true, 'N/A'],
-    [Infinity, undefined, undefined, 'Infinity'],
-    [Infinity, undefined, true, 'Infinity'],
-    [undefined, undefined, undefined, 'undefined'],
-    [undefined, '-', undefined, '-'],
+    [1000000000, undefined, undefined, undefined, '1G'],
+    [1000000000, undefined, undefined, false, '1B'],
+    [1000000000, undefined, true, false, '1.0B'],
+    [1000000, undefined, undefined, undefined, '1M'],
+    [10000, undefined, undefined, undefined, '10k'],
+    [1000, undefined, undefined, undefined, '1000'],
+    [100, undefined, undefined, undefined, '100'],
+    [100, undefined, true, undefined, '100.0'],
+    [7841319402, undefined, undefined, true, '7.8G'],
+    [7841319402, undefined, undefined, false, '7.8B'],
+    [58335971.81109362, undefined, undefined, undefined, '58.3M'],
+    [58335971, undefined, undefined, undefined, '58.3M'],
+    ['58335971', undefined, undefined, undefined, '58.3M'],
+    [318315, undefined, undefined, undefined, '318.3k'],
+    [1259, undefined, undefined, undefined, '1.2k'],
+    [1000, undefined, undefined, undefined, '1000'],
+    [1000, undefined, true, undefined, '1000.0'],
+    [725.019, undefined, undefined, undefined, '725'],
+    [NaN, undefined, undefined, undefined, 'N/A'],
+    [NaN, undefined, true, undefined, 'N/A'],
+    [Infinity, undefined, undefined, undefined, 'Infinity'],
+    [Infinity, undefined, true, undefined, 'Infinity'],
+    [undefined, undefined, undefined, undefined, 'undefined'],
+    [undefined, '-', undefined, undefined, '-'],
     // check if we can feed the result back => stability
-    ['7.8B', undefined, undefined, '7.8B'],
-    ['58.3M', undefined, undefined, '58.3M'],
-    ['725', undefined, undefined, '725'],
-    ['N/A', undefined, undefined, 'N/A'],
-    ['Infinity', undefined, undefined, 'Infinity'],
-    ['null', undefined, undefined, 'null'],
-    ['null', '-', undefined, '-'],
-    ['null', null, undefined, null],
-    ['-', undefined, undefined, '-'],
-].forEach(([nodes, def, keep_decimal, answer], id) => {
+    ['7.8B', undefined, undefined, false, '7.8B'],
+    ['58.3M', undefined, undefined, undefined, '58.3M'],
+    ['725', undefined, undefined, undefined, '725'],
+    ['N/A', undefined, undefined, undefined, 'N/A'],
+    ['Infinity', undefined, undefined, undefined, 'Infinity'],
+    ['null', undefined, undefined, undefined, 'null'],
+    ['null', '-', undefined, undefined, '-'],
+    ['null', null, undefined, undefined, null],
+    ['-', undefined, undefined, undefined, '-'],
+].forEach(([number, def, keep_decimal, is_si, answer], id) => {
     test(`FormatUnit:${id}`, () => {
-        expect(FormatUnit(nodes, def, keep_decimal)).toEqual(answer);
+        expect(FormatUnit(number, def, keep_decimal, is_si)).toEqual(answer);
     });
 });
 
@@ -189,6 +330,163 @@ let {
 ].forEach(([color, get_string, alpha, answer], id) => {
     test(`Hex2RGB:${id}`, () => {
         expect(Hex2RGB(color, get_string, alpha)).toEqual(answer);
+    });
+});
+
+// Hide
+[
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        [
+            '<div id="name" style="display: none;">N</div>',
+            '<a href="#" style="display: none;">L1</a>',
+            '<a class="link" style="display: none;"><i style="display: none;">L2</i></a>',
+            '<i style="display: none;">L2</i>',
+        ],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        [
+            '<a href="#" style="display: none;">L1</a>',
+            '<a class="link" style="display: none;"><i>L2</i></a>',
+        ]
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '#name',
+        ['<div id="name" style="display: none;">N</div>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'i',
+        ['<i style="display: none;">L2</i>'],
+    ],
+].forEach(([html, sel, answer], id) => {
+    test(`Hide:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Hide(sel, soup);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
+    });
+});
+
+// HTML
+[
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        undefined,
+        'N',
+        ['<div id="name">N</div>', '<a href="#">L1</a>', '<a class="link"><i>L2</i></a>', '<i>L2</i>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a.link',
+        undefined,
+        '<i>L2</i>',
+        ['<a class="link"><i>L2</i></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        '',
+        '',
+        ['<div id="name"></div>', '<a href="#"></a>', '<a class="link"></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        'text',
+        'text',
+        ['<a href="#">text</a>', '<a class="link">text</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        '<span>link</span>',
+        '<span>link</span>',
+        ['<a href="#"><span>link</span></a>', '<a class="link"><span>link</span></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '#name',
+        '<svg>SVG</svg><div><i data-t="complex">complex</i></div>',
+        '<svg>SVG</svg><div><i data-t="complex">complex</i></div>',
+        ['<div id="name"><svg>SVG</svg><div><i data-t="complex">complex</i></div></div>'],
+    ],
+].forEach(([shtml, sel, html, answer, answer_nodes], id) => {
+    test(`HTML:${id}`, () => {
+        let soup = CreateNode('div', shtml);
+        expect(HTML(sel, html, soup)).toEqual(answer);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer_nodes);
+    });
+});
+
+// Id
+[
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', '', null],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', 'link', null],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', 'name', '<div id="name">N</div>'],
+    ['<div id="name">N</div><a href="#">L1</a><a class="link">L2</a>', 'a', null],
+].forEach(([html, sel, answer], id) => {
+    test(`Id:${id}`, () => {
+        let soup = CreateNode('div', html),
+            node = Id(sel, soup);
+        expect(node? node.outerHTML: node).toEqual(answer);
+    });
+});
+
+// Index
+[
+    ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#first', 1],
+    ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#second', 2],
+    ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#third', -1],
+    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#box', 1],
+    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i0', 1],
+    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i1', 2],
+    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i2', 3],
+    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', 'span', 1],
+].forEach(([html, sel, answer], id) => {
+    test(`Index:${id}`, () => {
+        let soup = CreateNode('div', html),
+            node = _(sel, soup);
+        expect(Index(node)).toEqual(answer);
+    });
+});
+
+// InsertNodes
+[
+    [
+        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        'div',
+        '#box',
+        false,
+        '<hori id="box"><a id="i0"></a><div id="i1"></div><div id="i2"><span>big</span></div></hori>',
+    ],
+    [
+        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        'div',
+        '#box',
+        true,
+        '<hori id="box"><div id="i1"></div><div id="i2"><span>big</span></div><a id="i0"></a></hori>',
+    ],
+    [
+        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        'span',
+        '#box',
+        true,
+        '<hori id="box"><span>big</span><a id="i0"></a></hori><div id="i1"></div><div id="i2"></div>',
+    ],
+].forEach(([html, sel, parent, prepend, answer], id) => {
+    test(`InsertNodes:${id}`, () => {
+        let soup = CreateNode('div', html),
+            nodes = A(sel, soup);
+
+        InsertNodes(_(parent, soup), nodes, prepend, soup);
+        expect(soup.innerHTML).toEqual(answer);
     });
 });
 
@@ -277,6 +575,30 @@ let {
     });
 });
 
+// Merge
+[
+    [{x: {y: 5}}, {x: {y: 6}}, undefined, {x: {y: 6}}],
+    [{x: {y: 5}}, {x: {y: 6}}, 1, {x: {y: 6}}],
+    [{x: {y: 5}}, {x: {y: 6}}, 5, {x: {y: 6}}],
+    [{x: {y: 5}}, {x: {y: 6}}, 0, {x: {y: 5}}],
+    [{x: {y: 5}}, {x: {z: 6}}, 1, {x: {y: 5, z: 6}}],
+    [{x: {y: 5}}, {x: {y: {hello: 'there'}, z: 6}}, 1, {x: {y: {hello: 'there'}, z: 6}}],
+    [{x: {y: 5}}, {x: {y: {hello: 'there'}, z: 6}}, 0, {x: {y: 5, z: 6}}],
+    [{x: {y: 5}}, {x: 0}, 0, {x: {y: 5}}],
+    [{x: {y: 5}}, {x: 0}, 1, {x: 0}],
+    [{x: {y: 5}}, {x: undefined}, 0, {x: {y: 5}}],
+    [{x: {y: 5}}, {x: undefined}, 1, {x: {y: 5}}],
+    [{x: {y: 5}}, {x: undefined}, 2, {}],
+    [{x: {y: 5}}, {y: undefined}, 2, {x: {y: 5}}],
+    [{x: {y: 5}}, {x: {y: undefined}}, 2, {x: {}}],
+    [{x: {y: 5, z: 6}}, {x: {y: undefined}}, 2, {x: {z: 6}}],
+].forEach(([dico, extras, replace, answer], id) => {
+    test(`Merge:${id}`, () => {
+        expect(Merge(dico, extras, replace)).toEqual(answer);
+        expect(dico).toEqual(answer);
+    });
+});
+
 // Pad
 [
     [1, undefined, undefined, '01'],
@@ -294,6 +616,79 @@ let {
     });
 });
 
+// Parent
+[
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        'i',
+        {tag: 'a'},
+        'A',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        'i',
+        {tag: 'i'},
+        null,
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        'i',
+        {self: true, tag: 'i'},
+        'I',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        'i',
+        {class_: 'box'},
+        'DIV',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        'i',
+        {class_: 'top'},
+        'A',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        '#label',
+        {attrs: 'id=x'},
+        'A',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        '#label',
+        {attrs: 'id=label'},
+        null,
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        '#label',
+        {attrs: 'id=label', self: true},
+        'SPAN',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        '#label',
+        {attrs: 'data-i=2'},
+        'DIV',
+    ],
+    [
+        '<a class="top" id="x"><div class="box" data-i="2"><span id="label">A</span><i id="click">B</i></div></a>',
+        '#label',
+        {attrs: 'data-i=3'},
+        null,
+    ],
+].forEach(([html, sel, dico, answer], id) => {
+    test(`Parent:${id}`, () => {
+        let soup = CreateNode('div', html),
+            parent = Parent(_(sel, soup), dico);
+        if (!parent)
+            expect(parent).toEqual(answer);
+        else
+            expect(parent.tagName).toEqual(answer);
+    });
+});
+
 // ParseJSON
 [
     ['', undefined, undefined],
@@ -303,6 +698,34 @@ let {
 ].forEach(([text, def, answer], id) => {
     test(`ParseJSON:${id}`, () => {
         expect(ParseJSON(text, def)).toEqual(answer);
+    });
+});
+
+// Prop
+[
+    [
+        '<input name="accept" type="checkbox">',
+        'input',
+        'checked',
+        true,
+        [true],
+        ['<input name="accept" type="checkbox">'],
+    ],
+    [
+        '<input name="accept" type="checkbox"><input name="name" type="hidden">',
+        '*',
+        'type',
+        'text',
+        ['text', 'text'],
+        ['<input name="accept" type="text">', '<input name="name" type="text">'],
+    ],
+].forEach(([html, sel, prop, value, answer, answer_nodes], id) => {
+    test(`Prop:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Prop(sel, prop, value, soup);
+        let nodes = From(A(sel, soup));
+        expect(nodes.map(node => node[prop])).toEqual(answer);
+        expect(nodes.map(node => node.outerHTML)).toEqual(answer_nodes);
     });
 });
 
@@ -337,6 +760,70 @@ let {
     });
 });
 
+// S
+[
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '*',
+        true,
+        undefined,
+        [
+            '<div id="name" style="">N</div>',
+            '<a href="#">L1</a>',
+            '<a class="link"><i>L2</i></a>',
+            '<i>L2</i>',
+        ],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'a',
+        true,
+        'block',
+        [
+            '<a href="#" style="display: block;">L1</a>',
+            '<a class="link" style="display: block;"><i>L2</i></a>',
+        ]
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'a',
+        true,
+        'none',
+        [
+            '<a href="#" style="display: none;">L1</a>',
+            '<a class="link" style="display: none;"><i>L2</i></a>',
+        ]
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '#name',
+        true,
+        undefined,
+        ['<div id="name" style="">N</div>'],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '#name',
+        true,
+        'flex',
+        ['<div id="name" style="display: flex;">N</div>'],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'i',
+        false,
+        undefined,
+        ['<i style="display: none;">L2</i>'],
+    ],
+].forEach(([html, sel, show, mode, answer], id) => {
+    test(`S:${id}`, () => {
+        let soup = CreateNode('div', html);
+        S(sel, show, soup, mode);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
+    });
+});
+
 // SetDefault
 [
     [{}, 'new', ['a', 'b'], {new: ['a', 'b']}],
@@ -350,6 +837,45 @@ let {
     test(`SetDefault:${id}`, () => {
         SetDefault(dico, key, def);
         expect(dico).toEqual(answer);
+    });
+});
+
+// Show
+[
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '*',
+        [
+            '<div id="name" style="">N</div>',
+            '<a href="#">L1</a>',
+            '<a class="link"><i>L2</i></a>',
+            '<i>L2</i>',
+        ],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'a',
+        [
+            '<a href="#">L1</a>',
+            '<a class="link"><i>L2</i></a>',
+        ]
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '#name',
+        ['<div id="name" style="">N</div>'],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'i',
+        ['<i>L2</i>'],
+    ],
+].forEach(([html, sel, answer], id) => {
+    test(`Show:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Show(sel, soup);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
     });
 });
 
@@ -367,6 +893,145 @@ let {
     });
 });
 
+// Style
+[
+    // string
+    ['<a></a>', 'a', 'opacity:0.5', undefined, '<a style="opacity: 0.5;"></a>'],
+    ['<a></a>', 'a', 'color:red;opacity:0.5', true, '<a style="color: red; opacity: 0.5;"></a>'],
+    ['<a style="opacity:0.1"></a>', 'a', 'opacity', false, '<a style=""></a>'],
+    ['<a style="opacity:0.1"></a>', 'a', 'opacity:0.5', false, '<a style=""></a>'],
+    ['<a style="color:red;opacity:0.1"></a>', 'a', 'opacity:0.5', false, '<a style="color: red;"></a>'],
+    ['<a style="color:red;opacity:0.1"></a>', 'a', 'color:blue;opacity:0.5', false, '<a style=""></a>'],
+    ['<a></a>', 'a', 'font-size:2em;z-index:5', true, '<a style="font-size: 2em; z-index: 5;"></a>'],
+    // array
+    ['<a></a>', 'a', [['opacity', '0.5']], undefined, '<a style="opacity: 0.5;"></a>'],
+    ['<a></a>', 'a', [['color', 'red'], ['opacity', '0.5']], true, '<a style="color: red; opacity: 0.5;"></a>'],
+    ['<a style="opacity:0.1"></a>', 'a', [['opacity']], false, '<a style=""></a>'],
+    ['<a style="opacity:0.1"></a>', 'a', [['opacity', '0.5']], false, '<a style=""></a>'],
+    ['<a style="color:red;opacity:0.1"></a>', 'a', [['opacity' ,'0.5']], false, '<a style="color: red;"></a>'],
+    ['<a style="color:red;opacity:0.1"></a>', 'a', [['color', 'blue'], ['opacity', '0.5']], false, '<a style=""></a>'],
+    ['<a></a>', 'a', [['font-size', '2em'], ['z-index', '5']], true, '<a style="font-size: 2em; z-index: 5;"></a>'],
+].forEach(([html, sel, styles, add, answer], id) => {
+    test(`Style:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Style(sel, styles, add, soup);
+        expect(soup.innerHTML).toEqual(answer);
+    });
+});
+
+// TEXT
+[
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        undefined,
+        'N',
+        ['<div id="name">N</div>', '<a href="#">L1</a>', '<a class="link"><i>L2</i></a>', '<i>L2</i>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a.link',
+        undefined,
+        'L2',
+        ['<a class="link"><i>L2</i></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        '',
+        '',
+        ['<div id="name"></div>', '<a href="#"></a>', '<a class="link"></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        'text',
+        'text',
+        ['<a href="#">text</a>', '<a class="link">text</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a.link',
+        '<span>test</span>',
+        '<span>test</span>',
+        ['<a class="link">&lt;span&gt;test&lt;/span&gt;</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        '<span>link</span>',
+        '<span>link</span>',
+        ['<a href="#">&lt;span&gt;link&lt;/span&gt;</a>', '<a class="link">&lt;span&gt;link&lt;/span&gt;</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '#name',
+        'engine<br>version',
+        'engine<br>version',
+        ['<div id="name">engine&lt;br&gt;version</div>'],
+    ],
+].forEach(([shtml, sel, html, answer, answer_nodes], id) => {
+    test(`TEXT:${id}`, () => {
+        let soup = CreateNode('div', shtml);
+        expect(TEXT(sel, html, soup)).toEqual(answer);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer_nodes);
+    });
+});
+
+// TextHTML
+[
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        undefined,
+        'N',
+        ['<div id="name">N</div>', '<a href="#">L1</a>', '<a class="link"><i>L2</i></a>', '<i>L2</i>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a.link',
+        undefined,
+        'L2',
+        ['<a class="link"><i>L2</i></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '*',
+        '',
+        '',
+        ['<div id="name"></div>', '<a href="#"></a>', '<a class="link"></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        'text',
+        'text',
+        ['<a href="#">text</a>', '<a class="link">text</a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        'a',
+        '<span>link</span>',
+        '<span>link</span>',
+        ['<a href="#"><span>link</span></a>', '<a class="link"><span>link</span></a>'],
+    ],
+    [
+        '<div id="name">N</div><a href="#">L1</a><a class="link"><i>L2</i></a>',
+        '#name',
+        'engine<br>version',
+        'engine<br>version',
+        ['<div id="name">engine<br>version</div>'],
+    ],
+].forEach(([shtml, sel, html, answer, answer_nodes], id) => {
+    test(`TextHTML:${id}`, () => {
+        let soup = CreateNode('div', shtml);
+        expect(TextHTML(sel, html, soup)).toEqual(answer);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer_nodes);
+    });
+});
+
 // Title
 [
     ['', ''],
@@ -377,6 +1042,45 @@ let {
 ].forEach(([text, answer], id) => {
     test(`Title:${id}`, () => {
         expect(Title(text)).toEqual(answer);
+    });
+});
+
+// Toggle
+[
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '*',
+        [
+            '<div id="name" style="">N</div>',
+            '<a href="#" style="display: none;">L1</a>',
+            '<a class="link"><i style="display: none;">L2</i></a>',
+            '<i style="display: none;">L2</i>',
+        ],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'a',
+        [
+            '<a href="#" style="display: none;">L1</a>',
+            '<a class="link"><i>L2</i></a>',
+        ]
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        '#name',
+        ['<div id="name" style="">N</div>'],
+    ],
+    [
+        '<div id="name" style="display:none">N</div><a href="#">L1</a><a class="link dn"><i>L2</i></a>',
+        'i',
+        ['<i style="display: none;">L2</i>'],
+    ],
+].forEach(([html, sel, answer], id) => {
+    test(`Toggle:${id}`, () => {
+        let soup = CreateNode('div', html);
+        Toggle(sel, soup);
+        let nodes = A(sel, soup);
+        expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
     });
 });
 
@@ -397,5 +1101,38 @@ let {
 ].forEach(([value, def, answer], id) => {
     test(`Undefined:${id}`, () => {
         expect(Undefined(value, def)).toEqual(answer);
+    });
+});
+
+// Visible
+[
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', '*', false],
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', 'a', false],
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', 'a:first-of-type', true],
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', 'a.link', false],
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', '#x', false],
+    ['<div id="x" style="display:none">N</div><a>L1</a><a class="link dn"><i>L2</i></a>', 'i', true],
+].forEach(([html, sel, answer], id) => {
+    test(`Visible:${id}`, () => {
+        let soup = CreateNode('div', html);
+        expect(Visible(sel, soup)).toEqual(answer);
+    });
+});
+
+// VisibleHeight
+[
+    0,
+].forEach((answer, id) => {
+    test(`VisibleHeight:${id}`, () => {
+        expect(VisibleHeight()).toBeGreaterThan(answer);
+    });
+});
+
+// VisibleWidth
+[
+    0,
+].forEach((answer, id) => {
+    test(`VisibleWidth:${id}`, () => {
+        expect(VisibleWidth()).toBeGreaterThan(answer);
     });
 });

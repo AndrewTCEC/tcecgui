@@ -1,7 +1,6 @@
 TODO
 =====
 DONE         CREATED      DESCRIPTION
-~          : 2020-06-23 : parse livelog => update player eval / pv / wdl etc
 -          : 2020-10-02 : king safety: check 8 squares around, pawn or edge = block a direction
 ~          : 2020-07-22 : individual piece mobility, ex: bishop 1 + bishop 2
 -          : 2020-09-18 : pressure area around opponent king = larger bonus
@@ -9,16 +8,125 @@ DONE         CREATED      DESCRIPTION
 -          : 2020-09-20 : passed pawns
 -          : 2020-09-18 : pawn structure eval
 ~          : 2020-09-18 : keep list of non empty squares for each side => list of pieces
-~          : 2020-09-17 : hce improvement: direct flux (attacked - defended and by whom)
 -          : 2020-09-17 : variable material value
 -          : 2020-09-17 : static arrays of 256 moves per depth might be faster than std::vector
-2020-01-06 : 2020-01-06 : fix wrong sign in update_live_eval when kibitzer lags after a new move
-2020-01-06 : 2020-01-06 : fixed play button + new moves played sequentially
-2020-01-05 : 2020-01-05 : keep multiple prev_PVs in memory
-2020-01-05 : 2020-01-05 : better ply management
-2020-01-05 : 2020-01-05 : boom audio parameters for each sample
-2020-01-05 : 2020-01-04 : preload audio to avoid delays
-2021-01-02 : 2020-01-02 : calculate Direct Encounters
+-          : 2021-01-11 : count kibitzers only if they have enough nodes
+-          : 2021-01-20 : make # defaults for # resolutions + DPR, ex: Surface Pro 7: 1368 x 802 x 2
+-          : 2021-01-22 : right click on tab => tabs per row: saved in areas: [name, tabs, visible]
+-          : 2021-01-29 : precalculate agree + agree2 in a worker thread with wasm.js
+-          : 2021-02-15 : benchmark analyse_fen + make a c++ version if too slow
+-          : 2021-02-17 : if the ply only differs by 1 => use "add_move" to calculate animation faster
+-          : 2021-01-10 : right click to draw lines
+~          : 2021-02-16 : replace Class + Style: \bStyle\([^\s]+,\s['`]
+-          : 2021-02-20 : PVA playing with "d=4 e=att h=1 o=2 q=8 s=ab t=0 x=20" every=0 => choppy
+-          : 2021-02-20 : use analyse_log code when getting live data, calling add_moves_string
+~          : 2020-09-17 : hce improvement: direct flux (attacked - defended and by whom)
+2021-03-11 - 2021-03-11 : German language
+2021-03-06 : 2021-03-06 : fake evals detection
+2021-03-05 : 2021-03-05 : KomodoDragon => can become Komodo|Dragon in quick
+2021-03-02 : 2021-03-02 : load a custom language
+2021-02-21 : 2021-02-21 : better colors for crosstable: easy to see black & white games
+2021-02-21 : 2021-02-21 : improved evals for end game
+2021-02-20 : 2021-02-20 : 3 missing outcomes + links
+2021-02-19 : 2021-02-19 : crosstable shows dark/light background for win/loss
+2021-02-19 : 2021-02-19 : 1314 plies in 24.933s => 52.701 plies/s
+2021-02-19 : 2021-02-19 : CacheId => extra speed boost
+2021-02-17 : 2021-02-13 : 1314 plies in 25.392s => 51.749 plies/s
+2021-02-17 : 2021-02-16 : regularly check if the status should be shown or hidden
+2021-02-17 : 2021-02-16 : variable animation speed
+2021-02-16 : 2021-02-16 : click on << should highlight "1" + scroll
+2021-02-16 : 2021-02-13 : 1314 plies in 27.656s => 47.512 plies/s
+2021-02-16 : 2021-02-15 : accelerate Class + Style using a list or dico instead of string
+2021-02-15 : 2021-02-15 : graph presence is slowing everything down
+2021-02-15 : 2021-02-13 : 1314 plies in 27.931s => 47.045 plies/s
+2021-02-15 : 2021-02-13 : 1314 plies in 43.257s => 30.377 plies/s
+2021-02-14 : 2021-02-13 : 1314 plies in 42.185s => 31.149 plies/s
+2021-02-14 : 2021-02-14 : speed: use TEXT + TextHTML
+2021-02-13 : 2021-02-13 : speed: add_moves should reuse the nodes
+2021-02-13 : 2021-02-13 : 1314 plies in 44.347s => 29.630 plies/s
+2021-02-13 : 2021-01-23 : speed: add_moves_string should reuse the nodes, instead of HTML(...)
+2021-02-11 : 2021-02-11 : boom in PVA
+2021-02-10 : 2021-02-10 : improve analyse_fen + add tests
+2021-02-10 : 2021-01-24 : 1314 plies in 45.714s => 28.744 plies/s
+2021-02-10 : 2021-01-27 : pv should show fails
+2021-02-10 : 2021-02-10 : boom_every
+2021-02-10 : 2021-02-10 : quick_every interpolation
+2021-02-10 : 2021-02-10 : improved tab opening
+2021-02-09 : 2021-01-24 : piece animation is not smooth anymore, something to do with set_ply
+2021-02-09 : 2021-02-09 : optimise loading
+2021-02-05 : 2021-02-05 : closure compiler advanced #3
+2021-02-05 : 2021-02-05 : closure compiler advanced #2
+2021-02-05 : 2021-02-05 : closure compiler advanced #1
+2021-01-27 : 2021-01-27 : add engine tests
+2021-01-27 : 2021-01-27 : improve inspector.py
+2021-01-27 : 2021-01-27 : move populate_areas + move_pane to engine
+2021-01-27 : 2021-01-27 : color 0, 1, 2, 3, 01, 23
+2021-01-27 : 2021-01-27 : shortcut 3
+2021-01-27 : 2021-01-27 : add arrow_html tests
+2021-01-26 : 2021-01-26 : fix analyse_log tests
+2021-01-26 : 2021-01-26 : arrow from opponent
+2021-01-25 : 2021-01-25 : key accelerate + use AnimationFrame when going very fast
+2021-01-24 : 2021-01-24 : 2190 plies in 76.857s => 28.4945 plies/s
+2021-01-24 : 2021-01-23 : speed: compare_duals with a 100ms timeout
+2021-01-24 : 2021-01-24 : 2190 plies in 102.177s => 21.4334 plies/s
+2021-01-24 : 2021-01-24 : benchmark UI
+2021-01-24 : 2021-01-24 : 2190 plies in 105.763s => 20.7067 plies/s
+2021-01-24 : 2021-01-23 : speed: don't redraw charts when changing moves
+2021-01-23 : 2021-01-24 : 2190 plies in 138.677s => 15.7921 plies/s
+2021-01-24 : 2021-01-23 : speed: chart.canvas.getBoundingClientRect => cache it
+2021-01-24 : 2021-01-24 : 2190 plies in 139.370s => 15.7136 plies/s
+2021-01-23 : 2021-01-23 : speed: ctx.font = ... => only do it once
+2021-01-24 : 2021-01-24 : 2190 plies in 144.876s => 15.1164 plies/s : #div=sf&game=33&season=20 + 4 sections
+2021-01-23 : 2021-01-23 : find a good game + create a benchmark
+2021-01-23 : 2021-01-23 : resize WDB % + kibitzer info
+2021-01-23 : 2021-01-23 : fix show_pv for PVA
+2021-01-23 : 2021-01-23 : improved Copy popup
+2021-01-22 : 2021-01-22 : change font size of moves + copy/live/pv/pva
+2021-01-22 : 2021-01-22 : improved mobile support
+2021-01-21 : 2021-01-21 : vertical table for shortcuts when num player <= 4
+2021-01-21 : 2021-01-21 : time left graph
+2021-01-20 : 2021-01-20 : save width x height x DPR in the settings
+2021-01-19 : 2021-01-19 : improved GRID
+2021-01-18 : 2021-01-18 : fix grid layout
+2021-01-18 : 2021-01-18 : download live AFTER pgn
+2021-01-18 : 2021-01-18 : SI units
+2021-01-18 : 2021-01-17 : check the arrows code, sometimes they don't update correctly if at all
+2021-01-18 : 2021-01-17 : fix populate_areas
+2020-01-17 : 2020-01-17 : lock sub boards when not last move on main board
+2021-01-17 : 2020-01-17 : scan all the moves to update "agree"
+2021-01-17 : 2021-01-17 : "Agree" graph for players + kibitzers
+2021-01-17 : 2021-01-17 : show movesleft somewhere?
+2021-01-16 : 2021-01-16 : info => agree length
+2021-01-16 : 2021-01-16 : redo the swap_panels code: the panels should not change order, but their data should
+2021-01-15 : 2021-01-15 : multiple options on the same line
+2021-01-15 : 2021-01-15 : hide [DE] when only 2 engines are in cross/stand
+2021-01-15 : 2021-01-15 : smaller popup for Copy
+2021-01-13 : 2021-01-13 : explosion can be directly triggered by a boom
+2021-01-13 : 2021-01-13 : improved copy fen/pgn/moves
+2021-01-12 : 2021-01-11 : recreate color timeout inside shake timeout if doesn't exist
+2021-01-12 : 2020-01-11 : boom/moob/explosion don't produce visuals if sound is off
+2021-01-12 : 2021-01-11 : download PGN: wrong order for headers + bad engine options + empty line before *
+2021-01-12 : 2021-01-12 : fix: no explosion if just loaded the page
+2021-01-11 : 2021-01-10 : popup menu icon for main board + PVA => good for iPhone
+2021-01-11 : 2021-01-11 : make "analysis" option more compact: integrate all 3 choices
+2021-01-11 : 2021-01-11 : moob vibrates faster than boom
+2021-01-11 : 2021-01-10 : enable/disable right click for popup menu
+2021-01-09 : 2021-01-08 : boom should scale the volume + shake + duration
+2021-01-08 : 2021-01-08 : graph scale: boom
+2021-01-08 : 2021-01-07 : boom + explosion
+2021-01-08 : 2021-01-08 : set custom FEN in PV(A)
+2021-01-07 : 2021-01-07 : shake_screen should use AnimationFrame
+2021-01-07 : 2021-01-07 : no explosion if just loaded the page
+2021-01-07 : 2021-01-07 : #seen=1 or archive => skip quick setup
+2021-01-07 : 2021-01-07 : improve guess_types + fix wrap
+2021-01-07 : 2021-01-07 : improved Spanish
+2021-01-06 : 2021-01-06 : fix wrong sign in update_live_eval when kibitzer lags after a new move
+2021-01-06 : 2021-01-06 : fixed play button + new moves played sequentially
+2021-01-05 : 2021-01-05 : keep multiple prev_PVs in memory
+2021-01-05 : 2021-01-05 : better ply management
+2021-01-05 : 2021-01-05 : boom audio parameters for each sample
+2021-01-05 : 2021-01-04 : preload audio to avoid delays
+2021-01-02 : 2021-01-02 : calculate Direct Encounters
 2021-01-02 : 2021-01-02 : stop PVA after paste_text
 2021-01-02 : 2021-01-02 : r-mobility in tables
 2021-01-02 : 2021-01-01 : quick setup: boom sound + visual, theme
@@ -41,8 +149,11 @@ DONE         CREATED      DESCRIPTION
 2020-12-19 : 2020-12-19 : cross table engine sorting
 2020-12-19 : 2020-12-19 : parse_pgn breaks pv at first '='
 2020-11-22 : 2020-11-22 : parse mate from log
+2020-11-22 : 2020-06-23 : parse livelog => update player eval / pv / wdl etc
+2020-11-22 : 2020-06-20 : parse live log
 2020-11-20 : 2020-11-20 : improved livelog analysis
 2020-11-17 : 2020-11-17 : show FRC # in the opening
+2020-11-17 : 2020-05-02 : live fen calculation after clicking on a ply without chess.js (fast)
 2020-11-14 : 2020-11-14 : About works again
 2020-11-14 : 2020-11-14 : enable pv parsing from livelog
 2020-11-02 : 2020-11-02 : E2 => engine2, E5 => engine + engine4
@@ -488,17 +599,14 @@ DONE         CREATED      DESCRIPTION
 2020-04-12 : 2020-04-12 : remove lodash, because slower + takes more space
 2020-04-12 : 2020-04-12 : jshint + squash bugs, will be easier to debug
 high:
+-          : 2020-09-08 : remove socket.io
 medium:
 low:
 ~          : 2020-04-13 : add 3d board
--          : 2020-06-20 : parse live log
 -          : 2020-06-03 : PVA pawn promotion: should be able to choose the piece
 lowest:
 -          : 2020-09-29 : use d3.js instead of chart.js
 -          : 2020-05-23 : dynamic pagination and search nodes
--          : 2020-09-08 : remove socket.io
--          : 2020-05-02 : live fen calculation after clicking on a ply without chess.js (fast)
--          : 2020-05-26 : live_log option to run in the background
 -          : 2020-04-24 : add 3d dark room
 -          : 2020-04-24 : add 3d tables showing the player names + logos (photo1.jpg)
 -          : 2020-04-24 : add 3d screens displaying the board, requires 2d canvas drawing in XBoard

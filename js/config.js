@@ -1,16 +1,17 @@
-// game.js
+// config.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-11-14
+// @version 2021-04-28
 //
 // Ideally, only this file needs modification from an administrator.
 // If other files need to be modified, then contact me, and I will reengineer the system a bit.
 //
 // included after: common, engine, global, 3d, xboard, game, network, startup
 // (after everything except script.js)
+// jshint -W069
 /*
 globals
-AD_STYLES, Assign, CHAMPIONS:true, CHART_JS:true, DEFAULTS, ENGINE_FEATURES, ENGINE_NAMES:true, HOST:true,
-HOST_ARCHIVE:true, LINKS:true, THEMES:true, TIMEOUTS, TWITCH_CHANNEL:true, TWITCH_CHAT:true
+AD_STYLES, Assign, CHAMPIONS:true, DEFAULTS, ENGINE_FEATURES, ENGINE_NAMES:true, HOST:true,
+HOST_ARCHIVE:true, LINKS:true, THEMES:true, TWITCH_CHANNEL:true, TWITCH_CHAT:true
 */
 'use strict';
 
@@ -29,8 +30,8 @@ function startup_config() {
     // - & 1 => NN engine
     // - & 2 => Leela variations
     Assign(ENGINE_FEATURES, {
-        LCZeroCPU: 3,
-        LCZeroCPU3pct: 3,
+        'LCZeroCPU': 3,
+        'LCZeroCPU3pct': 3,
     });
 
     // first theme is always the default theme => don't change it
@@ -43,8 +44,9 @@ function startup_config() {
     // navigation links
     // the URL will be: HOST/path, except if it starts with 'http', '.' or '/'
     LINKS = {
-        articles: {
+        'articles': {
             '_ext': '.pdf',
+            'Super Final 20 by GM Sadler.pdf': 'articles/Sufi_20_-_Sadler.pdf',
             'Super Final 19 by GM Sadler.pdf': 'articles/Sufi_19_-_Sadler.pdf',
             'Super Final 18 by GM Sadler.pdf': 'articles/Sufi_18_-_Sadler.pdf',
             'Super Final 17 by GM Sadler.pdf': 'articles/Sufi_17_-_Sadler.pdf',
@@ -55,6 +57,8 @@ function startup_config() {
             'a': 0,
             // grid of 2 columns
             '_a1': 2,
+            'TCEC_20.pdf': 'articles/TCEC_20.pdf',
+            'TCEC_19.pdf': 'articles/TCEC_19.pdf',
             'TCEC_18.pdf': 'articles/TCEC_18.pdf',
             'TCEC_17.pdf': 'articles/TCEC_17.pdf',
             'TCEC_16.pdf': 'articles/TCEC_16.pdf',
@@ -69,6 +73,7 @@ function startup_config() {
             // again
             'b': 0,
             '_b1': 2,
+            'TCEC_Cup_8.pdf': 'http://tcec-chess.com/articles/TCEC_Cup_8.pdf',
             'TCEC_Cup_7.pdf': 'http://tcec-chess.com/articles/TCEC_Cup_7.pdf',
             'TCEC_Cup_6.pdf': 'http://tcec-chess.com/articles/TCEC_Cup_6.pdf',
             'TCEC_Cup_5.pdf': 'http://tcec-chess.com/articles/TCEC_Cup_5.pdf',
@@ -78,25 +83,26 @@ function startup_config() {
             'TCEC_Cup_1.pdf': 'http://tcec-chess.com/articles/TCEC_Cup_1.pdf',
             '_b2': 0,
         },
-        download: {
-            Crosstable: 'crosstable.json',
-            Schedule: 'schedule.json',
+        'download': {
+            'Crosstable': 'crosstable.json',
+            'Schedule': 'schedule.json',
             'Event PGN': 'evalbotelo/archive.pgn',
             'Current PGN': 'evalbotelo/live.pgn',
             '{Load PGN} ...': '',
         },
-        info: {
-            About: '',
-            Rules: 'https://wiki.chessdom.org/Rules',
+        'info': {
+            'About': '',
+            'Rules': 'https://wiki.chessdom.org/Rules',
             'Book FAQ': 'articles/TCEC_Openings_FAQ.html',
             'a': 0,
-            Coverage: 'https://wiki.chessdom.org/Category:Coverage',
+            'Coverage': 'https://wiki.chessdom.org/Category:Coverage',
             'Notable games': 'https://wiki.chessdom.org/Category:Notable_game',
         },
     };
 
     // season champions
     CHAMPIONS = [
+        '20|Stockfish',
         '19|Stockfish',
         '18|Stockfish',
         '17|LCZero',
@@ -106,7 +112,7 @@ function startup_config() {
         '13|Stockfish',
         '12|Stockfish',
         '11|Stockfish',
-        '10|Houdini',
+        '10|Komodo',
         '9|Stockfish',
         '8|Komodo',
         '7|Komodo',
@@ -126,20 +132,7 @@ function startup_config() {
         1: 'width:100%;height:320px',
     });
 
-    // startup timeouts in ms
-    Assign(TIMEOUTS, {
-        banner: 30 * 1000,
-        google_ad: 5 * 1000,
-        graph: 1 * 1000,
-        tables: 100,
-        twitch: 5 * 1000,
-        users: 5 * 1000,
-    });
-
-    // dynamically loaded libraries
-    CHART_JS = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js';
-
-    TWITCH_CHANNEL = 'https://player.twitch.tv/?channel=TCEC_Chess_TV&parent=tcec-chess.com';
+    TWITCH_CHANNEL = 'TCEC_Chess_TV';
     TWITCH_CHAT = 'https://www.twitch.tv/embed/TCEC_Chess_TV/chat?parent=tcec-chess.com';
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +140,7 @@ function startup_config() {
     //////////////////////////////
 
     // clean up some mistakes
-    DEFAULTS.theme = THEMES[0];
+    DEFAULTS['theme'] = THEMES[0];
     HOST = HOST.replace(/\/$/, '');
     HOST_ARCHIVE = HOST_ARCHIVE.replace(/\/$/, '');
 }

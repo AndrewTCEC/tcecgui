@@ -1,6 +1,6 @@
 // startup.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-02
+// @version 2021-05-24
 //
 // Startup
 // - start everything: 3d, game, ...
@@ -13,28 +13,29 @@
 /*
 globals
 _, __PREFIX:true, A, action_key, action_key_no_input, action_keyup_no_input, activate_tabs, add_history, add_timeout,
-ANCHORS:true, api_times:true, api_translate_get, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
-C, CacheId, cannot_click, cannot_popup, change_page, change_queue, change_setting, change_setting_game, change_theme,
-changed_hash, changed_section, charts, check_hash, check_socket_io, Clamp, Class, Clear, clear_timeout, close_popups,
-context_areas, context_target:true,
-DEFAULT_SCALES, DEFAULTS, detect_device, DEV, DEV_NAMES, device, document, download_tables, draw_rectangle,
+adjust_popups, ANCHORS:true, api_times:true, api_translate_get, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
+C, CacheId, cannot_popup, change_page, change_queue, change_setting, change_setting_game, change_theme, changed_hash,
+changed_section, charts, check_hash, check_socket_io, Clamp, Class, clear_timeout, close_popups, context_areas,
+context_target:true,
+DEFAULT_SCALES, DEFAULTS, detect_device, DEV, DEV_NAMES, device, document, download_tables, drag_source:true,
 E, Events, export_settings, exports, FileReader, find_area, Floor, From, game_action_key, game_action_keyup, get_area,
-get_drop_id, get_object, global, guess_types, handle_board_events, HasClass, HasClasses, hashes, Hide, HIDES, HTML,
-ICONS:true, import_settings, Index, init_graph, is_fullscreen, KEY_TIMES, Keys, KEYS,
+get_drop_id, get_object, global, guess_types, handle_board_events, HasClass, HasClasses, hashes, Hide, hide_element,
+HIDES, HTML, ICONS:true, import_settings, Index, init_graph, is_fullscreen, KEY_TIMES, Keys, KEYS,
 LANGUAGES:true, listen_log, load_defaults, load_library, load_preset, LOCALHOST, location, Max, merge_settings, Min,
 move_pane, navigator, NO_IMPORTS, Now, ON_OFF, open_table, option_number, order_boards, PANES, Parent, ParseJSON, PD,
 PIECE_THEMES, populate_areas, POPUP_ADJUSTS, require, reset_defaults, reset_old_settings, reset_settings,
 resize_bracket, resize_game, resize_move_lists, resize_table, resume_sleep,
-S, SafeId, save_option, scroll_adjust, ScrollDocument, set_draggable, set_engine_events, set_game_events, set_section,
-SetDefault, SHADOW_QUALITIES, Show, show_banner, show_board_info, show_filtered_games, show_popup, SP, start_3d,
-start_game, startup_3d, startup_config, startup_game, startup_graph, Style, TAB_NAMES, TABLES, TEXT, TextHTML, THEMES,
-TIMEOUT_adjust, TIMEOUT_tables, timers, toggle_fullscreen, touch_handle, translate_nodes, TRANSLATE_SPECIALS,
-translates:true, TYPES,
+S, SafeId, save_option, scroll_adjust, ScrollDocument, set_drag_events, set_draggable, set_engine_events,
+set_game_events, set_section, SetDefault, SHADOW_QUALITIES, Show, show_banner, show_board_info, show_filtered_games,
+show_popup, SP, start_3d, start_game, startup_3d, startup_config, startup_game, startup_graph, startup_network, Style,
+TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_adjust, TIMEOUT_tables, timers, toggle_fullscreen, touch_handle,
+translate_nodes, TRANSLATE_SPECIALS, translates:true, TYPES,
 Undefined, update_board_theme, update_debug, update_pgn, update_theme, update_twitch, VERSION,
 virtual_change_setting_special:true, virtual_check_hash_special:true, virtual_hide_areas:true,
 virtual_import_settings:true, virtual_opened_table_special:true, virtual_populate_areas_special:true,
-virtual_reset_settings_special:true, virtual_resize:true, virtual_set_modal_events_special:true, Visible, VisibleWidth,
-WB_LOWER, wheel_event, window, X_SETTINGS, xboards, Y, y_x
+virtual_reset_settings_special:true, virtual_resize:true, virtual_set_modal_events_special:true,
+virtual_window_click_dataset:true, virtual_window_click_parent:true, virtual_window_click_parent_dataset:true, Visible,
+VisibleWidth, WB_LOWER, wheel_event, window, window_click, X_SETTINGS, xboards, Y, y_x
 */
 'use strict';
 
@@ -74,7 +75,26 @@ let AD_STYLES = {},
             'graph',
         '.swaps': 'panel',
     },
-    drag_source,
+    // help in the settings
+    HELP_ADVANCED = '[advanced feature]',
+    HELP_ANIMATE = 'smooth animation',
+    HELP_COLOR_01 = 'players: white + black',
+    HELP_COLOR_23 = 'kibitzers: blue + red',
+    HELP_CONTROLS = 'show controls under the board',
+    HELP_DRAG_AND_DROP = 'drag and drop elements for a custom layout',
+    HELP_EVAL = 'show the eval next to the engine',
+    HELP_EVAL_LEFT = 'eval on the left of the engine, instead of right',
+    HELP_GRID = 'number of columns in the grid, 0 to disable',
+    HELP_HARDWARE = 'show kibitzer hardware',
+    HELP_MAX = 'max',
+    HELP_MIN = 'min',
+    HELP_MIN_MAX = 'min and max values, hidden if both are 0',
+    HELP_NOTATION = 'board notation: ABCDEFGH + 12345678',
+    HELP_OPACITY = '0: transparent, 1: opaque',
+    HELP_PERCENT = 'show WDB % (white, draw, black)',
+    HELP_PERCENT_WIDTH = 'max width in %',
+    HELP_SINGLE_LINE = 'show kibitzer engine info on 1 line instead of 2',
+    HELP_VOLUME = 'general volume, 10: 100%, affects all sounds',
     LEVELS = {
         'custom': '',
         'dog': 'd=3 e=hce h=1 q=0 s=ab t=0',
@@ -149,13 +169,6 @@ function action_key(code) {
         close_popups();
         break;
     }
-}
-
-/**
- * Adjust popup position
- */
-function adjust_popups() {
-    show_popup('', null, {adjust: true});
 }
 
 /**
@@ -311,11 +324,11 @@ function change_setting_special(name, value, close) {
         break;
     case 'game_960':
         pva.frc = value;
-        pva.delayed_picks();
+        pva.delayedPicks();
         break;
     case 'game_advice':
         pva.finished = false;
-        pva.set_ai(false);
+        pva.setAi(false);
         pva.think(true);
         break;
     case 'game_depth':
@@ -330,14 +343,14 @@ function change_setting_special(name, value, close) {
     case 'game_new_FEN':
     case 'game_new_game':
         pva.frc = Y['game_960'];
-        pva.new_game();
+        pva.newGame();
         break;
     case 'game_search':
         configure('s', value);
         break;
     case 'game_think':
         pva.finished = false;
-        pva.set_ai(true);
+        pva.setAi(true);
         pva.think();
         break;
     case 'game_time':
@@ -385,6 +398,9 @@ function change_setting_special(name, value, close) {
     case 'moves_copy':
         populate_areas();
         break;
+    case 'network':
+        check_socket_io();
+        break;
     case 'preset':
         load_preset(value + '');
         save_option('last_preset', value);
@@ -401,6 +417,11 @@ function change_setting_special(name, value, close) {
         break;
     case 'theme':
         change_theme(value);
+        break;
+    case 'twitch_chat':
+    case 'twitch_dark':
+    case 'twitch_video':
+        update_twitch();
         break;
     case 'unhide':
         Keys(context_areas).forEach(key => {
@@ -453,7 +474,7 @@ function change_theme(theme) {
 
 /**
  * Called whenever the page loads and whenever the hash changes
- * @param {Object} dico
+ * @param {!Object} dico
  */
 function check_hash_special(dico) {
     check_stream();
@@ -826,33 +847,11 @@ function handle_drop(e) {
 /**
  * Which elements should be hidden dynamically?
  * - used at the start of populate_areas
- * @param {Object} hides
+ * @param {!Object} hides
  */
 function hide_areas(hides) {
     if (!Y['moves_copy'])
         hides[`moves-${y_x}`] = 1;
-}
-
-/**
- * Hide a drag element
- * @param {Node} target
- */
-function hide_element(target) {
-    let drop = get_drop_id(target),
-        areas = Y['areas'];
-    if (!drop.node)
-        return;
-
-    Keys(areas).forEach(key => {
-        for (let vector of areas[key])
-            if (vector[0] == drop.id) {
-                vector[2] &= ~1;
-                break;
-            }
-    });
-
-    Hide(drop.node);
-    populate_areas();
 }
 
 /**
@@ -1354,94 +1353,63 @@ function update_visible() {
 }
 
 /**
- * Handle a general window click
- * @param {Event} e
+ * Window click on the first target
+ * @param {!Object} dataset
+ * @returns {number} 0:nothing, 1:return
  */
-function window_click(e) {
-    Clear(KEYS);
-    let cannot = cannot_click();
-    if (cannot == 1)
-        return;
-
-    let in_modal,
-        target = e.target,
-        type = e.type,
-        is_click = (type == 'click'),
-        dataset = target.dataset;
-
-    // special cases
-    if (dataset) {
-        let id = dataset['id'];
-        switch (id) {
-        case 'about':
-            show_about();
-            return;
-        case 'load_pgn':
-            let file = CacheId('file');
-            Attrs(file, {'data-x': id});
-            file.click();
-            return;
-        }
+function window_click_dataset(dataset) {
+    let id = dataset['id'];
+    switch (id) {
+    case 'about':
+        show_about();
+        return 1;
+    case 'load_pgn':
+        let file = CacheId('file');
+        Attrs(file, {'data-x': id});
+        file.click();
+        return 1;
     }
 
-    while (target) {
-        let id = target.id;
-        if (id) {
-            if (['archive', 'live'].includes(id))
-                break;
-            if (id.includes('modal') || id.includes('popup')) {
-                in_modal = id;
-                return;
-            }
-        }
-        if (HasClasses(target, 'fen|nav'))
-            return;
-        if (HasClasses(target, 'live-pv|xmoves'))
-            context_target = target;
-
-        if (is_click) {
-            if (HasClass(target, 'popup-close')) {
-                in_modal = false;
-                break;
-            }
-            if (HasClass(target, 'tab')) {
-                open_table(target, true);
-                break;
-            }
-
-            // sub settings
-            let dataset = target.dataset;
-            if (dataset) {
-                let set = target.dataset['set'];
-                if (set != undefined) {
-                    let parent = Parent(target, {class_: 'popup'}),
-                        xy = '';
-                    if (parent && parent.dataset) {
-                        let item = parent.dataset['xy'];
-                        if (item)
-                            xy = item.split(',').map(item => item * 1);
-                    }
-                    if (set == -1)
-                        close_popups();
-                    else
-                        show_popup('options', true, {id: 'options', setting: set, target: parent, xy: xy});
-                    return;
-                }
-
-                let seek = dataset['seek'];
-                if (seek) {
-                    show_filtered_games(seek);
-                    return;
-                }
-            }
-        }
-
-        target = target.parentNode;
-    }
-
-    if (!in_modal)
-        close_popups();
+    return 0;
 }
+
+/**
+ * Window click => some parent of the target
+ * @param {Node} parent
+ * @param {boolean} is_click
+ * @returns {number} 0:nothing, 1:return, 2:break
+ */
+function window_click_parent(parent, is_click) {
+    if (HasClass(parent, 'fen'))
+        return 1;
+    if (HasClasses(parent, 'live-pv|xmoves'))
+        context_target = parent;
+
+    if (is_click) {
+        if (HasClass(parent, 'popup-close'))
+            return 2;
+        if (HasClass(parent, 'tab')) {
+            open_table(parent, true);
+            return 2;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Window click => dataset of some parent of the target
+ * @param {!Object} dataset
+ * @returns {number} 0:nothing, 1:return, 2:break
+ */
+function window_click_parent_dataset(dataset) {
+    let seek = dataset['seek'];
+    if (seek) {
+        show_filtered_games(seek);
+        return 1;
+    }
+    return 0;
+}
+
 
 // EVENTS
 /////////
@@ -1652,48 +1620,6 @@ function set_global_events() {
         }
     });
 
-    // drag and drop
-    Events(window, 'dragstart', e => {
-        if (!Y['drag_and_drop'])
-            return;
-        // no drag and drop on text
-        let target = e.target;
-        if (target.nodeType != 1)
-            return;
-        let parent = Parent(target, {attrs: 'draggable=true', self: true});
-        if (parent)
-            drag_source = parent;
-    });
-    Events(window, 'dragenter dragover', e => {
-        if (!Y['drag_and_drop'])
-            return;
-        let child = get_drop_id(e.target).node,
-            parent = Parent(e.target, {class_: 'area', self: true});
-        if (child == drag_source)
-            child = null;
-        else if (!child)
-            child = parent;
-
-        // tab=drop or top/bottom area => vertical bar, otherwise horizontal
-        let orient = ((parent && ['bottom', 'top'].includes(parent.id)) || HasClass(child, 'drop'))? 1: 2;
-        draw_rectangle(child, orient, e.clientX, e.clientY);
-        if (!child)
-            return;
-
-        Class('.area', 'dragging');
-        SP(e);
-        PD(e);
-    });
-    Events(window, 'dragexit dragleave', e => {
-        if (!Y['drag_and_drop'])
-            return;
-        if (e.target.tagName == 'HTML') {
-            Class('.area', '-dragging');
-            Hide(CacheId('rect'));
-        }
-    });
-    Events(window, 'drop', handle_drop);
-
     // file
     Events(CacheId('file'), 'change', function() {
         let file = this.files[0],
@@ -1746,6 +1672,9 @@ function set_global_events() {
                 }
         };
     });
+
+    // drag and drop
+    set_drag_events(handle_drop);
 }
 
 // MAIN
@@ -1835,9 +1764,7 @@ function prepare_settings() {
             'archive': 'season',
             'live': 'stand',
         },
-        'twitch_chat': 1,
         'twitch_dark': 0,
-        'twitch_video': 1,
         'version': '0',
     });
     guess_types(DEFAULTS);
@@ -1967,7 +1894,6 @@ function prepare_settings() {
             'moves': {},
         },
         cores = navigator.hardwareConcurrency,
-        min_max = 'min and max values, hidden if both are 0',
         old = 'move',
         shortcuts = [...['off'], ...[...Keys(TABLES).filter(table => table != 'overview'), ...['stats']].sort()],
         show_plies = [['first', 'diverging', 'last'], 'diverging'];
@@ -1983,34 +1909,38 @@ function prepare_settings() {
             'theme': [THEMES, THEMES[0]],
         },
         'audio': {
-            'audio_book': [ON_OFF, 1],
+            'silent_mode': [ON_OFF, 0],
+            'audio_book': [ON_OFF, 1, 'opening moves from the book'],
             'audio_delay': option_number(150, 0, 2000, 1, {}, 'audio delay when animation speed is 500ms'),
-            'audio_live_archive': [ON_OFF, 0],
-            'audio_moves': [['none', 'all', 'last'], 'all'],
-            'audio_pva': [ON_OFF, 1],
+            'audio_live_archive': [ON_OFF, 0, 'when in the archive, hear a sound when a Live move was played'],
+            'audio_moves': [
+                ['none', 'all', 'last'], 'all',
+                'all: all moves emit a sound even from history\nlast: only the last move emits a sound',
+            ],
+            'audio_pva': [ON_OFF, 1, 'sound in PVA board'],
             'audio_set': [['custom', bamboo, 'kan'], 'custom'],
             'capture_delay': option_number(-200, -1000, 1000, 1, {}, 'capture delay when animation speed is 500ms'),
             'sound_capture': [['off', `${bamboo2}capture`, 'kan - capture', old], `${bamboo2}capture`],
             'sound_check': [['off', `${bamboo2}check`, old], `${bamboo2}check`],
             'sound_checkmate': [['off', `${bamboo2}checkmate`, old], `${bamboo2}checkmate`],
             'sound_draw': [['off', 'draw', 'win'], 'draw'],
-            'sound_move': [['off', `${bamboo2}move`, 'kan - move', old], `${bamboo2}move`],
-            'sound_move_pawn': [['off', `${bamboo2}pawn`, 'kan - move', old], `${bamboo2}pawn`],
+            'sound_move': [['off', `${bamboo2}move`, 'kan - move', old], `${bamboo2}move`, 'a non-pawn piece moved'],
+            'sound_move_pawn': [['off', `${bamboo2}pawn`, 'kan - move', old], `${bamboo2}pawn`, 'a pawn moved'],
             'sound_win': [['off', 'draw', 'win'], 'win'],
-            'volume': option_number(10, 0, 20, 0.5),
+            'volume': option_number(10, 0, 20, 0.5, {}, HELP_VOLUME),
         },
         'video': {
             'background_color': [{type: 'color'}, '#000000'],
             'background_image': [{type: 'link'}, ''],
-            'background_opacity': option_number(0, 0, 1, 0.01),
+            'background_opacity': option_number(0, 0, 1, 0.01, {}, HELP_OPACITY),
             'background_reset': '1',
-            'encoding': [['Gamma', 'Linear', 'sRGB'], 'sRGB'],
-            'exposure': option_number(1, 0.1, 10, 0.1),
-            'gamma': option_number(1.5, 0, 10, 0.1),
-            'lighting': [['low', 'medium', 'high'], 'high'],
-            'resolution': [['1:4', '1:3', '1:2', '1:1'], '1:2'],
-            'shadow': [Keys(SHADOW_QUALITIES), 'high'],
-            'texture': [AUTO_ON_OFF, 'auto'],
+            'encoding': [['Gamma', 'Linear', 'sRGB'], 'sRGB', '3D'],
+            'exposure': option_number(1, 0.1, 10, 0.1, {}, '3D'),
+            'gamma': option_number(1.5, 0, 10, 0.1, {}, '3D'),
+            'lighting': [['low', 'medium', 'high'], 'high', '3D'],
+            'resolution': [['1:4', '1:3', '1:2', '1:1'], '1:2', '3D'],
+            'shadow': [Keys(SHADOW_QUALITIES), 'high', '3D'],
+            'texture': [AUTO_ON_OFF, 'auto', '3D'],
         },
         // separator
         '_1': {},
@@ -2026,23 +1956,26 @@ function prepare_settings() {
             'color_01': {
                 '_label': '{Color} 0, 1',
                 '_multi': 2,
+                '_title': HELP_COLOR_01,
                 'arrow_color_0': [{type: 'color'}, '#cdcdbe', 'white'],
                 'arrow_color_1': [{type: 'color'}, '#666666', 'black'],
             },
             'color_23': {
                 '_label': '{Color} 2, 3',
                 '_multi': 2,
+                '_title': HELP_COLOR_23,
                 'arrow_color_2': [{type: 'color'}, '#236ad6', 'blue'],
                 'arrow_color_3': [{type: 'color'}, '#eb282d', 'red'],
             },
             'combine': {
                 '_label': '{Color} 01, 23',
                 '_multi': 2,
+                '_title': 'combined color when both players agree:\nwhite/black players + blue/red kibitzers',
                 'arrow_color_01': [{type: 'color'}, '#c6bf7b', '{white} + {black}'],
                 'arrow_color_23': [{type: 'color'}, '#007700', '{blue} + {red}'],
             },
             'arrow_from': [['none', 'all', 'kibitzer', 'player'], 'all'],
-            'arrow_from_opponent': option_number(0.6, 0, 1, 0.01),
+            'arrow_from_opponent': option_number(0.6, 0, 1, 0.01, {}, 'show the ponder move'),
             'arrow_head_border': option_number(0.5, 0, 5, 0.01),
             'arrow_head_color': {
                 '_multi': 2,
@@ -2050,19 +1983,20 @@ function prepare_settings() {
                 'arrow_head_mix': option_number(0.7, 0, 1, 0.01, {}, 'mix'),
             },
             'arrow_head_size': option_number(2.05, 0, 5, 0.05),
-            'arrow_history_lag': option_number(1300, 0, 5000),
-            'arrow_moves': [['all', 'last'], 'all'],
-            'arrow_opacity': option_number(0.7, 0, 1, 0.01),
+            'arrow_history_lag':
+                option_number(1300, 0, 5000, 1, {}, 'when checking past moves, wait a bit before showing the arrow'),
+            'arrow_moves': [['all', 'last'], 'all', 'show arrow for all moves or only the last move'],
+            'arrow_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
             'arrow_width': option_number(1.6, 0, 5, 0.01),
         },
         'board': {
             'analysis': analyses,
-            'animate': [ON_OFF, 1],
+            'animate': [ON_OFF, 1, HELP_ANIMATE],
             'animation_speed': {
                 '_multi': 2,
-                '_title': 'how fast pieces can move, in ms',
-                'smooth_min': option_number(250, 0, 2000, 10, {}, 'min'),
-                'smooth_max': option_number(500, 0, 2000, 10, {}, 'max'),
+                '_title': 'how fast pieces can move, in ms\nspeed is adjusted between min and max',
+                'smooth_min': option_number(250, 0, 2000, 10, {}, HELP_MIN),
+                'smooth_max': option_number(500, 0, 2000, 10, {}, HELP_MAX),
             },
             'arrow': '',
             'board_theme': [Keys(BOARD_THEMES), 'chess24'],
@@ -2074,20 +2008,20 @@ function prepare_settings() {
                 '_class': 'dn',
                 '_value': [{type: 'color'}, '#ffffff'],
             },
-            'controls': [ON_OFF, 1],
+            'controls': [ON_OFF, 1, HELP_CONTROLS],
             'copy': copy_download,
-            'draw_right_click': [ON_OFF, 0],
+            'draw_right_click': [ON_OFF, 0, 'use right click to draw on the board'],
             'highlight_color': [{type: 'color'}, '#ffff00'],
             'highlight_delay': option_number(0, -100, 1500, 100),
             'highlight_size': option_number(0.055, 0, 0.4, 0.001),
-            'notation': [ON_OFF, 1],
+            'notation': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme': [Keys(PIECE_THEMES), 'chess24'],
-            'status': [AUTO_ON_OFF, 'auto'],
+            'status': [AUTO_ON_OFF, 'auto', 'status bar\nauto: on when engine tab is not visible'],
         },
         'board_pv': {
             '_suffix': '_pv',
             'analysis': analyses,
-            'animate_pv': [ON_OFF, 1],
+            'animate_pv': [ON_OFF, 1, HELP_ANIMATE],
             'board_theme_pv': [Keys(BOARD_THEMES), 'uscf'],
             'custom_black_pv': {
                 '_class': 'dn',
@@ -2097,20 +2031,20 @@ function prepare_settings() {
                 '_class': 'dn',
                 '_value': [{type: 'color'}, '#ffffff'],
             },
-            'controls_pv': [ON_OFF, 1],
+            'controls_pv': [ON_OFF, 1, HELP_CONTROLS],
             'copy': copy_download,
             'highlight_color_pv': [{type: 'color'}, '#ffff00'],
             'highlight_size_pv': option_number(0.088, 0, 0.4, 0.001),
-            'notation_pv': [ON_OFF, 1],
+            'notation_pv': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme_pv': [Keys(PIECE_THEMES), 'chess24'],
             // 'show_delay': option_number(100, 0, 2000, 10),
             'show_ply': show_plies,
-            'status_pv': [ON_OFF, 1],
+            'status_pv': [ON_OFF, 1, 'status bar'],
         },
         'board_pva': {
             '_suffix': '_pva',
-            'animate_pva': [ON_OFF, 1],
-            'auto_paste': [ON_OFF, 1],
+            'animate_pva': [ON_OFF, 1, HELP_ANIMATE],
+            'auto_paste': [ON_OFF, 1, 'paste the position (or moves) when doing CTRL+C or copy PGN in other boards'],
             'board_theme_pva': [Keys(BOARD_THEMES), 'uscf'],
             'custom_black_pva': {
                 '_class': 'dn',
@@ -2120,29 +2054,29 @@ function prepare_settings() {
                 '_class': 'dn',
                 '_value': [{type: 'color'}, '#ffffff'],
             },
-            'controls_pva': [ON_OFF, 1],
+            'controls_pva': [ON_OFF, 1, HELP_CONTROLS],
             'highlight_color_pva': [{type: 'color'}, '#ffff00'],
             'highlight_size_pva': option_number(0.055, 0, 0.4, 0.001),
-            'notation_pva': [ON_OFF, 1],
+            'notation_pva': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme_pva': [Keys(PIECE_THEMES), 'chess24'],
             'source_color': {
                 '_multi': 2,
-                '_title': 'clicked piece',
+                '_title': 'color of the clicked piece',
                 'source_color': [{type: 'color'}, '#ffb400'],
-                'source_opacity': option_number(0.7, 0, 1, 0.01, {}, 'opacity'),
+                'source_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
             },
-            'status_pva': [ON_OFF, 1],
+            'status_pva': [ON_OFF, 1, 'status bar'],
             'target_color': {
                 '_multi': 2,
-                '_title': 'legal squares',
+                '_title': 'show legal squares that the piece can occupy',
                 'target_color': [{type: 'color'}, '#ff5a00'],
-                'target_opacity': option_number(0.7, 0, 1, 0.01, {}, 'opacity'),
+                'target_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
             },
             'turn_color': {
                 '_multi': 2,
-                '_title': 'legal pieces',
+                '_title': 'show pieces that are allowed to move',
                 'turn_color': [{type: 'color'}, '#ff5a00'],
-                'turn_opacity': option_number(0, 0, 1, 0.01, {}, 'opacity'),
+                'turn_opacity': option_number(0, 0, 1, 0.01, {}, HELP_OPACITY),
             },
         },
         'boom': {
@@ -2162,53 +2096,52 @@ function prepare_settings() {
                 option_number(2.3, 0, 10, 0.1, {}, 'strict majority of unique engines must exceed this eval'),
             'explosion_visual': [boom_visuals, 'all'],
             'explosion_volume': option_number(5, 0, 20, 0.5),
-            'PVA': [ON_OFF, 0],
+            'PVA': [ON_OFF, 0, 'enable boom in PVA board'],
             'test': [{list: ['boom', 'moob', 'explosion'], type: 'list'}],
         },
         'control': {
             'book_every': option_number(600, 100, 5000, 50, {}, 'opening book play speed'),
             'key_accelerate':
                 option_number(1.04, 0.5, 1, 0.001, {}, 'divide key repeat time by this value, 1 for no acceleration'),
-            'key_repeat': option_number(70, 10, 2000, 10),
-            'key_repeat_initial': option_number(500, 10, 2000, 10),
+            'key_repeat': option_number(70, 10, 2000, 10, {}, 'delay for the 2nd, 3rd, ... repeats when holding a key'),
+            'key_repeat_initial': option_number(500, 10, 2000, 10, {}, 'delay for the 1st repeat when holding a key'),
             'play_every': option_number(1200, 100, 5000, 50, {}, 'speed when clicking on PLAY'),
             'quick_every': {
                 '_multi': 2,
-                '_title': 'live moves play speed',
-                'quick_min': option_number(100, 100, 50000, 10, {}, 'min'),
-                'quick_max': option_number(500, 100, 50000, 10, {}, 'max'),
+                '_title': 'Live moves play speed\speed is adjusted between min and max',
+                'quick_min': option_number(100, 100, 50000, 10, {}, HELP_MIN),
+                'quick_max': option_number(500, 100, 50000, 10, {}, HELP_MAX),
             },
             // 'wasm': [ON_OFF, 0],
         },
         'engine': {
+            'checkmate': [['moves', 'plies'], 'moves', 'moves: M#8, plies: M16'],
             'engine_font': option_number(16, 8, 24, 0.25),
             'engine_spacing': option_number(0.2, 0, 5, 0.0025),
             'material_color': [['inverted', 'normal'], 'normal', 'normal will show black pieces under white player'],
             'mobility': [ON_OFF, 1, 'show r-mobility goal + mobilities'],
             'moves_left': [ON_OFF, 1, 'show moves left when Lc0 is playing'],
             'small_decimal': [['on', 'off', 10, 100], 100, 'decimals format for the eval'],
-            'SI_units': [ON_OFF, 1],
+            'SI_units': [ON_OFF, 1, '1 billion = 1G in SI units instead of 1B'],
         },
         'extra': {
-            'archive_scroll': [ON_OFF, 1],
+            'archive_scroll': [ON_OFF, 1, 'automatically scroll down when clicking on "Archive"'],
             'benchmark': {
                 '_main': 1,
                 '_multi': 2,
+                '_title': 'check how fast your computer is, try "Game" with preset="4 columns"',
                 'now': {},
                 'game': {},
             },
-            'drag_and_drop': [ON_OFF, 0],
-            'join_next': [ON_OFF, 0],
-            'log_auto_start': [ON_OFF, 1],
-            'log_history': option_number(100, -1, 1000),
-            'log_pv': [ON_OFF, 1, 'use livelog pv'],
+            'drag_and_drop': [ON_OFF, 0, HELP_DRAG_AND_DROP],
+            'join_next': [ON_OFF, 0, 'show the "join next" button when right clicking on an element'],
             'popup_right_click': [ON_OFF, 1, 'right click on elements for a popup menu'],
-            'reload_missing': [ON_OFF, 1],
-            'reverse_kills': [ON_OFF, 0],
+            'reverse_kills': [ON_OFF, 0, 'replace "double wins" with "reverse kills"'],
             'rows_per_page': [[10, 20, 50, 100, 1000], 10],
-            'scroll_inertia': option_number(0.95, 0, 0.99, 0.01),
-            'wheel_adjust': option_number(63, 0, 240),
-            'wrap': [ON_OFF, 1],
+            'scroll_inertia': option_number(0.95, 0, 0.99, 0.01, {}, HELP_ADVANCED),
+            'wheel_adjust':
+                option_number(63, 0, 240, 1, {}, 'adjust the scrolling when using wheel scroll\nmax amount in pixels'),
+            'wrap': [ON_OFF, 1, 'wrap cell content'],
             'wrap_cross': [AUTO_ON_OFF, 'auto'],
             'wrap_h2h': [AUTO_ON_OFF, 'auto'],
             'wrap_sched': [AUTO_ON_OFF, 'auto'],
@@ -2216,7 +2149,7 @@ function prepare_settings() {
         },
         'game': {
             '_prefix': 'game_',
-            'game_960': [ON_OFF, 1],
+            'game_960': [ON_OFF, 1, 'Chess960 = Fischer Random Chess'],
             'game_advice': '1',
             'analysis': analyses,
             'game_arrow': [['none', 'color', 'kibitz', 'color 0', 'color 1', 'color 2', 'color 3'], 'kibitz'],
@@ -2229,64 +2162,66 @@ function prepare_settings() {
             'game_options_black': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20'],
             'game_options_white': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20'],
             'parameters': '',
-            'game_PV': [ON_OFF, 1],
+            'game_PV': [ON_OFF, 1, 'show the PV'],
             'game_think': '1',
             'game_time': option_number(5, -1, 120),
         },
         'graph': {
             '_prefix': 'graph_',
-            'graph_aspect_ratio': option_number(1.5, 0.5, 5, 0.005),
+            'graph_aspect_ratio': option_number(1.5, 0.5, 5, 0.005, {}, '(horizontal/vertical) ratio'),
             'color_01': {
                 '_label': '{Color} 0, 1',
                 '_multi': 2,
+                '_title': HELP_COLOR_01,
                 'graph_color_0': [{type: 'color'}, '#fefdde', 'white'],
                 'graph_color_1': [{type: 'color'}, '#02031e', 'black'],
             },
             'color_23': {
                 '_label': '{Color} 2, 3',
                 '_multi': 2,
+                '_title': HELP_COLOR_23,
                 'graph_color_2': [{type: 'color'}, '#236ad6', 'blue'],
                 'graph_color_3': [{type: 'color'}, '#eb282d', 'red'],
             },
-            'graph_eval_clamp': option_number(10, 0, 256, 0.5, {}, 'works with scale=linear'),
+            'graph_eval_clamp': option_number(10, 0, 256, 0.5, {}, 'limit the eval, only works with scale=linear'),
             'graph_eval_mode': [['percent', 'score'], 'score'],
-            'graph_line': option_number(1.5, 0, 10, 0.1),
+            'graph_line': option_number(1.5, 0, 10, 0.1, {}, 'line thickness'),
             'marker_color': {
                 '_multi': 2,
                 'marker_color': [{type: 'color'}, '#299bff'],
-                'marker_opacity': option_number(0.5, 0, 1, 0.01, {}, 'opacity'),
+                'marker_opacity': option_number(0.5, 0, 1, 0.01, {}, HELP_OPACITY),
             },
             'graph_min_width': option_number(240, 40, 640),
-            'graph_radius': option_number(1.2, 0, 10, 0.1),
+            'graph_radius': option_number(1.2, 0, 10, 0.1, {}, 'radius of the points'),
             'graph_scale': [SCALES, 0, '!', null, () => {
                 let name = ((context_target || {}).id || '').split('-')[1],
                     value = Y['scales'][name];
                 DEFAULTS['graph_scale'] = DEFAULT_SCALES[name];
                 return (value & 10)? 10: value;
             }],
-            'graph_tension': option_number(0.1, 0, 0.5, 0.01),
-            'graph_text': option_number(10, 1, 30),
+            'graph_tension': option_number(0.1, 0, 0.5, 0.01, {}, HELP_ADVANCED),
+            'graph_text': option_number(10, 1, 30, 1, {}, 'text size'),
             'use_for_arrow': '1',
         },
         'info': {
-            'eval': [ON_OFF, 1],
-            'eval_left': [ON_OFF, 1],
-            'hardware': [ON_OFF, 0],
-            'more': [ON_OFF, 1],
+            'eval': [ON_OFF, 1, HELP_EVAL],
+            'eval_left': [ON_OFF, 1, HELP_EVAL_LEFT],
+            'hardware': [ON_OFF, 0, HELP_HARDWARE],
+            'more': [ON_OFF, 1, HELP_ADVANCED],
             'moves': [ON_OFF, 1],
-            'moves_copy': [ON_OFF, 0],
+            'moves_copy': [ON_OFF, 0, 'show a copy of the moves (advanced)'],
             'moves_live': [ON_OFF, 1],
             'moves_pv': [ON_OFF, 1],
             'moves_pva': [ON_OFF, 1],
-            'percent': [ON_OFF, 1],
-            'percent_width': option_number(58, 0, 100, 0.5, {}, 'max width in %'),
-            'single_line': [ON_OFF, 0],
+            'percent': [ON_OFF, 1, HELP_PERCENT],
+            'percent_width': option_number(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+            'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
         },
         'live': {
             'agree_length': agree_length,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_live': option_number(0, 0, 10),
+            'grid_live': option_number(0, 0, 10, 1, {}, HELP_GRID),
             'live_engine_1': [ON_OFF, 1],
             'live_engine_2': [ON_OFF, 1],
             'live_pv': [ON_OFF, 1],
@@ -2297,11 +2232,11 @@ function prepare_settings() {
         },
         'moves': {
             'agree_length': agree_length,
-            'grid': option_number(0, 0, 10),
-            'grid_copy': option_number(2, 0, 10),
-            'grid_live': option_number(0, 0, 10),
-            'grid_pv': option_number(2, 0, 10),
-            'grid_pva': option_number(0, 0, 10),
+            'grid': option_number(0, 0, 10, 1, {}, HELP_GRID),
+            'grid_copy': option_number(2, 0, 10, 1, {}, HELP_GRID),
+            'grid_live': option_number(0, 0, 10, 1, {}, HELP_GRID),
+            'grid_pv': option_number(2, 0, 10, 1, {}, HELP_GRID),
+            'grid_pva': option_number(0, 0, 10, 1, {}, HELP_GRID),
             'move_font': option_number(13, 6, 30, 0.1),
             'move_font_copy': option_number(13, 6, 30, 0.1),
             'move_font_live': option_number(13, 6, 30, 0.1),
@@ -2313,50 +2248,66 @@ function prepare_settings() {
             'move_height_pv': option_number(91, 65, 1600, 0.5),
             'move_height_pva': option_number(70, 65, 1600, 0.5),
         },
+        'network': {
+            'log_auto_start':
+                [ON_OFF, 1, 'enable the LiveLog whenever the page is loaded\nlog is used for live eval+pv updates'],
+            'log_history': option_number(100, -1, 1000, 1, {}, 'max number of lines'),
+            'log_pv': [ON_OFF, 1, 'use LiveLog to update the PV in real time'],
+            'network': [
+                ['auto', 'socket.io', 'websocket'], 'auto',
+                'socket.io: slow + unreliable + more traffic = works on the old server\n'
+                + 'websocket: fast + reliable + less traffic = needs the new server',
+            ],
+            'reload_missing': [ON_OFF, 1, 'reload the full PGN when moves are missing'],
+            'twitch_chat': [ON_OFF, 1],
+            'twitch_dark': [ON_OFF, 0, 'Twitch chat dark mode'],
+            'twitch_video': [ON_OFF, 1, 'show the Twitch stream at the bottom of the page'],
+        },
         'panel': {
-            'column_bottom': option_number(4, 1, 8),
-            'column_top': option_number(2, 1, 8),
+            'column_bottom': option_number(4, 1, 8, 1, {}, 'number of columns in the bottom panel'),
+            'column_top': option_number(2, 1, 8, 1, {}, 'number of columns in the top panel'),
             'default_positions': '1',
-            'drag_and_drop': [ON_OFF, 0],
+            'drag_and_drop': [ON_OFF, 0, HELP_DRAG_AND_DROP],
             'left_2': {
                 '_multi': 2,
-                '_title': min_max,
-                'min_left_2': option_number(0, -1, 1200),
-                'max_left_2': option_number(0, -1, 1200),
+                '_title': HELP_MIN_MAX,
+                'min_left_2': option_number(0, -1, 1200, 1, {}, HELP_MIN),
+                'max_left_2': option_number(0, -1, 1200, 1, {}, HELP_MAX),
             },
             'left': {
                 '_multi': 2,
-                '_title': min_max,
-                'min_left': option_number(300, -1, 1200),
-                'max_left': option_number(500, -1, 1200),
+                '_title': HELP_MIN_MAX,
+                'min_left': option_number(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_left': option_number(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'center': {
                 '_multi': 2,
-                '_title': min_max,
-                'min_center': option_number(300, -1, 1200),
-                'max_center': option_number(500, -1, 1200),
+                '_title': HELP_MIN_MAX,
+                'min_center': option_number(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_center': option_number(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'right': {
                 '_multi': 2,
-                '_title': min_max,
-                'min_right': option_number(300, -1, 1200),
-                'max_right': option_number(500, -1, 1200),
+                '_title': HELP_MIN_MAX,
+                'min_right': option_number(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_right': option_number(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'right_2': {
                 '_multi': 2,
-                '_title': min_max,
-                'min_right_2': option_number(0, -1, 1200),
-                'max_right_2': option_number(0, -1, 1200),
+                '_title': HELP_MIN_MAX,
+                'min_right_2': option_number(0, -1, 1200, 1, {}, HELP_MIN),
+                'max_right_2': option_number(0, -1, 1200, 1, {}, HELP_MAX),
             },
-            'max_window': option_number(2560, 256, 32000),
+            'max_window': option_number(2560, 256, 32000, 1, {}, 'max width of the layout, in pixels'),
             'panel_adjust': [ON_OFF, 0, 'show the < > - + above the panel'],
-            'panel_gap': option_number(device.mobile? 5: 10, 0, 100),
+            'panel_gap': option_number(device.mobile? 5: 10, 0, 100, 1, {}, 'spacing between each panel'),
             'quick': '',
-            'tabs_per_row': option_number(7, 1, 100),
+            'tabs_per_row': option_number(7, 1, 100, 1, {}, 'max number of tabs per row'),
             'unhide': '1',
         },
         'quick': {
-            'chat_height': option_number(828, 100, 1600, 0.5),
+            'chat_height':
+                option_number(828, 100, 1600, 0.5, {}, 'height in pixels of the chat + other tabs next to the chat'),
             'shortcut_1': [shortcuts, 'stand'],
             'shortcut_2': [shortcuts, 'stats'],
             'shortcut_3': [shortcuts, 0],
@@ -2371,7 +2322,7 @@ function prepare_settings() {
             '_pop': true,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid': option_number(0, 0, 10),
+            'grid': option_number(0, 0, 10, 1, {}, HELP_GRID),
             'move_font': option_number(13, 6, 30, 0.1),
             'move_height': option_number(70, 39, 1600, 0.5),
             'moves': [ON_OFF, 1],
@@ -2381,7 +2332,7 @@ function prepare_settings() {
             '_pop': true,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_copy': option_number(2, 0, 10),
+            'grid_copy': option_number(2, 0, 10, 1, {}, HELP_GRID),
             'move_font_copy': option_number(13, 6, 30, 0.1),
             'move_height_copy': option_number(260, 39, 1600, 0.5),
             'moves': [ON_OFF, 1],
@@ -2392,7 +2343,7 @@ function prepare_settings() {
             'agree_length': agree_length,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_pv': option_number(2, 0, 10),
+            'grid_pv': option_number(2, 0, 10, 1, {}, HELP_GRID),
             'move_font_pv': option_number(13, 6, 30, 0.1),
             'move_height_pv': option_number(91, 39, 1600, 0.5),
             'moves_pv': [ON_OFF, 1],
@@ -2403,7 +2354,7 @@ function prepare_settings() {
             '_prefix': 'game_',
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_pva': option_number(0, 0, 10),
+            'grid_pva': option_number(0, 0, 10, 1, {}, HELP_GRID),
             'move_font_pva': option_number(13, 6, 30, 0.1),
             'move_height_pva': option_number(70, 39, 1600, 0.5),
             'moves_pva': [ON_OFF, 1],
@@ -2412,24 +2363,24 @@ function prepare_settings() {
         },
         'eval': {
             '_pop': true,
-            'eval': [ON_OFF, 1],
-            'eval_left': [ON_OFF, 1],
-            'hardware': [ON_OFF, 0],
+            'eval': [ON_OFF, 1, HELP_EVAL],
+            'eval_left': [ON_OFF, 1, HELP_EVAL_LEFT],
+            'hardware': [ON_OFF, 0, HELP_HARDWARE],
             'moves_live': [ON_OFF, 1],
-            'percent': [ON_OFF, 1],
-            'percent_width': option_number(58, 0, 100, 0.5, {}, 'max width in %'),
-            'single_line': [ON_OFF, 0],
+            'percent': [ON_OFF, 1, HELP_PERCENT],
+            'percent_width': option_number(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+            'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
         },
         'parameters': {
             '_pop': true,
             '_prefix': 'game_',
-            'game_depth': option_number(4, 0, 8),
-            'game_evaluation': [['nul', 'mat', 'mob', 'hce', 'att', 'paw', 'kin', 'nn'], 'att'],
-            'game_options_black': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20'],
-            'game_options_white': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20'],
-            'game_search': [['ab=AlphaBeta', 'mm=Minimax', 'rnd=RandomMove'], 'ab'],
+            'game_depth': option_number(4, 0, 9, 1, {}, HELP_ADVANCED),
+            'game_evaluation': [['nul', 'mat', 'mob', 'hce', 'att', 'paw', 'kin', 'nn'], 'att', HELP_ADVANCED],
+            'game_options_black': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
+            'game_options_white': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
+            'game_search': [['ab=AlphaBeta', 'mm=Minimax', 'rnd=RandomMove'], 'ab', HELP_ADVANCED],
             'game_threads': option_number(1, 1, cores),   // Max(1, cores / 2)
-            'game_wasm': [ON_OFF, 1],
+            'game_wasm': [ON_OFF, 1, 'WASM = compiled C++, faster than native Javascript'],
         },
         'quick_copy': {
             '_flag': 3,
@@ -2441,12 +2392,12 @@ function prepare_settings() {
         'quick_setup': {
             '_pop': true,
             '_title': 'Quick setup',
-            'boom_effect': [ON_OFF, 0],
-            'moob_effect': [ON_OFF, 0],
-            'explosion_effect': [ON_OFF, 1],
+            'boom_effect': [ON_OFF, 0, 'audiovisual effect when an eval spikes'],
+            'moob_effect': [ON_OFF, 0, 'audiovisual effect when an engine blunders'],
+            'explosion_effect': [ON_OFF, 1, 'audiovisual effect when most engines agree that someone is winning'],
             'language': [LANGUAGES, ''],
             'theme': [THEMES, THEMES[0]],
-            'volume': option_number(10, 0, 15, 0.5, {}, 'general volume, 10: 100%, affects all sounds'),
+            'volume': option_number(10, 0, 20, 0.5, {}, HELP_VOLUME),
         },
     });
 
@@ -2532,6 +2483,9 @@ function startup() {
     virtual_reset_settings_special = reset_settings_special;
     virtual_resize = resize;
     virtual_set_modal_events_special = set_modal_events_special;
+    virtual_window_click_dataset = window_click_dataset;
+    virtual_window_click_parent = window_click_parent;
+    virtual_window_click_parent_dataset = window_click_parent_dataset;
 
     // pre-process
     detect_device();
@@ -2550,6 +2504,7 @@ function startup() {
     set_engine_events();
     set_game_events();
     startup_graph();
+    startup_network();
     add_history();
     ready ++;
 

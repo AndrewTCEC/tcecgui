@@ -1,5 +1,5 @@
 // chart.js
-// @version 2021-02-14
+// @version 2021-05-21
 /*
 globals
 Abs, AnimationFrame, Assign, Ceil, Clamp, console, Cos,
@@ -1015,7 +1015,7 @@ var helpers_options = {
      * Converts the given value into a padding object with pre-computed width/height.
      * @param {number|Object} value - If a number, set the value to all TRBL component,
      *  else, if and object, use defined properties and sets undefined ones to 0.
-     * @returns {Object} The padding values (top, right, bottom, left, width, height)
+     * @returns {!Object} The padding values (top, right, bottom, left, width, height)
      * @since 2.7.0
      */
     toPadding: function(value) {
@@ -1042,8 +1042,8 @@ var helpers_options = {
 
     /**
      * Parses font options and returns the font object.
-     * @param {Object} options - A object that contains font options to be parsed.
-     * @returns {Object} The font object.
+     * @param {!Object} options - A object that contains font options to be parsed.
+     * @returns {!Object} The font object.
      * @todo Support font.* options and renamed to toFont().
      * @private
      */
@@ -1416,10 +1416,11 @@ function listenArrayEvents(array, listener) {
                 var args = Array.prototype.slice.call(arguments);
                 var res = base.apply(this, args);
 
-                helpers.each(array._chartjs.listeners, function(object) {
-                    if (IsFunction(object[method]))
-                        object[method].apply(object, args);
-                });
+                if (array._chartjs)
+                    helpers.each(array._chartjs.listeners, function(object) {
+                        if (IsFunction(object[method]))
+                            object[method].apply(object, args);
+                    });
 
                 return res;
             }
@@ -2347,6 +2348,8 @@ var controller_line = core_datasetController.extend({
         var x, y;
 
         var options = me._resolveDataElementOptions(point, index);
+        if (!xScale || ! yScale)
+            return;
 
         x = xScale.getPixelForValue(IsObject(value)? value : NaN, index, datasetIndex);
         y = reset ? yScale.getBasePixel() : me.calculatePointY(value, index, datasetIndex);
@@ -2417,7 +2420,8 @@ var controller_line = core_datasetController.extend({
         // Only consider points that are drawn in case the spanGaps option is used
         if (lineModel.spanGaps) {
             points = points.filter(function(pt) {
-                return !pt._model.skip;
+                let model = pt._model;
+                return model && !model.skip;
             });
         }
 
@@ -4022,7 +4026,7 @@ var positioners = {
      * Average mode places the tooltip at the average position of the elements shown
      * @function Chart.Tooltip.positioners.average
      * @param {Array<ChartElement>} elements the elements being displayed in the tooltip
-     * @returns {Object} tooltip position
+     * @returns {Object|boolean} tooltip position
      */
     average: function(elements) {
         if (!elements.length) {
@@ -6603,7 +6607,7 @@ var Scale = Element.extend({
      * Get the padding needed for the scale
      * @method getPadding
      * @private
-     * @returns {Padding} the necessary padding
+     * @returns {!Object} the necessary padding
      */
     getPadding: function() {
         var me = this;

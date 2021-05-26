@@ -1,6 +1,6 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-02-19
+// @version 2021-05-21
 //
 // utility JS functions used in all the sites
 //
@@ -52,7 +52,8 @@ let Abs = Math.abs,
     Exp = Math.exp,
     Floor = Math.floor,
     From = Array.from,
-    IS_NODE = (typeof global != 'undefined')? global: null,
+    HAS_DOCUMENT = (typeof document != 'undefined')? document: null,
+    HAS_GLOBAL = (typeof global != 'undefined')? global: null,
     IsArray = Array.isArray,
     IsFloat = value => (Number.isFinite(value) && !Number.isInteger(value)),
     IsFunction = value => (typeof(value) == 'function'),
@@ -137,7 +138,7 @@ function Id(id, parent) {
         return null;
     if (IsObject(id))
         return /** @type {Node} */(id);
-    if (IS_NODE)
+    if (HAS_GLOBAL)
         return (parent || document).querySelector(`#${id}`);
     return (parent || document).getElementById(id);
 }
@@ -246,7 +247,7 @@ function CacheId(id, parent) {
 /**
  * Add / remove classes
  * @param {Node|string} sel CSS selector or node
- * @param {Array<*>|string} classes [['dn', flag=]], flag:0=add, 1=remove, 2=toggle
+ * @param {!Array<!Array>|string} classes [['dn', flag=]], flag:0=add, 1=remove, 2=toggle
  * @param {boolean|number=} add true for normal behavior (default), otherwise invert all - and +
  * @param {Node?=} parent
  */
@@ -317,8 +318,8 @@ function Class(sel, classes, add=true, parent=null) {
     }
 
     // array
+    classes = /** @type {!Array<!Array>} */(classes);
     if (IsObject(sel)) {
-        classes = /** @type {Array<*>} */(classes);
         let list = sel.classList;
         for (let [name, flag] of classes) {
             if (!name)
@@ -501,7 +502,7 @@ function Events(sel, events, callback, options, parent) {
 /**
  * Check if a node has a class
  * @param {Node|string} node CSS selector or node
- * @param {string} class_ can be multiple classes separated by spaces
+ * @param {string} class_ class name to match exactly
  * @returns {boolean}
  */
 function HasClass(node, class_) {
@@ -857,7 +858,7 @@ function Show(sel, parent, mode='') {
 /**
  * Change the style of nodes
  * @param {Node|string} sel CSS selector or node
- * @param {Array<*>|string} styles [['font-size', 10, flag=]], flag:0=add, 1=remove, 2=toggle
+ * @param {!Array<!Array>|string} styles [['font-size', 10, flag=]], flag:0=add, 1=remove, 2=toggle
  * @param {boolean=} add to set/add the style, otherwise remove it
  * @param {Node?=} parent
  */
@@ -939,8 +940,8 @@ function Style(sel, styles, add=true, parent=null) {
     }
 
     // array
+    styles = /** @type {!Array<!Array>} */(styles);
     if (IsObject(sel)) {
-        styles = /** @type {Array<*>} */(styles);
         let list = sel.style;
         for (let [name, value, flag] of styles) {
             if (!name)
@@ -1057,7 +1058,7 @@ function TEXT(sel, text, parent) {
         if (!node.childElementCount) {
             let child = node.firstChild;
             if (!child)
-                node.appendChild(document.createTextNode(text));
+                node.appendChild(document.createTextNode(/** @type {string} */(text)));
             else if (child.nodeType == 3)
                 child.nodeValue = text;
             else if (node.innerHTML != text)
@@ -1112,7 +1113,7 @@ function TextHTML(sel, text, parent) {
         if (!is_html && !node.childElementCount) {
             let child = node.firstChild;
             if (!child)
-                node.appendChild(document.createTextNode(text));
+                node.appendChild(document.createTextNode(/** @type {string} */(text)));
             else if (child.nodeType == 3)
                 child.nodeValue = text;
             else if (node.innerHTML != text)
@@ -1225,7 +1226,7 @@ function Clamp(number, min, max, min_set) {
 /**
  * Remove all properties of an object
  * @param {!Object} dico
- * @returns {Object}
+ * @returns {!Object}
  */
 function Clear(dico) {
     Keys(dico).forEach(key => {
@@ -1717,10 +1718,6 @@ function RandomSpread(range) {
  * @example
  * // get the context of the file
  * Resource('./fragment.frag', (status, text) => {LS(text)}, {type: 'text'})
- * // api call
- * Resource('api/user_login', (status, result) => {
- *     LS(result)}, Stringify({user: 'David'}
- * ), {method: 'POST'})
  */
 function Resource(url, callback, {content=null, form, headers={}, method='GET', type='json'}={}) {
     let xhr = new XMLHttpRequest();
@@ -1859,16 +1856,20 @@ if (typeof exports != 'undefined') {
         From: From,
         FromSeconds: FromSeconds,
         FromTimestamp: FromTimestamp,
+        HAS_DOCUMENT: HAS_DOCUMENT,
+        HAS_GLOBAL: HAS_GLOBAL,
+        HasClass: HasClass,
+        HasClasses: HasClasses,
         HashText: HashText,
         Hex2RGB: Hex2RGB,
         Hide: Hide,
         HTML: HTML,
         Id: Id,
         Index: Index,
+        Input: Input,
         InsertNodes: InsertNodes,
         InvalidEmail: InvalidEmail,
         InvalidPhone: InvalidPhone,
-        IS_NODE: IS_NODE,
         IsArray: IsArray,
         IsDigit: IsDigit,
         IsFloat: IsFloat,

@@ -1,6 +1,6 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-02
+// @version 2021-05-21
 //
 // global variables/functions shared across multiple js files
 //
@@ -8,8 +8,8 @@
 // jshint -W069
 /*
 globals
-Abs, Assign, Atan, CacheId, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, Hide, HTML, IsDigit, Keys,
-LS, Max, Min, Pad, Pow, require, reset_default, Round, save_default, save_option, show_popup, Split, Undefined, Y
+Abs, Assign, Atan, CacheId, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, HTML, IsDigit, IsString, Keys,
+LS, Max, Min, Pow, require, reset_default, save_default, save_option, Split, Undefined, virtual_can_close_popups:true, Y
 */
 'use strict';
 
@@ -26,7 +26,7 @@ let HOST_ARCHIVE,
     SF_COEFF_AS = [-8.24404295, 64.23892342, -95.73056462, 153.86478679],
     SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
     SF_PAWN_VALUE = 2.06,
-    VERSION = '20210502',
+    VERSION = '20210521',
     virtual_close_popups,
     xboards = {};
 
@@ -77,7 +77,7 @@ function allie_cp_to_score(cp) {
 /**
  * Update move values but skips empty strings like fen='' and pv=''
  * @param {Move} move
- * @param {Object} dico
+ * @param {!Object} dico
  */
 function assign_move(move, dico) {
     Assign(move, ...Keys(dico).filter(key => {
@@ -124,16 +124,66 @@ function calculate_feature_q(feature, eval_, ply) {
 }
 
 /**
- * Close all popups
+ * Can close popups = first step in "close popups"
+ * @returns {boolean}
  */
-function close_popups() {
-    show_popup();
+function can_close_popups() {
     if (virtual_close_popups)
         virtual_close_popups('popup-fen', 'fen', {type: 'mouseleave'});
 
     // empty the content to prevent controls for still interacting with the popup (ex: SELECT)
     HTML(CacheId('modal'), '');
-    Hide(CacheId('overlay'));
+    return true;
+}
+
+/**
+ * Convert a checkmate between moves and plies
+ * ply to move:
+ *      black says -M2 => next move = -M#1 (no M2)
+ * @param {number|string} text
+ * @param {number} ply ply or id
+ * @returns {string}
+ */
+function convert_checkmate(value, ply) {
+    let positive = 1,
+        want_ply = (Y['checkmate'] == 'plies');
+
+    // 1) already got M or M# => good sign
+    if (IsString(value)) {
+        positive = (value[0] == '-')? 0: 1;
+
+        if (value.includes('M#')) {
+            if (!want_ply)
+                return value;
+
+            value = value.replace('M#', '') << 1;
+            if ((ply & 1) == positive)
+                value --;
+        }
+        else if (value.includes('M')) {
+            if (want_ply)
+                return value;
+
+            value = value.replace('M', '');
+            if ((ply & 1) == positive)
+                value ++;
+            value = (value / 2) >> 0;
+        }
+    }
+    // 2) number => mate is in moves by default + invert sign if black
+    else {
+        if (ply & 1)
+            value = -value;
+        positive = (value < 0)? 0: 1;
+
+        if (want_ply) {
+            value <<= 1;
+            if ((ply & 1) == positive)
+                value --;
+        }
+    }
+
+    return `${positive? '': '-'}M${want_ply? '': '#'}${Abs(value)}`;
 }
 
 /**
@@ -179,7 +229,7 @@ function fix_move_format(move) {
             move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000): '-';
         // fix insta-moves speed
         else if (move['mt'] && move['mt'] < 2000) {
-            let speed = move['n'] / (move['mt'] + 500) * 1000;
+            let speed = move['n'] / (move['mt'] + (move['n'] > 500)? 5: 300) * 1000;
             if (move['s'] > speed * 3)
                 move['s'] = '-';
         }
@@ -190,14 +240,20 @@ function fix_move_format(move) {
 
 /**
  * Format the eval to make the 2 decimals smaller if the eval is high
+ * + can convert checkmate
  * @param {number} value
+ * @param {number} ply required for checkmate conversion, id is also ok
  * @param {boolean=} process can make decimals smaller
- * @returns {number}
+ * @returns {string}
  */
-function format_eval(value, process) {
+function format_eval(value, ply, process) {
     let float = parseFloat(value);
-    if (isNaN(float))
+    if (isNaN(float)) {
+        // checkmate conversion?
+        if (IsString(value) && value.includes('M'))
+            value = convert_checkmate(value, ply);
         return value;
+    }
 
     let small_decimal = Y['small_decimal'],
         text = float.toFixed(2);
@@ -275,32 +331,8 @@ function leela_cp_to_score(cp) {
 }
 
 /**
- * Mix 2 hex colors
- * @param {string} color1 #ffff00, ffff00
- * @param {string} color2 #0000ff
- * @param {number} mix how much of color2 to use, 0..1
- * @returns {string} #808080
- */
-function mix_hex_colors(color1, color2, mix) {
-    if (mix <= 0)
-        return color1;
-    else if (mix >= 1)
-        return color2;
-
-    let off1 = (color1[0] == '#')? 1: 0,
-        off2 = (color2[0] == '#')? 1: 0;
-
-    return '#' + [0, 2, 4].map(i => {
-        let color =
-              parseInt(color1.slice(off1 + i, off1 + i + 2), 16) * (1 - mix)
-            + parseInt(color2.slice(off2 + i, off2 + i + 2), 16) * mix;
-        return Pad(Round(color).toString(16));
-    }).join('');
-}
-
-/**
  * Get the seconds from a time text
- * @param {string} text
+ * @param {string} time
  * @returns {number}
  */
 function parse_time(time) {
@@ -430,6 +462,16 @@ function stoof_cp_to_score(cp) {
     return Atan(cp / 194) / 1.55564;
 }
 
+// STARTUP
+//////////
+
+/**
+ * Initialise structures with global data
+ */
+function startup_global() {
+    virtual_can_close_popups = can_close_popups;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
@@ -439,13 +481,13 @@ if (typeof exports != 'undefined') {
         allie_cp_to_score: allie_cp_to_score,
         assign_move: assign_move,
         calculate_feature_q: calculate_feature_q,
+        convert_checkmate: convert_checkmate,
         fix_move_format: fix_move_format,
         format_eval: format_eval,
         format_unit: format_unit,
         get_fen_ply: get_fen_ply,
         get_move_ply: get_move_ply,
         leela_cp_to_score: leela_cp_to_score,
-        mix_hex_colors: mix_hex_colors,
         reset_defaults: reset_defaults,
         reset_old_settings: reset_old_settings,
         split_move_string: split_move_string,

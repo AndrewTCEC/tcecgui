@@ -1,6 +1,6 @@
 // analyse_pgn.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-02-05
+// @version 2021-05-24
 /*
 globals
 process, require
@@ -12,9 +12,9 @@ let fs = require('fs'),
     unzipper = require('unzipper'),
     {
         Assign, DefaultInt, Floor, FormatUnit, FromTimestamp, IsDigit, Keys, LS, Max, Now, Pad, SetDefault,
-    } = require('./js/common.js'),
-    {fix_move_format} = require('./js/global.js'),
-    {extract_threads, parse_pgn} = require('./js/game.js');
+    } = require('../js/common.js'),
+    {fix_move_format} = require('../js/global.js'),
+    {extract_threads, parse_pgn} = require('../js/game.js');
 
 let engine_check = 'LCZero 0.27.0d-Tilps-dje-magic_JH.94-100',
     OPTIONS = {},
@@ -36,7 +36,7 @@ let engine_check = 'LCZero 0.27.0d-Tilps-dje-magic_JH.94-100',
  * @param {string} fill
  * @returns {string}
  */
-function create_spaces(size, fill=' ') {
+function createSpaces(size, fill=' ') {
     return new Array(size).fill(fill).join('');
 }
 
@@ -44,12 +44,12 @@ function create_spaces(size, fill=' ') {
  * Get Multi PGN stats
  * - accumulate all individual speeds
  * @param {string} data
- * @param {Object} result
+ * @param {QObject} result
  * @param {string=} origin
  */
-function get_multi_pgn_stats(data, result, origin) {
+function getMultiPgnStats(data, result, origin) {
     data.split(/\r?\n\r?\n(?=\[)/).forEach((split, id) => {
-        let dico = get_pgn_stats(split, `${origin}:${id}`);
+        let dico = getPgnStats(split, `${origin}:${id}`);
         Keys(dico).forEach(key => {
             let entry = SetDefault(result, key, []),
                 value = dico[key];
@@ -62,9 +62,9 @@ function get_multi_pgn_stats(data, result, origin) {
  * Get PGN stats
  * @param {string} name
  * @param {string=} origin
- * @returns {Object}
+ * @returns {!Object}
  */
-function get_pgn_stats(data, origin) {
+function getPgnStats(data, origin) {
     let dico = parse_pgn('', data, 7, origin);
     if (!dico || !dico.Headers || !dico.Moves)
         return {};
@@ -185,10 +185,10 @@ function get_pgn_stats(data, origin) {
 
 /**
  * Merge stats
- * @param {Object} result
+ * @param {!Object} result
  * @returns {string}
  */
-function merge_stats(result) {
+function mergeStats(result) {
     let headers = 'Engine|Speed|nps|Event|Threads|GPUs|Games'.split('|'),
         maxs = headers.map(item => item.length),
         names = Keys(result);
@@ -237,7 +237,7 @@ function merge_stats(result) {
         sort_alpha = OPTIONS.alpha,
         sort_engine = OPTIONS.engine,
         sort_event = OPTIONS.event,
-        spaces = maxs.map(max => create_spaces(max));
+        spaces = maxs.map(max => createSpaces(max));
 
     // skip 40StockfishClassical 202007311012
     keys = keys.filter(key => {
@@ -260,7 +260,7 @@ function merge_stats(result) {
     // 4) output
     let prev_items,
         header = headers.map((item, id) => (item + spaces[id]).slice(0, maxs[id])),
-        underline = headers.map((item, id) => create_spaces(maxs[id], '-')).join('-:-'),
+        underline = headers.map((item, id) => createSpaces(maxs[id], '-')).join('-:-'),
         text = keys.map(key => {
             let prefix = '',
                 splits = key.split('|'),
@@ -307,10 +307,10 @@ function merge_stats(result) {
 /**
  * Open a file and process it
  * @param {string} filename
- * @param {Object} result
+ * @param {!Object} result
  * @param {Function} callback
  */
-function open_file(filename, result, callback) {
+function openFile(filename, result, callback) {
     let ext = filename.split('.').slice(-1)[0],
         verbose = OPTIONS.verbose;
 
@@ -336,7 +336,7 @@ function open_file(filename, result, callback) {
                     LS(`  ${number} : ${name}`);
                 entry.buffer().then(content => {
                     let data = content.toString();
-                    get_multi_pgn_stats(data, result, `${filename} / ${name}`);
+                    getMultiPgnStats(data, result, `${filename} / ${name}`);
                 });
             })
             .on('error', () => callback(true))
@@ -349,7 +349,7 @@ function open_file(filename, result, callback) {
         fs.readFile(filename, 'utf8', (err, data) => {
             if (err || !data)
                 return;
-            get_multi_pgn_stats(data, result, filename);
+            getMultiPgnStats(data, result, filename);
             callback();
         });
     }
@@ -364,12 +364,12 @@ function open_file(filename, result, callback) {
 
 /**
  * Show the results
- * @param {Object} result
- * @param {Array<string>} filenames
+ * @param {!Object} result
+ * @param {!Array<string>} filenames
  */
 function done(result, filenames) {
     let [day] = FromTimestamp(),
-        text = merge_stats(result),
+        text = mergeStats(result),
         lines = [
             '```',
             filenames.map(name => name.split(/[/\\]/).slice(-1)[0]).sort().join(', '),
@@ -443,7 +443,7 @@ function main() {
 
                 let left2 = files.length;
                 for (let file of files) {
-                    open_file(file, result, () => {
+                    openFile(file, result, () => {
                         left2 --;
                         LS(`${left2} : ${filename} / ${file}`);
                         if (!left2) {
@@ -457,7 +457,7 @@ function main() {
             });
         }
         else {
-            open_file(filename, result, () => {
+            openFile(filename, result, () => {
                 left --;
                 LS(`A:left=${left} : ${filename}`);
                 if (!left)

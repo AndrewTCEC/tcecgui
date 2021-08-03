@@ -1,6 +1,6 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
@@ -10,15 +10,15 @@
 // jshint -W069
 /*
 globals
-_, A, Abs, AnimationFrame, Assign, Attrs, C, CacheId, cancelAnimationFrame, Ceil, Clamp, Class, Clear, clearInterval,
-clearTimeout, CreateNode,
+_, A, Abs, AddTimeout, AnimationFrame, Assign, Attrs, C, CacheId, CancelAnimationFrame, Ceil, Clamp, Class, Clear,
+ClearTimeout, CreateNode,
 DefaultFloat, DefaultInt, DefaultObject, document, DownloadObject, E, Events, exports, Floor, From, global,
-HAS_DOCUMENT, HAS_GLOBAL, HasClass, Hide, history, HTML, Input, IsArray, IsDigit, IsFloat, IsFunction, IsObject,
+HAS_DOCUMENT, HAS_GLOBAL, HasClass, Hide, history, HTML, Id, Input, IsArray, IsDigit, IsFloat, IsFunction, IsObject,
 IsString, Keys,
 LoadLibrary, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Pad, Parent, ParseJSON, PD, Pow, QueryString,
 require, Resource, Round,
-S, Safe, ScrollDocument, setInterval, setTimeout, Show, Sign, SP, Stringify, Style, TextHTML, Title, Undefined, Upper,
-Visible, VisibleHeight, VisibleWidth, WebSocket, window
+S, Safe, ScrollDocument, Show, Sign, SP, Stringify, Style, TextHTML, timeouts, Title, Undefined, Upper, Visible,
+VisibleHeight, VisibleWidth, WebSocket, window
 */
 'use strict';
 
@@ -59,11 +59,11 @@ let MESSAGES = {
 };
 
 let __PREFIX = '_',
+    _ALL = 'all',
     ANCHORS = {},
-    animation,
     api = {},
     api_times = {},
-    app_start = Now(true),
+    app_start = Now(1),
     AUTO_ON_OFF = ['auto', 'on', 'off'],
     change_queue,
     click_target,
@@ -97,6 +97,7 @@ let __PREFIX = '_',
     HIDES = {},
     HOST = '',
     ICONS = {},
+    ip_callbacks = {},
     KEY_TIMES = {},
     KEYS = {},
     LANGUAGES = {},
@@ -141,11 +142,14 @@ let __PREFIX = '_',
     NO_TRANSLATES = {
         '#': 1,
     },
+    node_modal,
+    node_overlay,
     old_tabs = '',
     ON_OFF = ['on', 'off'],
     PANES = {},
-    ping = 0,
-    pong = 0,
+    ping_diff = [0, 0, 0],                              // last ping, average ping, average server clock diff
+    ping_values = new Uint32Array(16),
+    pings = [0, 0, 0, 0],                               // ping time, pong time, ping count, pings requested
     POPUP_ADJUSTS = {},
     popup_classes = new Set(),
     QUERY_KEYS = {
@@ -153,18 +157,18 @@ let __PREFIX = '_',
         'hash': '#',
     },
     scroll_target,
+    server_diffs = new Int32Array(16),                  // estimations of the server clock diffs
     socket,
     socket_fail = 0,
     STATE_KEYS = {},
     TAB_NAMES = {},
     THEMES = [''],
-    TIMEOUT_activate = 500,                             // activate tabs in populate_areas
+    TIMEOUT_activate = 500,                             // activate tabs in populateAreas
     TIMEOUT_adjust = 250,
     TIMEOUT_ip = 600,
     TIMEOUT_preset = LOCALHOST? 60: 3600 * 2,
     TIMEOUT_touch = 0.5,
     TIMEOUT_translate = LOCALHOST? 60: 3600 * 2,
-    timers = {},
     TITLES = {},
     touch_done = 0,                                     // time when the touch was released
     TOUCH_ENDS = {
@@ -192,41 +196,46 @@ let __PREFIX = '_',
     TRANSLATES = {},
     TYPES = {},
     // virtual functions, can be assigned
-    virtual_can_close_popups,
-    virtual_change_setting_special,
-    virtual_check_hash_special,
-    virtual_click_tab,
-    virtual_closed_popup,
-    virtual_drag_done,
-    virtual_hide_areas,
-    virtual_import_settings,
-    virtual_logout,
-    virtual_populate_areas_special,
-    virtual_rename_option,
-    virtual_reset_old_settings_special,
-    virtual_reset_settings_special,
-    virtual_sanitise_data_special,
-    virtual_set_combo_special,
-    virtual_set_modal_events_special,
-    virtual_socket_close,
-    virtual_socket_message,
-    virtual_socket_open,
-    virtual_window_click_dataset,
-    virtual_window_click_parent,
-    virtual_window_click_parent_dataset,
+    vi_canClosePopups,
+    vi_changeSettingSpecial,
+    vi_checkHashSpecial,
+    vi_clickTab,
+    vi_closedPopup,
+    vi_dragDone,
+    vi_hideAreas,
+    vi_importSettings,
+    vi_logout,
+    vi_populateAreasSpecial,
+    vi_renameOption,
+    vi_resetOldSettingsSpecial,
+    vi_resetSettingsSpecial,
+    vi_sanitiseDataSpecial,
+    vi_setComboSpecial,
+    vi_setModalEventsSpecial,
+    vi_socketClose,
+    vi_socketMessage,
+    vi_socketOpen,
+    vi_windowClickDataset,
+    vi_windowClickParent,
+    vi_windowClickParentDataset,
     WS = (typeof WebSocket != 'undefined')? WebSocket: null,
     X_SETTINGS = {},
+    // saved in localStorage
     Y = {
+        'x': '',
+    },
+    y_index = -1,
+    y_states = [],
+    y_x = '',
+    // not saved
+    Z = {
+        foot: 'OK',
         ip: '',
         ip_time: 0,
         new_version: false,
         s: '',
-        'x': '',
-    },                                             // params
-    y_index = -1,
-    y_s = '',
-    y_states = [],
-    y_x = '';
+        title_add: '',
+    };
 
 /**
  * @typedef {{
@@ -242,65 +251,11 @@ let Vector2;
 //////////
 
 /**
- * Add a timeout / interval
- * @param {string} name
- * @param {Function} func function to be called after the timer
- * @param {number} timer milliseconds <0: does nothing, =0: executes directly, >0: timer
- * @param {boolean=} is_interval
- */
-function add_timeout(name, func, timer, is_interval) {
-    clear_timeout(name);
-    if (timer < 0)
-        return;
-
-    if (timer)
-        timers[name] = [
-            is_interval? setInterval(func, timer): setTimeout(() => {delete timers[name]; func();}, timer),
-            is_interval? 1: 0,
-        ];
-    else
-        func();
-    if (DEV['frame']) {
-        LS(`add_timeout: ${name} : ${timer} : ${is_interval}`);
-        LS(timers);
-    }
-}
-
-/**
- * Cancel the animation
- */
-function cancel_animation() {
-    if (!isNaN(animation)) {
-        cancelAnimationFrame(/** @type {number} */(animation));
-        animation = null;
-    }
-}
-
-/**
- * Clear a timeout / interval
- * @param {string} name
- */
-function clear_timeout(name) {
-    let timer = timers[name];
-    if (!timer)
-        return;
-
-    if (timer[1])
-        clearInterval(timer[0]);
-    else
-        clearTimeout(timer[0]);
-
-    delete timers[name];
-    if (DEV['frame'])
-        LS(`clear_timeout: ${name} : ${timer}`);
-}
-
-/**
  * Create a field for a table value
  * @param {string} text
  * @returns {!Array<string>} field, value
  */
-function create_field_value(text) {
+function createFieldValue(text) {
     let field = text,
         indices = [field.indexOf(' ['), field.indexOf(' <')].filter(pos => pos > 0).sort(),
         pos = field.indexOf('=');
@@ -324,7 +279,7 @@ function create_field_value(text) {
  * @param {number} mix how much of color2 to use, 0..1
  * @returns {string} #808080
  */
-function mix_hex_colors(color1, color2, mix) {
+function mixHexColors(color1, color2, mix) {
     if (mix <= 0)
         return color1;
     else if (mix >= 1)
@@ -346,28 +301,34 @@ function mix_hex_colors(color1, color2, mix) {
  * @param {string} section null to skip
  * @param {string=} subsection null/undefined to skip
  */
-function set_section(section, subsection) {
+function setSection(section, subsection) {
     if (section != null) {
         Y['x'] = section;
         y_x = section;
     }
-    if (subsection != null) {
-        Y.s = subsection;
-        y_s = subsection;
-    }
-    if (HAS_GLOBAL) {
-        HAS_GLOBAL.y_s = y_s;
+    if (subsection != null)
+        Z.s = subsection;
+    if (HAS_GLOBAL)
         HAS_GLOBAL.y_x = y_x;
-    }
 }
 
 // SETTINGS
 ///////////
 
 /**
+ * Add the OK or BACK at the end
+ * @param {!Array<string>} lines
+ * @param {string} foot_set
+ * @param {string} foot
+ */
+function addFoot(lines, foot_set, foot) {
+    lines.push(`<a class="item item-title span" data-set="${foot_set}" data-t="${foot}"></a>`);
+}
+
+/**
  * Remember the setting state
  */
-function add_history() {
+function addHistory() {
     let text = Stringify(Y);
     if (text == y_states[y_index])
         return;
@@ -384,7 +345,7 @@ function add_history() {
  * @param {string|number=} value
  * @param {boolean=} close close the popup
  */
-function change_setting(name, value, close) {
+function changeSetting(name, value, close) {
     let old_value = Y[name];
 
     if (value != undefined) {
@@ -397,7 +358,7 @@ function change_setting(name, value, close) {
             if (no_import & 4)
                 Y[name] = value;
             else
-                save_option(name, value);
+                saveOption(name, value);
         }
     }
 
@@ -408,7 +369,7 @@ function change_setting(name, value, close) {
     }
     change_queue = null;
 
-    if (virtual_change_setting_special && virtual_change_setting_special(name, value, close))
+    if (vi_changeSettingSpecial && vi_changeSettingSpecial(name, value, close))
         return;
 
     switch (name) {
@@ -418,7 +379,7 @@ function change_setting(name, value, close) {
             if (old_value == 'eng')
                 old_value = 'fra';
             _('select[name="language"]').value = old_value;
-            save_option(name, old_value);
+            saveOption(name, old_value);
 
             let file = CacheId('file');
             Attrs(file, {'data-x': name});
@@ -426,12 +387,12 @@ function change_setting(name, value, close) {
             break;
         }
         else if (value == 'eng' || translates['_lan'] == value)
-            translate_nodes('body');
+            translateNodes('body');
         else if (value != 'eng')
-            api_translate_get();
+            apiTranslateGet();
         break;
     case 'theme':
-        update_theme([value]);
+        updateTheme([value]);
         break;
     }
 }
@@ -441,7 +402,7 @@ function change_setting(name, value, close) {
  * @param {Node} node
  * @param {number} &1:html, &2:style
  */
-function destroy_popup(node, flag) {
+function destroyPopup(node, flag) {
     if (flag & 1)
         HTML(node, '');
     if (flag & 2)
@@ -452,7 +413,7 @@ function destroy_popup(node, flag) {
  * Export settings
  * @param {string} name
  */
-function export_settings(name) {
+function exportSettings(name) {
     Assign(Y, {
         '_dpr': Floor(window.devicePixelRatio * 1000 + 0.5) / 1000,
         '_height': window.innerHeight,
@@ -470,8 +431,8 @@ function export_settings(name) {
  * @param {number} def
  * @returns {number}
  */
-function get_float(name, def) {
-    return DefaultFloat(get_string(name), def);
+function getFloat(name, def) {
+    return DefaultFloat(getString(name), def);
 }
 
 /**
@@ -482,8 +443,8 @@ function get_float(name, def) {
  * @param {boolean=} force force int, otherwise keep the string
  * @returns {number|boolean|string}
  */
-function get_int(name, def, force) {
-    let text = get_string(name),
+function getInt(name, def, force) {
+    let text = getString(name),
         value = DefaultInt(text, force? def: (text || def));
     if (typeof(def) == 'boolean')
         value = !!value;
@@ -496,8 +457,8 @@ function get_int(name, def, force) {
  * @param {*=} def
  * @returns {*}
  */
-function get_object(name, def) {
-    let text = get_string(name);
+function getObject(name, def) {
+    let text = getString(name);
     if (!text)
         return def;
     return ParseJSON(text, def);
@@ -509,7 +470,7 @@ function get_object(name, def) {
  * @param {string=} def
  * @returns {string}
  */
-function get_string(name, def) {
+function getString(name, def) {
     let value = localStorage.getItem(`${__PREFIX}${name}`);
     return (value == 'undefined')? def: (value || def);
 }
@@ -519,7 +480,7 @@ function get_string(name, def) {
  * @param {!Object} settings
  * @param {Array<string>=} keys
  */
-function guess_types(settings, keys) {
+function guessTypes(settings, keys) {
     if (!keys)
         keys = Keys(settings);
 
@@ -607,25 +568,25 @@ function guess_types(settings, keys) {
  * @param {*} data
  * @param {boolean=} reset
  */
-function import_settings(data, reset) {
+function importSettings(data, reset) {
     if (!IsObject(data))
         return;
 
     Keys(/** @type {!Object} */(data)).forEach(key => {
         if (!NO_IMPORTS[key])
-            save_option(key, data[key]);
+            saveOption(key, data[key]);
     });
 
     if (reset)
-        reset_settings();
-    if (virtual_import_settings)
-        virtual_import_settings();
+        resetSettings();
+    if (vi_importSettings)
+        vi_importSettings();
 }
 
 /**
  * Load default settings
  */
-function load_defaults() {
+function loadDefaults() {
     Keys(DEFAULTS).forEach(key => {
         let value,
             def = DEFAULTS[key],
@@ -633,17 +594,17 @@ function load_defaults() {
 
         switch (type) {
         case 'f':
-            value = get_float(key, def);
+            value = getFloat(key, def);
             break;
         case 'b':
         case 'i':
-            value = get_int(key, def);
+            value = getInt(key, def);
             break;
         case 'o':
-            value = get_object(key, def);
+            value = getObject(key, def);
             break;
         case 's':
-            value = get_string(key, def);
+            value = getString(key, def);
             break;
         case 'u':
             return;
@@ -655,23 +616,23 @@ function load_defaults() {
     });
 
     // use browser language
-    guess_browser_language();
+    guessBrowserLanguage();
 }
 
 /**
  * Load a preset
  * @param {string} name
  */
-function load_preset(name) {
+function loadPreset(name) {
     if (name == 'custom')
         return;
     if (name == 'default settings')
-        reset_settings(true);
+        resetSettings(true);
     else {
         Resource(`preset/${name}.json?v=${Ceil(Now() / TIMEOUT_preset)}`, (code, data) => {
             if (code != 200)
                 return;
-            import_settings(data, true);
+            importSettings(data, true);
         });
     }
 }
@@ -681,7 +642,7 @@ function load_preset(name) {
  * + updates DEFAULTS and TYPES
  * @param {!Object} x_settings
  */
-function merge_settings(x_settings) {
+function mergeSettings(x_settings) {
     Keys(x_settings).forEach(name => {
         let value = x_settings[name];
 
@@ -714,8 +675,11 @@ function merge_settings(x_settings) {
                 return;
 
             // support {_value: [...]}
-            if (setting['_value'])
+            if (setting['_value']) {
                 setting = setting['_value'];
+                if (IsFunction(setting))
+                    setting = setting();
+            }
 
             // support {_multi: 2, a: [...], b: [...]}
             if (setting['_multi'] && !setting['_main']) {
@@ -737,7 +701,7 @@ function merge_settings(x_settings) {
 
         // update defaults + types
         Assign(DEFAULTS, dico);
-        guess_types(sub_settings, Keys(dico));
+        guessTypes(sub_settings, Keys(dico));
     });
 }
 
@@ -751,14 +715,14 @@ function merge_settings(x_settings) {
  * @param {string=} help
  * @returns {!Array<*>}
  */
-function option_number(def, min, max, step=1, options={}, help='') {
+function optionNumber(def, min, max, step=1, options={}, help='') {
     return [Assign({max: max, min: min, step: step, type: 'number'}, options), def, help];
 }
 
 /**
  * Parse DEV
  */
-function parse_dev() {
+function parseDev() {
     let text = Y['dev'] || '';
     Clear(DEV);
 
@@ -784,7 +748,7 @@ function parse_dev() {
         if (!value)
             DEV[name] = 0;
         else {
-            (value.toString(2)).split('').reverse().forEach((bit, id) => {
+            From(value.toString(2)).reverse().forEach((bit, id) => {
                 if (bit == '1')
                     DEV[`${name}${id? (1 << id): ''}`] = value;
             });
@@ -799,7 +763,7 @@ function parse_dev() {
  * Local Storage - remove a key
  * @param {string} name
  */
-function remove_storage(name) {
+function removeStorage(name) {
     localStorage.removeItem(`${__PREFIX}${name}`);
 }
 
@@ -809,10 +773,10 @@ function remove_storage(name) {
  * @param {string} name
  * @returns {*} default value
  */
-function reset_default(name) {
+function resetDefault(name) {
     let value = DEFAULTS[name];
     Y[name] = value;
-    remove_storage(name);
+    removeStorage(name);
     return value;
 }
 
@@ -820,60 +784,91 @@ function reset_default(name) {
  * Reset default settings matching the pattern
  * @param {RegExp} pattern
  */
-function reset_defaults(pattern) {
+function resetDefaults(pattern) {
     Keys(DEFAULTS).forEach(key => {
         if (pattern.test(key))
-            reset_default(key);
+            resetDefault(key);
     });
+}
+
+/**
+ * Reset default setting on an item
+ * - ignore if already default
+ * - possibly multiple inputs
+ * @param {Node} node
+ */
+function resetItemSetting(node) {
+    let next = node.nextElementSibling;
+    if (!next)
+        return;
+
+    E('input, select, textarea', node => {
+        let name = node.name,
+            def = DEFAULTS[name];
+        if (def == undefined)
+            return;
+        if (node.type == 'checkbox') {
+            if (node.checked == (def? true: false))
+                return;
+            node.checked = def? true: false;
+        }
+        else {
+            if (node.value == def)
+                return;
+            node.value = def;
+        }
+        saveOption(name, def);
+        changeSetting(name, def);
+    }, next);
 }
 
 /**
  * Reset some settings if the version is too old
  * @param {string} new_version
  */
-function reset_old_settings(new_version) {
+function resetOldSettings(new_version) {
     let version = Undefined(Y['version'], '');
     if (version == new_version) {
-        save_option('version', new_version);
+        saveOption('version', new_version);
         return;
     }
 
     let keys = [];
-    if (virtual_reset_old_settings_special)
-        virtual_reset_old_settings_special(version, keys);
+    if (vi_resetOldSettingsSpecial)
+        vi_resetOldSettingsSpecial(version, keys);
 
     let changes = [];
     for (let key of keys)
         for (let item of key.split(' '))
             if (Y[item] != DEFAULTS[item]) {
                 changes.push(item);
-                reset_default(item);
+                resetDefault(item);
             }
 
     LS(`version: ${version} => ${new_version} : ${changes}`);
-    save_option('version', new_version);
-    Y.new_version = version;
+    saveOption('version', new_version);
+    Z.new_version = version;
 }
 
 /**
  * Reset to the default/other settings
  * @param {boolean=} is_default
  */
-function reset_settings(is_default) {
+function resetSettings(is_default) {
     if (is_default) {
         localStorage.clear();
         Assign(Y, DEFAULTS);
     }
 
-    if (virtual_reset_settings_special)
-        virtual_reset_settings_special(is_default);
+    if (vi_resetSettingsSpecial)
+        vi_resetSettingsSpecial(is_default);
 }
 
 /**
  * Restore history
  * @param {number} dir -1 (undo), 0, 1 (redo)
  */
-function restore_history(dir) {
+function restoreHistory(dir) {
     let y_copy = y_states[y_index + dir];
     if (!y_copy)
         return;
@@ -883,13 +878,13 @@ function restore_history(dir) {
         return;
 
     Assign(Y, /** @type {!Object} */(data));
-    import_settings(data, true);
+    importSettings(data, true);
 }
 
 /**
  * Make sure there is no garbage data
  */
-function sanitise_data() {
+function sanitiseData() {
     // convert string to number
     Keys(DEFAULTS).forEach(key => {
         let value = Y[key];
@@ -906,8 +901,8 @@ function sanitise_data() {
             Y[key] = DefaultInt(value, value);
     });
 
-    if (virtual_sanitise_data_special)
-        virtual_sanitise_data_special();
+    if (vi_sanitiseDataSpecial)
+        vi_sanitiseDataSpecial();
 }
 
 /**
@@ -915,7 +910,7 @@ function sanitise_data() {
  * @param {string} name
  * @param {*=} value value for the name, undefined to save Y[name]
  */
-function save_default(name, value) {
+function saveDefault(name, value) {
     if (value === undefined) {
         value = Y[name];
         if (value === undefined) {
@@ -926,9 +921,9 @@ function save_default(name, value) {
     else
         Y[name] = value;
     if (value == DEFAULTS[name])
-        remove_storage(name);
+        removeStorage(name);
     else
-        save_storage(name, value);
+        saveStorage(name, value);
 }
 
 /**
@@ -936,12 +931,12 @@ function save_default(name, value) {
  * @param {string} name
  * @param {*=} value value for the name, undefined to save Y[name]
  */
-function save_option(name, value) {
+function saveOption(name, value) {
     if (value === undefined)
         value = Y[name];
     else
         Y[name] = value;
-    save_storage(name, value);
+    saveStorage(name, value);
 }
 
 /**
@@ -951,7 +946,7 @@ function save_option(name, value) {
  * @param {string} name
  * @param {*} value value for the name
  */
-function save_storage(name, value) {
+function saveStorage(name, value) {
     if (IsObject(value))
         value = Stringify(value);
     else if (value === true)
@@ -971,7 +966,7 @@ function save_storage(name, value) {
  * @param {number=} obj.bar_x width of the scrollbar
  * @param {boolean=} obj.center place the popup in the center of the screen
  * @param {string=} obj.class_ extra class
- * @param {number=} obj.event 0 to disable set_modal_events
+ * @param {number=} obj.event 0 to disable setModalEvents
  * @param {string=} obj.html 0 to skip => keep the current HTML
  * @param {string=} obj.id id of the element that us used for adjust
  * @param {boolean=} obj.instant popup appears instantly
@@ -985,12 +980,12 @@ function save_storage(name, value) {
  * @param {Node=} obj.target element that was clicked
  * @param {Array<number>=} obj.xy
  */
-function show_popup(name, show, {
+function showPopup(name, show, {
         adjust, bar_x=20, center, class_, event=1, html='', id, instant=true, margin_y=0, node_id, offset=[0, 0],
         overlay, parent, setting, shadow=1, target, xy}={}) {
     // remove the red rectangle
     if (!adjust)
-        set_draggable();
+        setDraggable();
     else if (device.iphone)
         return;
 
@@ -1000,7 +995,7 @@ function show_popup(name, show, {
         click_target = null;
 
     // find the modal
-    let node = click_target || CacheId(node_id || 'modal', parent);
+    let node = click_target || (node_id? CacheId(node_id, parent): node_modal);
     if (!node)
         return;
 
@@ -1019,7 +1014,7 @@ function show_popup(name, show, {
         show = (data_id != (id || name) || !HasClass(node, 'popup-show') || (xy && xy + '' != dataset['xy']));
 
     if (!adjust && overlay != undefined)
-        S(CacheId('overlay'), show && overlay);
+        S(node_overlay, show && overlay);
 
     if (show || adjust) {
         let px = 0,
@@ -1039,17 +1034,17 @@ function show_popup(name, show, {
         case 'options':
             if (!xy)
                 context_target = null;
-            html = show_settings(setting, {xy: xy});
+            html = html || showSettings(setting, {xy: xy});
             break;
         default:
             let link = LINKS[name];
             if (link)
-                html = create_url_list(LINKS[name]);
+                html = createUrlList(LINKS[name]);
             break;
         }
 
         if (show) {
-            destroy_popup(node, 2);
+            destroyPopup(node, 2);
             if (html !== 0)
                 HTML(node, html);
             // focus?
@@ -1063,8 +1058,8 @@ function show_popup(name, show, {
         }
 
         Class(node, 'settings', !!(name == 'options' && (adjust || setting)));
-        translate_nodes(node);
-        update_svg();
+        translateNodes(node);
+        updateSvg();
 
         if (is_modal) {
             // make sure the popup remains inside the window
@@ -1177,7 +1172,7 @@ function show_popup(name, show, {
             dataset['id'] = show? (id || ''): '';
             dataset['name'] = show? name: '';
             if (!show)
-                destroy_popup(node, 3);
+                destroyPopup(node, 3);
         }
         if (show) {
             dataset['ev'] = event;
@@ -1200,7 +1195,7 @@ function show_popup(name, show, {
             dataset['xy'] = '';
         }
 
-        set_modal_events(node);
+        setModalEvents(node);
         Show(node);
     }
 }
@@ -1217,15 +1212,16 @@ function show_popup(name, show, {
  * @param {boolean=} obj.xy
  * @returns {string} html
  */
-function show_settings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={}) {
+function showSettings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={}) {
     let settings = name? (X_SETTINGS[name] || []): X_SETTINGS,
         class_ = settings['_class'] || '',
         keys = Keys(settings),
         lines = [`<grid class="${grid_class}${class_? ' ': ''}${class_}">`],
-        parent_id = get_drop_id(context_target).id,
+        parent_id = getDropId(context_target).id,
         prefix = settings['_prefix'],
         split = settings['_split'],
-        suffix = settings['_suffix'];
+        suffix = settings['_suffix'],
+        title_add = Undefined(settings['_add'], Z.title_add);
 
     flag = /** @type {number} */(Undefined(flag, settings['_flag']) || 0);
 
@@ -1251,8 +1247,16 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
         if (parent_id)
             lines.push(`<div class="item2 span" data-set="-1">${parent_id}</div>`);
         else if (name) {
-            if (!title)
-                title = settings['_title'] || `${Title(name).replace(/_/g, ' ')}${settings['_same']? '': ' options'}`;
+            if (!title) {
+                title = settings['_title'];
+                if (IsFunction(title))
+                    title = title();
+                if (!title) {
+                    title = Title(name).replace(/_/g, ' ');
+                    if (title_add && title.slice(-title_add.length) != title_add)
+                        title = `${title}${title_add}`;
+                }
+            }
             lines.push(
                 `<div class="item-title span" data-set="${unique? -1: ''}" data-n="${name}" data-t="${title}"></div>`);
         }
@@ -1276,6 +1280,7 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             sflag = setting['_flag'],
             sid = setting['_id'],
             slabel = setting['_label'],
+            slower = setting['_lower'],
             smain = setting['_main'],                   // use the main key
             smulti = setting['_multi'],
             son = setting['_on'],
@@ -1287,10 +1292,13 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             svalue = setting['_value'];
         if (sflag && sflag & flag)
             return;
-        if (son && !son())
+        if (IsFunction(son) && !son())
             return;
-        if (svalue != undefined)
+        if (svalue != undefined) {
+            if (IsFunction(svalue))
+                svalue = svalue();
             setting = svalue;
+        }
 
         // separator
         if (key[0] == '_') {
@@ -1321,6 +1329,9 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             more_class = ' item-title span';
         if (ssvg)
             more_class = `${more_class} frow`;
+
+        if (string_digit & 8)
+            more_class = `${more_class} no-close`;
 
         sid = sid? ` data-id="${sid}"`: '';
 
@@ -1404,29 +1415,23 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             let iclass = sclass? ` ${sclass}`: '';
 
             if (IsArray(data)) {
-                if (data == ON_OFF)
+                if (data == ON_OFF) {
                     lines.push(
                         `<vert class="fcenter fastart${iclass}">`
                             + `<input name="${key}" type="checkbox" ${y_key? 'checked': ''}>`
                         + '</vert>'
                     );
-                else
+                }
+                else {
+                    let dico = {on_off: true};
+                    if (slower != undefined)
+                        dico.lower = slower;
                     lines.push(
                         `<vert class="fcenter${iclass}">`
-                        + `<select name="${key}">`
-                            + data.map(option => {
-                                let splits = (option + '').split('='),
-                                    value = Undefined({'off': 0, 'on': 1}[option], option);
-                                if (splits.length > 1) {
-                                    option = splits[1];
-                                    value = splits[0];
-                                }
-                                let selected = (y_key == value)? ' selected': '';
-                                return `<option value="${value}"${selected} data-t="${option}"></option>`;
-                            }).join('')
-                        + '</select>'
+                            + `<select name="${key}">${fillCombo(null, data, y_key, dico)}</select>`
                         + '</vert>'
                     );
+                }
                 return;
             }
 
@@ -1442,7 +1447,7 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             // title
             title = title || data.title;
             if (title)
-                title = ` title="${translate_expression(title)}"`;
+                title = ` title="${translateExpression(title)}"`;
 
             if (id == 0)
                 lines.push(smulti? `<hori class="faround${iclass}">`: `<vert class="fcenter${iclass}">`);
@@ -1494,17 +1499,8 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
             // dictionary / string
             else {
                 let keys = Keys(data).filter(item => item[0] != '_' && item != 'class');
-                if (keys.length) {
-                    lines.push(
-                        `<select name="${key}"${focus}>`
-                            + Keys(data).map(value => {
-                                let option = data[value],
-                                    selected = (Y[key] == value)? ' selected': '';
-                                return `<option value="${value}"${selected} data-t="${option}"></option>`;
-                            }).join('')
-                        + '</select>'
-                    );
-                }
+                if (keys.length)
+                    lines.push(`<select name="${key}"${focus}>${fillCombo(null, data, y_key)}</select>`);
                 // string
                 else {
                     let class_ = item_class,
@@ -1534,9 +1530,11 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
                 + '</hori>'
             );
         }
-        else if (name)
-            lines.push(
-                `<a class="item item-title span" data-set="-1" data-t="${settings['_cancel']? 'CANCEL': 'OK'}"></a>`);
+        else if (name) {
+            let foot = Undefined(settings['_foot'], Z.foot),
+                foot_set = (foot == 'OK')? -1: '';
+            addFoot(lines, foot_set, foot);
+        }
     }
 
     lines.push('</grid>');
@@ -1553,7 +1551,7 @@ function show_settings(name, {flag, grid_class='options', item_class='item', tit
  * @param {string=} class_ class to use
  * @returns {string} the resized text
  */
-function resize_text(text, resize, class_='resize') {
+function resizeText(text, resize, class_='resize') {
     if (!text || resize < 1)
         return text;
 
@@ -1619,7 +1617,7 @@ function translate(text) {
  * @param {string} text
  * @returns {string|null} translated text
  */
-function translate_default(text) {
+function translateDefault(text) {
     return translate(text) || text;
 }
 
@@ -1628,7 +1626,7 @@ function translate_default(text) {
  * @param {string} text
  * @returns {string} translated text
  */
-function translate_expression(text) {
+function translateExpression(text) {
     if (!text)
         return '';
 
@@ -1638,7 +1636,7 @@ function translate_expression(text) {
         text = result;
     // 2) translate {...}
     else if (text.includes('{'))
-        text = text.replace(/{(.*?)}/g, (_match, p1) => translate_default(p1));
+        text = text.replace(/{(.*?)}/g, (_match, p1) => translateDefault(p1));
 
     // 3) translate [...]
     if (text.includes('['))
@@ -1657,7 +1655,7 @@ function translate_expression(text) {
  * - resolve all data-t, data-t2=target, data-tr=resize
  * @param {Node=} node
  */
-function translate_node(node) {
+function translateNode(node) {
     // 1) skip?
     if (!node)
         return;
@@ -1668,7 +1666,7 @@ function translate_node(node) {
     // 2) translate
     let tag = node.tagName,
         target = node.dataset['t2'],
-        translated = translate_expression(text);
+        translated = translateExpression(text);
 
     if (!target)
         if (tag == 'INPUT')
@@ -1681,7 +1679,7 @@ function translate_node(node) {
     else {
         let resize = node.dataset['tr'];
         if (resize)
-            translated = resize_text(translated, parseInt(resize, 10));
+            translated = resizeText(translated, parseInt(resize, 10));
         TextHTML(node, translated);
     }
 }
@@ -1691,12 +1689,12 @@ function translate_node(node) {
  * - resolve all data-t, data-t2=target, data-tr=resize
  * @param {string|Node?} parent CSS selector or node
  */
-function translate_nodes(parent) {
+function translateNodes(parent) {
     parent = _(parent);
     if (!parent)
         return;
-    E('[data-t]', translate_node, parent);
-    translate_node(parent);
+    E('[data-t]', translateNode, parent);
+    translateNode(parent);
 }
 
 // NODES
@@ -1707,7 +1705,7 @@ function translate_nodes(parent) {
  * @param {string} name
  * @returns {string}
  */
-function create_svg_icon(name) {
+function createSvgIcon(name) {
     let image = ICONS[name.split(' ')[0]];
     if (!image)
         return '';
@@ -1721,12 +1719,16 @@ function create_svg_icon(name) {
  * @param {Node|string?} letter, ex: m=mode, v=view ... or a selector; null => get the HTML
  * @param {Array<string>|Object<string, string>=} values list of values for the combo, default to [DEFAULTS[letter]]
  * @param {string=} select the value to be selected, default to Y[letter]
- * @param {Object=} dico used to name the values, ex: 01 => cheater
- * @param {boolean=} no_translate don't translate the options
- * @param {Node=} parent parent node, document by default
+ * @param {Object} obj
+ * @param {Object=} obj.dico used to name the values, ex: 01 => cheater
+ * @param {boolean=} obj.lower values should be lower cased
+ * @param {boolean=} obj.on_off convert on=>1 and off=>0
+ * @param {Node=} obj.parent parent node, document by default
+ * @param {boolean=} obj.no_translate don't translate the options
+ * @param {Object=} obj.skips keys to skip
  * @returns {string} the selected value, or the HTML
  */
-function fill_combo(letter, values, select, dico, no_translate, parent) {
+function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_off, parent, skips}={}) {
     if (!HAS_DOCUMENT)
         return '';
     dico = Undefined(dico, {});
@@ -1749,20 +1751,29 @@ function fill_combo(letter, values, select, dico, no_translate, parent) {
         group = false,
         lines = [];
 
-    for (let value_ of /** @type {!Array<string|number>} */(values)) {
+    for (let option of /** @type {!Array<string|number>} */(values)) {
+        if (skips && skips[option])
+            continue;
+
         let selected,
-            items = (value_ + '').split('='),
+            items = (option + '').split('='),
             text = items.slice(-1)[0],
-            value = Lower(items.slice(-2)[0]);
+            value = items.slice(-2)[0];
+        if (lower)
+            value = Lower(value);
 
         if (value.slice(0, 2) == '* ') {
-            if (group) lines.push('</optgroup>');
+            if (group)
+                lines.push('</optgroup>');
             group = true;
             lines.push(`<optgroup data-t="${text.slice(2)}" data-t2="label">`);
             continue;
         }
 
-        if (select == value.split('|')[0]) {
+        if (on_off)
+            value = Undefined({'off': 0, 'on': 1}[value], value);
+
+        if (select == value || (IsString(value) && select == value.split('|')[0])) {
             selected = ' selected="selected"';
             found = value;
         }
@@ -1774,8 +1785,8 @@ function fill_combo(letter, values, select, dico, no_translate, parent) {
         // rename using dico or custom function
         if (items.length < 2) {
             text = dico[text] || text;
-            if (virtual_rename_option)
-                text = virtual_rename_option(value, text);
+            if (vi_renameOption)
+                text = vi_renameOption(value, text);
         }
 
         // parent:child => {parent}: {child}
@@ -1783,10 +1794,8 @@ function fill_combo(letter, values, select, dico, no_translate, parent) {
         if (splits.length > 1)
             text = `{${splits[0]}}: {${splits[1]}}`;
 
-        if (no_translate)
-            lines.push(`<option value="${value}"${selected}>${text}</option>`);
-        else
-            lines.push(`<option value="${value}"${selected} data-t="${text}"></option>`);
+        let data = no_translate? `>${text}`: ` data-t="${text}">`;
+        lines.push(`<option value="${value}"${selected}${data}</option>`);
     }
     if (group)
         lines.push('</optgroup>');
@@ -1796,9 +1805,9 @@ function fill_combo(letter, values, select, dico, no_translate, parent) {
 
     // set the HTML: 1 letter => #co+letter, otherwise letter is a selector
     if (letter) {
-        let sel = IsString(letter)? _(letter_selector(/** @type {string} */(letter)), parent): letter;
+        let sel = IsString(letter)? _(letterSelector(/** @type {string} */(letter)), parent): letter;
         HTML(sel, lines.join(''));
-        translate_nodes(sel);
+        translateNodes(sel);
     }
     return found.split('|')[0];
 }
@@ -1809,7 +1818,7 @@ function fill_combo(letter, values, select, dico, no_translate, parent) {
  * @param {string} letter
  * @returns {string} CSS selector
  */
-function letter_selector(letter) {
+function letterSelector(letter) {
     if (letter.length == 1)
         letter = `#co${letter}`;
     return letter;
@@ -1817,12 +1826,12 @@ function letter_selector(letter) {
 
 /**
  * Update the theme
- * @param {Array<string>=} themes if null, will use Y.theme
+ * @param {Array<string>=} themes if null, will use Y['theme']
  * @param {Function=} callback
  * @param {number=} version CSS version, use Now() to force reload
  * @returns {boolean} true if the theme was changed
  */
-function update_theme(themes, callback, version=1) {
+function updateTheme(themes, callback, version=1) {
     let parent = CacheId('extra-style');
     if (!parent)
         return false;
@@ -1871,7 +1880,7 @@ function update_theme(themes, callback, version=1) {
         return false;
 
     // post-process
-    update_svg();
+    updateSvg();
     if (callback)
         callback();
     return true;
@@ -1881,10 +1890,10 @@ function update_theme(themes, callback, version=1) {
  * Resolve the SVG
  * @param {Node=} parent parent node, document by default
  */
-function update_svg(parent) {
+function updateSvg(parent) {
     E('[data-svg]', node => {
         let name = node.dataset['svg'],
-            image = create_svg_icon(name);
+            image = createSvgIcon(name);
         if (image) {
             HTML(node, image);
             delete node.dataset['svg'];
@@ -1899,26 +1908,26 @@ function update_svg(parent) {
  * Check the query hash/string
  * @param {boolean=} no_special
  */
-function check_hash(no_special) {
+function checkHash(no_special) {
     let string = /** @type {!Object} */(QueryString({key: 'hash'})),
         dico = Assign({}, ...Keys(string).map(key => ({[key]: (string[key] == 'undefined')? undefined: string[key]})));
     Assign(Y, dico);
-    sanitise_data();
-    parse_dev();
+    sanitiseData();
+    parseDev();
 
     // section
     if (dico['x'] != undefined)
-        set_section(dico['x']);
+        setSection(dico['x']);
 
-    if (!no_special && virtual_check_hash_special)
-        virtual_check_hash_special(dico);
+    if (!no_special && vi_checkHashSpecial)
+        vi_checkHashSpecial(dico);
 }
 
 /**
  * Detect the device
  * @returns {!Object}
  */
-function detect_device() {
+function detectDevice() {
     let agent = navigator.userAgent || navigator.vendor || window.opera,
         mobile = false,
         os = '?';
@@ -1942,7 +1951,7 @@ function detect_device() {
 /**
  * Guess the browser language
  */
-function guess_browser_language() {
+function guessBrowserLanguage() {
     let indices = Assign({}, ...Keys(LANGUAGES).map(lan => ({[lan.slice(0, 2)]: lan}))),
         languages = [...[navigator.language], ...(navigator.languages || [])];
     Assign(indices, LANGUAGES_23);
@@ -1964,7 +1973,7 @@ function guess_browser_language() {
  * Check if the browser is in full screen mode
  * @returns {Node}
  */
-function is_fullscreen() {
+function isFullscreen() {
     let full = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
     full_target = full? CacheId('body'): null;
     return full;
@@ -1976,11 +1985,11 @@ function is_fullscreen() {
  * @param {Function=} callback
  * @param {Object=} extra
  */
-function load_library(url, callback, extra) {
+function loadLibrary(url, callback, extra) {
     if (!libraries[url])
         LoadLibrary(url, () => {
             if (DEV['load'])
-                LS('load_library:', url);
+                LS('loadLibrary:', url);
             libraries[url] = Now();
             if (callback)
                 callback();
@@ -1999,10 +2008,10 @@ function load_library(url, callback, extra) {
  * @param {boolean=} obj.replace replace the state instead of pushing it
  * @returns {Object} dictionary of changes, or null if empty
  */
-function push_state(query, {check, go, key='hash', replace}={}) {
+function pushState(query, {check, go, key='hash', replace}={}) {
     query = query || {};
     let changes = [],
-        state_keys = STATE_KEYS[y_s] || STATE_KEYS[y_x] || STATE_KEYS['_'] || [],
+        state_keys = STATE_KEYS[Z.s] || STATE_KEYS[y_x] || STATE_KEYS['_'] || [],
         new_state = Assign({}, ...state_keys.filter(x => query[x] || Y[x]).map(x =>
             ({[x]: Undefined(query[x], Y[x])})
         )),
@@ -2028,7 +2037,7 @@ function push_state(query, {check, go, key='hash', replace}={}) {
         else
             history.pushState(new_state, '', url);
         if (check)
-            check_hash();
+            checkHash();
     }
 
     return Assign({}, ...changes.map(change => ({[change]: 1})));
@@ -2038,8 +2047,8 @@ function push_state(query, {check, go, key='hash', replace}={}) {
  * Toggle full screen mode
  * @param {Function=} callback
  */
-function toggle_fullscreen(callback) {
-    let full = is_fullscreen();
+function toggleFullscreen(callback) {
+    let full = isFullscreen();
     if (full) {
         let exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
         if (exit)
@@ -2060,24 +2069,68 @@ function toggle_fullscreen(callback) {
 //////////
 
 /**
+ * Add session info
+ * @param {!Array|!Object|string} data
+ * @param {number=} flag &1:session, &2:email+login
+ * @returns {boolean}
+ */
+function addSession(data, flag) {
+    return true;
+}
+
+/**
  * Check sockets: ping + reconnection
  */
-function check_sockets() {
-    add_timeout('ws', () => {
-        let now = Now(true);
-        if (now < pong + 15)
+function checkSockets() {
+    AddTimeout('ws', () => {
+        let ms = Now(2);
+        if (ms < pings[1] + 12000 && ms < pings[0] + 24000)
             return;
 
         let ready = socket? socket.readyState: WS.CLOSED;
-        if (ready == WS.OPEN) {
-            socket.send(Uint8Array.of(0));
-            if (DEV['socket'])
-                LS('ping');
-            ping = now;
-        }
+        if (ready == WS.OPEN)
+            socketPing();
         else if (ready == WS.CLOSED)
-            init_websockets();
-    }, 8000, true);
+            initWebsockets();
+    }, 4100, true);
+}
+
+/**
+ * Handle ping
+ * https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4821719/
+ * @param {ArrayBuffer} data
+ */
+function handlePing(data) {
+    // 0: client sent, 1: server received
+    let count = pings[2] & 15,
+        items = new Uint16Array(data),
+        now = pings[1] & 0xffff,
+        ping_pong = now - items[0],
+        ping = (ping_pong >> 1) & 0x7fff,
+        diff = (items[1] - ((items[0] + now) >> 1)) & 0x7fff;
+
+    // keep diff between [-16384, 16383]
+    if (diff >= 0x4000)
+        diff -= 0x4000;
+    else if (diff < -0x4000)
+        diff += 0x4000;
+
+    ping_diff[0] = ping;
+    ping_values[count & 15] = ping;
+    server_diffs[count & 15] = diff;
+    pings[2] ++;
+
+    if (pings[2] < 16) {
+        ping_diff[1] = ping;
+        ping_diff[2] = diff;
+    }
+    else {
+        ping_diff[1] = [...ping_values].sort().slice(4, 12).reduce((a, b) => a + b) >> 3;
+        ping_diff[2] = [...server_diffs].sort().slice(4, 12).reduce((a, b) => a + b) >> 3;
+    }
+
+    if (DEV['socket'])
+        LS('ping=', ping_diff, 'data=', items[0], items[1]);
 }
 
 /**
@@ -2087,7 +2140,7 @@ function check_sockets() {
  * @param {Function=} obj.message
  * @param {Function=} obj.open
  */
-function init_websockets({close, message, open}={}) {
+function initWebsockets({close, message, open}={}) {
     if (socket && socket.readyState <= WS.OPEN)
         return;
     if (DEV['socket'])
@@ -2098,85 +2151,106 @@ function init_websockets({close, message, open}={}) {
 
     // set virtuals
     if (close)
-        virtual_socket_close = close;
+        vi_socketClose = close;
     if (message)
-        virtual_socket_message = message;
+        vi_socketMessage = message;
     if (open)
-        virtual_socket_open = open;
+        vi_socketOpen = open;
 
     // reconnect when closed
     socket.onclose = () => {
         socket = null;
-        socket_error(`socket close: ${Now(true) - app_start}`);
-        if (virtual_socket_close)
-            virtual_socket_close();
+        socketError(`socket close: ${Now(1) - app_start}`);
+        if (vi_socketClose)
+            vi_socketClose();
     };
     socket.onerror = e => {
         if (!socket_fail)
-            LS('socket error:', Now(true) - app_start, e);
+            LS('socket error:', Now(1) - app_start, e);
     };
     socket.onopen = () => {
         socket_fail = 0;
         // try to reuse the session
-        check_session();
-        if (virtual_socket_open)
-            virtual_socket_open();
+        checkSession();
+        if (vi_socketOpen)
+            vi_socketOpen();
     };
-    socket.onmessage = data => {
-        pong = Now(true);
-        let vector = new Uint8Array(data.data);
-        if (vector[0] == 0) {
-            if (DEV['socket'])
-                LS('pong:', pong - ping);
-        }
-        else if (virtual_socket_message)
-            virtual_socket_message(data);
+    socket.onmessage = message => {
+        pings[1] = Now(2);
+        let data = message.data;
+        // ping message?
+        if (data instanceof ArrayBuffer && data.byteLength == 4)
+            handlePing(data);
+        else if (vi_socketMessage)
+            vi_socketMessage(message);
     };
 
-    check_sockets();
+    checkSockets();
 }
 
 /**
  * Socket error
  * @param {string} text error text
  */
-function socket_error(text) {
+function socketError(text) {
     if (!socket_fail)
         LS(text);
     socket_fail ++;
-    if (socket_fail > 3 && virtual_logout)
-        virtual_logout();
+    if (socket_fail > 3) {
+        if (me['session'] && vi_logout)
+            vi_logout();
+    }
     else
-        add_timeout('socket_init', init_websockets, Pow(socket_fail, 2) * 1000);
+        AddTimeout('socket_init', initWebsockets, Pow(socket_fail, 2) * 1000);
+}
+
+/**
+ * Send a ping
+ * @returns {boolean}
+ */
+function socketPing() {
+    if (!socket || socket.readyState != WS.OPEN)
+        return false;
+    pings[0] = Now(2);
+    pings[3] ++;
+    socket.send(Uint16Array.of(pings[0] & 0xffff));
+    return true;
+}
+
+/**
+ * Send 16 pings
+ * @returns {boolean}
+ */
+function socketPings() {
+    if (!socket || socket.readyState != WS.OPEN)
+        return false;
+    for (let i = 0; i < 16; i ++)
+        AddTimeout(`ping_${i}`, socketPing, i * 200);
+    return true;
 }
 
 /**
  * Send data to a socket
- * @param {!Array|!Object} data
+ * @param {!Array|!Object|ArrayBuffer|string} data
  * @param {number=} ajax_session &1:session, &2:email+login
  * @returns {boolean?}
  */
-function socket_send(data, ajax_session) {
+function socketSend(data, ajax_session) {
     // no socket => use ajax
     if (!socket || socket.readyState != WS.OPEN) {
+        if (data instanceof ArrayBuffer)
+            return false;
+
         if (DEV['socket'])
             LS('socket_ajax:', data);
 
         // add session info when WebSocket is closed
-        if (ajax_session && IsArray(data)) {
-            let obj = data[1];
-            if (IsObject(obj)) {
-                if (ajax_session & 2) {
-                    obj['email'] = me['email'];
-                    obj['login'] = me['login'];
-                }
-                obj['session'] = me['session'];
-            }
-        }
+        if (ajax_session)
+            addSession(data, ajax_session);
 
-        api_message(data, result => {
-            if (result != null && virtual_socket_message)
-                virtual_socket_message(result);
+        apiMessage(data, result => {
+            if (result != null && vi_socketMessage)
+                vi_socketMessage(result);
         });
         return true;
     }
@@ -2184,11 +2258,11 @@ function socket_send(data, ajax_session) {
     // send socket
     let success = null;
     try {
-        socket.send(Stringify(data));
+        socket.send((data instanceof ArrayBuffer || IsString(data))? data: Stringify(data));
         success = true;
     }
     catch(error) {
-        socket_error(`socket_send: ${Now()} : ${error}`);
+        socketError(`socketSend: ${Now()} : ${error}`);
     }
     return success;
 }
@@ -2204,7 +2278,7 @@ function socket_send(data, ajax_session) {
  * @param {number=} ratio_y
  * @returns {!Array<number>} deltas
  */
-function add_move(change, stamp, ratio_x=1, ratio_y=1) {
+function addMove(change, stamp, ratio_x=1, ratio_y=1) {
     if (!drag)
         return [0, 0];
     let dx = (change.x - drag[0].x) * ratio_x,
@@ -2217,8 +2291,8 @@ function add_move(change, stamp, ratio_x=1, ratio_y=1) {
  * We cannot click just after a touch drop, as that would cause misclick events
  * @returns {boolean|Node}
  */
-function cannot_click() {
-    if (Now(true) < touch_done + TIMEOUT_touch)
+function cannotClick() {
+    if (Now(1) < touch_done + TIMEOUT_touch)
         return true;
     let active = document.activeElement;
     if (active && {'INPUT': 1, 'TEXTAREA': 1}[active.tagName])
@@ -2230,7 +2304,7 @@ function cannot_click() {
  * Check if we can't right click to popup
  * @returns {boolean}
  */
-function cannot_popup() {
+function cannotPopup() {
     let is_control = KEYS[17],
         cannot = !Undefined(Y['popup_right_click'], 1) || is_control;
     if (cannot && is_control)
@@ -2242,8 +2316,8 @@ function cannot_popup() {
  * Finished touching which means we cannot click for a bit
  * @param {number=} delta
  */
-function done_touch(delta=0) {
-    touch_done = Now(true) + delta;
+function doneTouch(delta=0) {
+    touch_done = Now(1) + delta;
 }
 
 /**
@@ -2251,7 +2325,7 @@ function done_touch(delta=0) {
  * @param {Node} node
  * @returns {Node}
  */
-function get_area(node) {
+function getArea(node) {
     return Parent(node, {class_: 'area'});
 }
 
@@ -2260,7 +2334,7 @@ function get_area(node) {
  * @param {Event} e
  * @returns {!Array<Vector2>}
  */
-function get_changed_touches(e) {
+function getChangedTouches(e) {
     let touches = e.changedTouches || e.touches;
     if (touches)
         touches = [...touches].map(touch => ({x: touch.clientX, y: touch.clientY}));
@@ -2272,12 +2346,12 @@ function get_changed_touches(e) {
 /**
  * Render the inertial scrolling
  */
-function render_scroll() {
+function renderScroll() {
     let ratio = Y['scroll_inertia'];
     if (!ratio)
         return;
 
-    let now = Now(true),
+    let now = Now(1),
         delta = Min(33, (now - touch_now) * 1000);
 
     touch_scroll.x -= touch_speed.x * delta;
@@ -2286,12 +2360,12 @@ function render_scroll() {
         full_scroll.x -= touch_speed.x * delta;
         full_scroll.y -= touch_speed.y * delta;
     }
-    set_scroll();
+    setScroll();
 
     if (Abs(touch_speed.x) > 0.03 || Abs(touch_speed.y) > 0.03) {
         touch_speed.x *= ratio;
         touch_speed.y *= ratio;
-        animation = AnimationFrame(render_scroll);
+        AnimationFrame('scroll', renderScroll);
     }
     touch_now = now;
 }
@@ -2304,7 +2378,7 @@ function render_scroll() {
  * @param {number=} max_delta
  * @param {number=} depth
  */
-function scroll_adjust(target, max_delta, depth=0) {
+function scrollAdjust(target, max_delta, depth=0) {
     if (max_delta == undefined)
         max_delta = Y['wheel_adjust'];
 
@@ -2402,14 +2476,14 @@ function scroll_adjust(target, max_delta, depth=0) {
     if (!target && depth < 1 && combined < 2) {
         let new_delta = max_delta - Abs(y - y_old);
         if (new_delta > 0)
-            add_timeout('adjust', () => scroll_adjust(target, new_delta, depth + 1), TIMEOUT_adjust);
+            AddTimeout('adjust', () => scrollAdjust(target, new_delta, depth + 1), TIMEOUT_adjust);
     }
 }
 
 /**
  * Set the scroll
  */
-function set_scroll() {
+function setScroll() {
     let node = drag_target || scroll_target;
 
     if (node) {
@@ -2435,7 +2509,7 @@ function set_scroll() {
 /**
  * Stop dragging
  */
-function stop_drag() {
+function stopDrag() {
     drag = null;
     drag_moved = false;
     drag_scroll = 3;
@@ -2447,8 +2521,8 @@ function stop_drag() {
  * @param {Event} e
  * @returns {{change:Vector2, error:number, stamp:number}}
  */
-function touch_event(e) {
-    let changes = get_changed_touches(e),
+function touchEvent(e) {
+    let changes = getChangedTouches(e),
         change = changes[0],
         error = -1,
         length = changes.length,
@@ -2502,12 +2576,12 @@ function touch_event(e) {
  * @param {boolean=} full full screen scrolling
  * @param {boolean=} prevent_default
  */
-function touch_handle(e, full, prevent_default) {
+function touchHandle(e, full, prevent_default) {
     if (full == undefined)
-        full = !!is_fullscreen();
+        full = !!isFullscreen();
 
     let buttons = e.buttons,
-        event = touch_event(e),
+        event = touchEvent(e),
         change = event.change,
         stamp = event.stamp,
         target = e.target,
@@ -2517,7 +2591,7 @@ function touch_handle(e, full, prevent_default) {
 
     if (is_start) {
         let old_target = drag_target;
-        stop_drag();
+        stopDrag();
         if (type5 == 'mouse' && buttons != 1)
             return;
         // input => skip
@@ -2527,7 +2601,7 @@ function touch_handle(e, full, prevent_default) {
         if (type == 'mouseenter' && !old_target)
             return;
 
-        clear_timeout('touch_end');
+        ClearTimeout('touch_end');
 
         drag_target = Parent(/** @type {Node} */(target), {class_: 'scroller', self: true, tag: 'div'});
         if (drag_target && !full_target) {
@@ -2546,7 +2620,7 @@ function touch_handle(e, full, prevent_default) {
         drag_type = type5;
         touch_last = change;
         touch_moves.length = 0;
-        touch_now = Now(true);
+        touch_now = Now(1);
         touch_speed = {x: 0, y: 0};
         touch_start = touch_now;
 
@@ -2560,12 +2634,12 @@ function touch_handle(e, full, prevent_default) {
             return;
         // reset needed when we move the mouse outside the window, then come back
         if (type == 'mousemove' && !buttons) {
-            stop_drag();
+            stopDrag();
             return;
         }
 
         drag_moved = true;
-        let [dx, dy] = add_move(change, stamp);
+        let [dx, dy] = addMove(change, stamp);
         touch_last = change;
 
         touch_scroll.x -= dx;
@@ -2574,7 +2648,7 @@ function touch_handle(e, full, prevent_default) {
             full_scroll.x -= dx;
             full_scroll.y -= dy;
         }
-        set_scroll();
+        setScroll();
 
         drag = [change, stamp];
         if (prevent_default && (e.cancelable != false || type5 != 'touch'))
@@ -2584,7 +2658,7 @@ function touch_handle(e, full, prevent_default) {
         if (!drag || !drag_moved)
             return;
 
-        add_move(change, stamp);
+        addMove(change, stamp);
 
         // inertia during the last 100ms
         let sumx = 0,
@@ -2598,7 +2672,7 @@ function touch_handle(e, full, prevent_default) {
                 break;
         }
 
-        done_touch();
+        doneTouch();
         touch_now = touch_done;
         let absx = Abs(sumx),
             absy = Abs(sumy),
@@ -2609,20 +2683,21 @@ function touch_handle(e, full, prevent_default) {
             scroll_target = drag_target;
             touch_speed = {x: sumx / time, y: sumy / time};
 
-            if (virtual_drag_done)
-                virtual_drag_done(sumx, sumy, touch_speed);
+            if (vi_dragDone)
+                vi_dragDone(sumx, sumy, touch_speed);
 
-            cancel_animation();
             if (drag_target || full_target || scroll_target)
-                animation = AnimationFrame(render_scroll);
+                AnimationFrame('scroll', renderScroll);
+            else
+                CancelAnimationFrame('scroll');
         }
         // big movement or average duration => prevent click
         if (type != 'mouseleave') {
             drag = null;
             if (absx > 2 || absy > 2 || (elapsed > 0.3 && elapsed < 1))
-                add_timeout('touch_end', stop_drag, 10);
+                AddTimeout('touch_end', stopDrag, 10);
             else
-                stop_drag();
+                stopDrag();
         }
     }
 
@@ -2634,7 +2709,7 @@ function touch_handle(e, full, prevent_default) {
  * @param {Event} e
  * @param {boolean=} full full screen scrolling
  */
-function wheel_event(e, full) {
+function wheelEvent(e, full) {
     if (full_target) {
         full_scroll.x -= e.wheelDeltaX / 3;
         full_scroll.y -= e.wheelDeltaY / 3;
@@ -2644,7 +2719,7 @@ function wheel_event(e, full) {
         touch_scroll.y -= e.wheelDeltaY / 3;
     }
 
-    set_scroll();
+    setScroll();
     PD(e);
 }
 
@@ -2654,7 +2729,7 @@ function wheel_event(e, full) {
 /**
  * Activate tabs after populating the areas
  */
-function activate_tabs() {
+function activateTabs() {
     E('.tabs', (node, id) => {
         let tabs = From(A('.tab', node)),
             actives = tabs.filter(node => HasClass(node, 'active'));
@@ -2666,8 +2741,8 @@ function activate_tabs() {
                 dataset['t'] = dataset['label'] || dataset['abbr'];
             }
 
-        add_timeout(`active:${id}`, () => {
-            virtual_click_tab(actives.length? actives[0]: tabs[0]);
+        AddTimeout(`active:${id}`, () => {
+            vi_clickTab(actives.length? actives[0]: tabs[0]);
         }, node.id == 'table-tabs'? TIMEOUT_activate: 0);
     });
 }
@@ -2675,29 +2750,29 @@ function activate_tabs() {
 /**
  * Adjust popup position
  */
-function adjust_popups() {
-    show_popup('', null, {adjust: true});
+function adjustPopups() {
+    showPopup('', null, {adjust: true});
 }
 
 /**
  * Close the input box and possibly rename the tab
  * @param {boolean=} cancel don't rename the tab
  */
-function close_input(cancel) {
+function closeInput(cancel) {
 }
 
 /**
  * Close all popups
  */
-function close_popups() {
-    if (virtual_can_close_popups && !virtual_can_close_popups())
+function closePopups() {
+    if (vi_canClosePopups && !vi_canClosePopups())
         return;
 
-    show_popup();
-    Hide(CacheId('overlay'));
+    showPopup();
+    Hide(node_overlay);
 
-    if (virtual_closed_popup)
-        virtual_closed_popup();
+    if (vi_closedPopup)
+        vi_closedPopup();
 }
 
 /**
@@ -2707,7 +2782,7 @@ function close_popups() {
  * @param {number} extra
  * @returns {!Array<number>}
  */
-function create_page_array(num_page, page, extra) {
+function createPageArray(num_page, page, extra) {
     if (num_page < 2)
         return [2];
 
@@ -2748,7 +2823,7 @@ function create_page_array(num_page, page, extra) {
  * - otherwise insert separator
  * @returns {string}
  */
-function create_url_list(dico) {
+function createUrlList(dico) {
     if (!dico)
         return '';
 
@@ -2776,7 +2851,7 @@ function create_url_list(dico) {
                 return '<hr>';
 
             if (!value)
-                return `<a class="item" data-id="${create_field_value(key)[0]}" data-t="${key}"></a>`;
+                return `<a class="item" data-id="${createFieldValue(key)[0]}" data-t="${key}"></a>`;
 
             if (!'./'.includes(value[0]) && value.slice(0, 4) != 'http')
                 value = `${HOST}/${value}`;
@@ -2805,7 +2880,7 @@ function create_url_list(dico) {
  * @param {number=} mx mouse x
  * @param {number=} my mouse y
  */
-function draw_rectangle(node, orient, mx, my) {
+function drawRectangle(node, orient, mx, my) {
     let rect_node = CacheId('rect');
     if (!node) {
         Hide(rect_node);
@@ -2842,7 +2917,7 @@ function draw_rectangle(node, orient, mx, my) {
  * @param {string} name
  * @returns {{area: (Array<string|number>|undefined), id: number, key: (string|undefined)}}
  */
-function find_area(name) {
+function findArea(name) {
     let areas = Y['areas'];
     for (let key of Keys(areas)) {
         let vector = areas[key];
@@ -2858,7 +2933,7 @@ function find_area(name) {
  * @param {Node|EventTarget} target
  * @returns {{id:string, node:Node?}}
  */
-function get_drop_id(target) {
+function getDropId(target) {
     let parent = Parent(/** @type {Node} */(target), {class_: 'drag|drop', self: true});
     return {
         id: parent? (parent.id || parent.dataset['x']): null,
@@ -2870,8 +2945,8 @@ function get_drop_id(target) {
  * Hide a drag element
  * @param {Node} target
  */
-function hide_element(target) {
-    let drop = get_drop_id(target),
+function hideElement(target) {
+    let drop = getDropId(target),
         areas = Y['areas'];
     if (!drop.node)
         return;
@@ -2885,7 +2960,7 @@ function hide_element(target) {
     });
 
     Hide(drop.node);
-    populate_areas();
+    populateAreas();
 }
 
 /**
@@ -2893,7 +2968,7 @@ function hide_element(target) {
  * @param {Node} node
  * @param {number} dir <<[-3] <[-1] >[1] >>[3]
  */
-function move_pane(node, dir) {
+function movePane(node, dir) {
     // 1) gather pane info
     let areas = Y['areas'],
         index = -1,
@@ -2926,28 +3001,28 @@ function move_pane(node, dir) {
     });
     Assign(Y, dico);
     for (let order of orders) {
-        save_option(`max_${order}`);
-        save_option(`min_${order}`);
+        saveOption(`max_${order}`);
+        saveOption(`min_${order}`);
     }
 
     // 4) update areas
     let new_areas = Assign({}, ...panes.map((pane, id) => ({[`${orders[id]}0`]: pane[1]})));
     Assign(areas, new_areas);
-    populate_areas();
+    populateAreas();
 }
 
 /**
  * Populate areas
  * @param {boolean=} activate activate the tabs
  */
-function populate_areas(activate) {
+function populateAreas(activate) {
     let areas = Y['areas'] || {},
         default_areas = DEFAULTS['areas'],
         section = y_x,
         hides = Assign({}, HIDES[section]);
 
-    if (virtual_hide_areas)
-        virtual_hide_areas(hides);
+    if (vi_hideAreas)
+        vi_hideAreas(hides);
 
     // 1) count existing
     Keys(areas).forEach(key => {
@@ -3101,20 +3176,20 @@ function populate_areas(activate) {
 
     // 3) activate tabs
     if (activate)
-        activate_tabs();
+        activateTabs();
 
-    save_option('areas');
-    translate_nodes('body');
-    set_draggable();
+    saveOption('areas');
+    translateNodes('body');
+    setDraggable();
 
-    if (virtual_populate_areas_special)
-        virtual_populate_areas_special();
+    if (vi_populateAreasSpecial)
+        vi_populateAreasSpecial();
 }
 
 /**
  * Set some elements to be draggable or not
  */
-function set_draggable() {
+function setDraggable() {
     let drag = !!Y['drag_and_drop'];
     Attrs('.drag, .drop', {'draggable': drag});
     Hide(CacheId('rect'));
@@ -3125,10 +3200,10 @@ function set_draggable() {
  * Handle a general window click
  * @param {Event} e
  */
-function window_click(e) {
+function windowClick(e) {
     has_clicked = true;
     Clear(KEYS);
-    let cannot = cannot_click();
+    let cannot = cannotClick();
     if (cannot == 1)
         return;
 
@@ -3139,8 +3214,8 @@ function window_click(e) {
     last_click = target;
 
     // special 1
-    if (virtual_window_click_dataset)
-        if (virtual_window_click_dataset(dataset))
+    if (vi_windowClickDataset)
+        if (vi_windowClickDataset(dataset))
             return;
 
     while (target) {
@@ -3149,11 +3224,11 @@ function window_click(e) {
             if (MODAL_IDS[id] || id.includes('modal') || id.includes('popup'))
                 return;
         }
-        if (HasClass(target, 'nav'))
+        if (HasClass(target, 'no-close') || HasClass(target, 'nav'))
             return;
         // special 2
-        if (virtual_window_click_parent) {
-            let result = virtual_window_click_parent(target, is_click);
+        if (vi_windowClickParent) {
+            let result = vi_windowClickParent(target, is_click);
             if (result == 1)
                 return;
             else if (result == 2)
@@ -3174,15 +3249,15 @@ function window_click(e) {
                             xy = item.split(',').map(item => item * 1);
                     }
                     if (set == -1)
-                        close_popups();
+                        closePopups();
                     else
-                        show_popup('options', true, {id: 'options', setting: set, target: parent, xy: xy});
+                        showPopup('options', true, {id: 'options', setting: set, target: parent, xy: xy});
                     return;
                 }
 
                 // special 3
-                if (virtual_window_click_parent_dataset) {
-                    let result = virtual_window_click_parent_dataset(dataset);
+                if (vi_windowClickParentDataset) {
+                    let result = vi_windowClickParentDataset(dataset);
                     if (result == 1)
                         return;
                     else if (result == 2)
@@ -3194,8 +3269,8 @@ function window_click(e) {
         target = target.parentNode;
     }
 
-    close_input();
-    close_popups();
+    closeInput();
+    closePopups();
 }
 
 // API
@@ -3203,14 +3278,19 @@ function window_click(e) {
 
 /**
  * Send an API message
- * @param {!Array|!Object} vector format=[code, message]
+ * @param {!Array|!Object|string} data format=[code, message]
  * @param {Function=} callback
+ * @param {number=} ajax_session &1:session, &2:email+login
  */
-function api_message(vector, callback) {
-    Resource('/api/', (http_code, data) => {
+function apiMessage(data, callback, ajax_session) {
+    // add session info?
+    if (ajax_session)
+        addSession(data, ajax_session);
+
+    Resource('/api/', (status, data) => {
         if (callback)
-            callback((http_code == 200)? data: null);
-    }, {content: Stringify(vector), method: 'POST'});
+            callback((status == 200)? data: null);
+    }, {content: (IsString(data)? data: Stringify(data)), method: 'POST'});
 }
 
 /**
@@ -3219,18 +3299,18 @@ function api_message(vector, callback) {
  * @param {Function=} callback
  * @param {Object=} custom_data provide translations directly
  */
-function api_translate_get(force, callback, custom_data) {
+function apiTranslateGet(force, callback, custom_data) {
     /**
      * @param {Object=} data
      */
     function _done(data) {
         if (data) {
             translates = data;
-            api_times.translate = Now(true);
-            save_storage('trans', translates);
-            save_storage('times', api_times);
+            api_times.translate = Now(1);
+            saveStorage('trans', translates);
+            saveStorage('times', api_times);
         }
-        translate_nodes('body');
+        translateNodes('body');
         if (callback)
             callback();
     }
@@ -3264,42 +3344,56 @@ function api_translate_get(force, callback, custom_data) {
 /**
  * Check if the session is valid
  */
-function check_session() {
+function checkSession() {
     if (!me['session'])
         return;
 
-    get_ip(() => {
-        socket_send([
-            MSG_USER_SESSION,
-            {
-                'email': me['email'],
-                'ip': Y.ip,
-                'login': me['login'],
-                'session': me['session'],
-            },
-        ]);
+    getIp('session', ip => {
+        socketSend([MSG_USER_SESSION, {
+            'email': me['email'],
+            'ip': ip,
+            'login': me['login'],
+            'session': me['session'],
+        }]);
     });
 }
 
 /**
  * Get the IP, for login/register + call_me
+ * @param {string=} name
  * @param {Function=} callback
  */
-function get_ip(callback) {
-    if (Y.ip && Now() < Y.ip_time + TIMEOUT_ip) {
+function getIp(name, callback) {
+    // 1) use cached IP
+    if (Z.ip && Now() < Z.ip_time + TIMEOUT_ip) {
         if (callback)
-            callback(Y.ip);
+            callback(Z.ip);
         return;
     }
 
-    api_message([MSG_IP_GET], data => {
-        if (data == null)
-            return;
-        Y.ip = data[1];
-        Y.ip_time = Now();
-        if (callback)
-            callback(data[1]);
-    });
+    // 2) get a new IP online
+    // register a callback
+    if (callback && !ip_callbacks[name])
+        ip_callbacks[name] = callback;
+
+    if (timeouts['getIp'])
+        return;
+
+    AddTimeout('getIp', () => {
+        apiMessage([MSG_IP_GET], data => {
+            if (!data)
+                return;
+            Z.ip = data[1];
+            Z.ip_time = Now();
+
+            // use all the callbacks
+            let ip = data[1];
+            Keys(ip_callbacks).forEach(key => {
+                ip_callbacks[key](ip);
+                delete ip_callbacks[key];
+            });
+        });
+    }, 1);
 }
 
 // EVENTS
@@ -3307,10 +3401,10 @@ function get_ip(callback) {
 
 /**
  * Drag and drop events
- * @param {Function=} handle_drop
+ * @param {Function=} handleDrop
  * @param {number=} force_orient 1:vert, 2:hori
  */
-function set_drag_events(handle_drop, force_orient=0) {
+function setDragEvents(handleDrop, force_orient=0) {
     Events(window, 'dragstart', e => {
         if (!Y['drag_and_drop'])
             return;
@@ -3328,13 +3422,13 @@ function set_drag_events(handle_drop, force_orient=0) {
                 break;
             }
         drag_source = parent;
-        close_popups();
+        closePopups();
     });
 
     Events(window, 'dragenter dragover', e => {
         if (!Y['drag_and_drop'])
             return;
-        let child = get_drop_id(e.target).node,
+        let child = getDropId(e.target).node,
             parent = Parent(e.target, {class_: 'area', self: true});
         if (child == drag_source)
             child = null;
@@ -3347,7 +3441,7 @@ function set_drag_events(handle_drop, force_orient=0) {
 
         // tab=drop or top/bottom area => vertical bar, otherwise horizontal
         let orient = ((parent && ['bottom', 'top'].includes(parent.id)) || HasClass(child, 'drop'))? 1: 2;
-        draw_rectangle(child, force_orient || orient, e.clientX, e.clientY);
+        drawRectangle(child, force_orient || orient, e.clientX, e.clientY);
         if (!child)
             return;
 
@@ -3365,28 +3459,28 @@ function set_drag_events(handle_drop, force_orient=0) {
         }
     });
 
-    if (handle_drop)
-        Events(window, 'drop', handle_drop);
+    if (handleDrop)
+        Events(window, 'drop', handleDrop);
 }
 
 /**
  * Global engine events
  */
-function set_engine_events() {
+function setEngineEvents() {
     Events(window, 'mousedown touchstart', () => {
-        cancel_animation();
+        CancelAnimationFrame('scroll');
     });
 
     // iframe support: scroll going to opposite expected way => stop the animation
     Events(window, 'scroll', () => {
-        last_scroll = Now(true);
+        last_scroll = Now(1);
         if (Abs(touch_speed.x) <= 0.03 && Abs(touch_speed.y) <= 0.03)
             return;
         let y = ScrollDocument(),
             sign = Sign(y - touch_scroll.y);
         if (sign && sign != -Sign(touch_speed.y)) {
-            cancel_animation();
-            stop_drag();
+            CancelAnimationFrame('scroll');
+            stopDrag();
         }
     });
 }
@@ -3397,23 +3491,23 @@ function set_engine_events() {
  * @param {Function=} obj.move mouse move event
  * @param {Function=} obj.wheel mouse wheel event
  */
-function set_fullscreen_events({move, wheel}={}) {
+function setFullscreenEvents({move, wheel}={}) {
     Events(window, 'mousedown mouseenter mouseleave mousemove mouseup touchstart touchmove touchend', e => {
         if (move)
             move(e);
-        if (!is_fullscreen())
+        if (!isFullscreen())
             return;
-        touch_handle(e, true);
+        touchHandle(e, true);
     });
     Events(window, 'wheel', e => {
         if (wheel)
             wheel(e);
-        if (!is_fullscreen()) {
+        if (!isFullscreen()) {
             if (Y['wheel_adjust'])
-                add_timeout('adjust', scroll_adjust, TIMEOUT_adjust);
+                AddTimeout('adjust', scrollAdjust, TIMEOUT_adjust);
             return;
         }
-        wheel_event(e, true);
+        wheelEvent(e, true);
     }, {'passive': true});
 }
 
@@ -3421,9 +3515,9 @@ function set_fullscreen_events({move, wheel}={}) {
  * Used when showing a modal
  * @param {Node=} parent parent node, document by default
  */
-function set_modal_events(parent) {
+function setModalEvents(parent) {
     // settings events
-    parent = parent || CacheId('modal');
+    parent = parent || node_modal;
     if (parent.dataset['ev'] == 0)
         return;
 
@@ -3433,14 +3527,19 @@ function set_modal_events(parent) {
         let name = this.name;
         if (name || HasClass(this, 'item-title')) {
             click_target = Parent(this, {class_: 'popup', self: true});
-            change_setting(name, undefined, this.dataset['set'] == '-1' || HasClass(this, 'span'));
+            let close = !HasClass(this, 'no-close') && (this.dataset['set'] == '-1' || HasClass(this, 'span'));
+            changeSetting(name, undefined, close);
             return;
         }
 
         // input + select
         let next = this.nextElementSibling;
-        if (!next)
+        if (!next) {
+            // link
+            if (this.href)
+                checkHash();
             return;
+        }
         next = _('input, select', next);
         if (!next)
             return;
@@ -3448,68 +3547,65 @@ function set_modal_events(parent) {
         case 'INPUT':
             if (next.type == 'checkbox') {
                 next.checked = !next.checked;
-                change_setting(next.name, next.checked * 1);
+                changeSetting(next.name, next.checked * 1);
             }
             break;
         case 'SELECT':
             if (!NO_CYCLES[next.name]) {
                 next.selectedIndex = (next.selectedIndex + 1) % next.options.length;
-                change_setting(next.name, next.value);
+                changeSetting(next.name, next.value);
             }
             break;
         }
     }, parent);
     C('.item2', function() {
         let name = this.dataset['t'];
-        change_setting(name? name.replace(/ /g, '_'): name);
+        changeSetting(name? name.replace(/ /g, '_'): name);
     }, parent);
 
     // right click on item => reset to default
     Events('.item', 'contextmenu', function(e) {
-        if (cannot_popup())
+        if (cannotPopup())
             return;
-        let next = this.nextElementSibling;
-        if (next) {
-            E('input, select, textarea', node => {
-                let name = node.name,
-                    def = DEFAULTS[name];
-                if (def == undefined)
-                    return;
-                if (node.type == 'checkbox')
-                    node.checked = def? true: false;
-                else
-                    node.value = def;
-                save_option(name, def);
-                change_setting(name, def);
-            }, next);
-        }
+        resetItemSetting(this);
         PD(e);
         SP(e);
     }, parent);
 
     // inputs
     Events('input, select, textarea', 'change', function() {
-        done_touch();
-        change_setting(this.name, (this.type == 'checkbox')? this.checked * 1: this.value);
+        doneTouch();
+        changeSetting(this.name, (this.type == 'checkbox')? this.checked * 1: this.value);
     }, {}, parent);
     //
     Input('input, select, textarea', function() {
-        done_touch();
-        change_setting('');
+        doneTouch();
+        changeSetting('');
     }, parent);
     //
     C('input, select, textarea', function() {
-        if (cannot_click())
+        if (cannotClick())
             return;
-        change_setting('');
+        changeSetting('');
     }, parent);
     //
     C('div[name]', function() {
-        change_setting(this.getAttribute('name'));
+        changeSetting(this.getAttribute('name'));
     }, parent);
 
-    if (virtual_set_modal_events_special)
-        virtual_set_modal_events_special();
+    if (vi_setModalEventsSpecial)
+        vi_setModalEventsSpecial();
+}
+
+// STARTUP
+//////////
+
+/**
+ * Initialise structures
+ */
+function startupEngine() {
+    node_modal = Id('modal');
+    node_overlay = Id('overlay');
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3517,90 +3613,96 @@ function set_modal_events(parent) {
 // <<
 if (typeof exports != 'undefined') {
     Object.assign(exports, {
-        activate_tabs: activate_tabs,
-        add_history: add_history,
-        add_move: add_move,
-        add_timeout: add_timeout,
+        _ALL: _ALL,
+        activateTabs: activateTabs,
+        addHistory: addHistory,
+        addMove: addMove,
         AUTO_ON_OFF: AUTO_ON_OFF,
-        cannot_click: cannot_click,
-        cannot_popup: cannot_popup,
-        clear_timeout: clear_timeout,
-        create_field_value: create_field_value,
-        create_page_array: create_page_array,
-        create_svg_icon: create_svg_icon,
-        create_url_list: create_url_list,
+        cannotClick: cannotClick,
+        cannotPopup: cannotPopup,
+        createFieldValue: createFieldValue,
+        createPageArray: createPageArray,
+        createSvgIcon: createSvgIcon,
+        createUrlList: createUrlList,
         DEFAULTS: DEFAULTS,
-        detect_device: detect_device,
+        detectDevice: detectDevice,
         DEV: DEV,
         DEV_NAMES: DEV_NAMES,
         device: device,
-        done_touch: done_touch,
+        doneTouch: doneTouch,
         DRAG_CLASSES: DRAG_CLASSES,
-        draw_rectangle: draw_rectangle,
-        fill_combo: fill_combo,
-        find_area: find_area,
+        drawRectangle: drawRectangle,
+        fillCombo: fillCombo,
+        findArea: findArea,
         FONTS: FONTS,
-        get_area: get_area,
-        get_changed_touches: get_changed_touches,
-        get_float: get_float,
-        get_int: get_int,
-        get_object: get_object,
-        get_string: get_string,
-        guess_types: guess_types,
+        getArea: getArea,
+        getChangedTouches: getChangedTouches,
+        getFloat: getFloat,
+        getInt: getInt,
+        getObject: getObject,
+        getString: getString,
+        guessTypes: guessTypes,
+        handlePing: handlePing,
         has_clicked: has_clicked,
         HIDES: HIDES,
         ICONS: ICONS,
-        import_settings: import_settings,
+        importSettings: importSettings,
         KEY_TIMES: KEY_TIMES,
         KEYS: KEYS,
         LANGUAGES: LANGUAGES,
-        load_defaults: load_defaults,
+        loadDefaults: loadDefaults,
         LOCALHOST: LOCALHOST,
         me: me,
-        merge_settings: merge_settings,
+        mergeSettings: mergeSettings,
         MESSAGES: MESSAGES,
-        mix_hex_colors: mix_hex_colors,
+        mixHexColors: mixHexColors,
         MODAL_IDS: MODAL_IDS,
-        move_pane: move_pane,
+        movePane: movePane,
         NO_IMPORTS: NO_IMPORTS,
+        node_modal: node_modal,
         ON_OFF: ON_OFF,
-        option_number: option_number,
+        optionNumber: optionNumber,
         PANES: PANES,
-        parse_dev: parse_dev,
-        populate_areas: populate_areas,
+        parseDev: parseDev,
+        ping_diff: ping_diff,
+        ping_values: ping_values,
+        pings: pings,
+        populateAreas: populateAreas,
         POPUP_ADJUSTS: POPUP_ADJUSTS,
-        reset_default: reset_default,
-        reset_defaults: reset_defaults,
-        reset_settings: reset_settings,
-        resize_text: resize_text,
-        restore_history: restore_history,
-        sanitise_data: sanitise_data,
-        save_default: save_default,
-        save_option: save_option,
-        set_section: set_section,
-        show_popup: show_popup,
-        show_settings: show_settings,
+        resetDefault: resetDefault,
+        resetDefaults: resetDefaults,
+        resetSettings: resetSettings,
+        resizeText: resizeText,
+        restoreHistory: restoreHistory,
+        sanitiseData: sanitiseData,
+        saveDefault: saveDefault,
+        saveOption: saveOption,
+        server_diffs: server_diffs,
+        setSection: setSection,
+        showPopup: showPopup,
+        showSettings: showSettings,
         socket: socket,
-        socket_send: socket_send,
-        stop_drag: stop_drag,
+        socketSend: socketSend,
+        stopDrag: stopDrag,
         TAB_NAMES: TAB_NAMES,
         THEMES: THEMES,
-        timers: timers,
-        touch_event: touch_event,
-        touch_handle: touch_handle,
         touch_moves: touch_moves,
+        touchEvent: touchEvent,
+        touchHandle: touchHandle,
         translate: translate,
-        translate_default: translate_default,
-        translate_expression: translate_expression,
-        translate_node: translate_node,
-        translate_nodes: translate_nodes,
         TRANSLATE_SPECIALS: TRANSLATE_SPECIALS,
+        translateDefault: translateDefault,
+        translateExpression: translateExpression,
+        translateNode: translateNode,
+        translateNodes: translateNodes,
         translates: translates,
         TYPES: TYPES,
-        update_svg: update_svg,
+        updateSvg: updateSvg,
         X_SETTINGS: X_SETTINGS,
         Y: Y,
         y_states: y_states,
+        y_x: y_x,
+        Z: Z,
     });
 }
 // >>

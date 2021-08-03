@@ -1,6 +1,6 @@
 // chess-wasm.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-04-28
+// @version 2021-08-02
 //
 /*
 globals
@@ -10,7 +10,7 @@ beforeAll, beforeEach, describe, expect, require, test
 
 let Module = require('./chess-wasm.js'),
     {ArrayJS, Assign, IsArray, IsString, Keys, LS, Undefined} = require('./common'),
-    {get_move_ply} = require('./global');
+    {getMovePly} = require('./global');
 
 let chess,
     START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -836,7 +836,7 @@ beforeEach(() => {
         if (answer) {
             for (let move of moves)
                 if (move.fen)
-                    expect(get_move_ply({fen: move.fen})).toEqual(move.ply);
+                    expect(getMovePly({fen: move.fen})).toEqual(move.ply);
             expect(moves).toEqual(answer);
         }
         expect(chess.fen()).toEqual(new_fen);
@@ -888,7 +888,7 @@ beforeEach(() => {
         let moves = ArrayJS(chess.multiUci(multi));
         if (answer) {
             for (let move of moves)
-                expect(get_move_ply({fen: move.fen})).toEqual(move.ply);
+                expect(getMovePly({fen: move.fen})).toEqual(move.ply);
             if (IsString(answer))
                 moves = moves.map((item, id) => `${!(id & 1)? (1 + id / 2 + '. '): ''}${item.m}`).join(' ');
             expect(moves).toEqual(answer);

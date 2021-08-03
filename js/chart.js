@@ -1320,7 +1320,7 @@ var core_animations = {
             // Skip animation frame requests until the active one is executed.
             // This can happen when processing mouse events, e.g. 'mousemove'
             // and 'mouseout' events will trigger multiple renders.
-            me.request = AnimationFrame(() => {
+            me.request = AnimationFrame('chart', () => {
                 me.request = null;
                 me.startDigest();
             });
@@ -3360,7 +3360,7 @@ function throttled(fn, thisArg) {
 
         if (!ticking) {
             ticking = true;
-            AnimationFrame(() => {
+            AnimationFrame('throttled', () => {
                 ticking = false;
                 fn.apply(thisArg, args);
             });

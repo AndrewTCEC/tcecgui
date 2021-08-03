@@ -1,6 +1,6 @@
 // analyse_pgn.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-05
+// @version 2021-08-02
 /*
 globals
 process, require
@@ -13,8 +13,8 @@ let fs = require('fs'),
     {
         Assign, DefaultArray, DefaultInt, Floor, FormatUnit, FromTimestamp, IsDigit, Keys, LS, Max, Now, Pad,
     } = require('../js/common.js'),
-    {fix_move_format} = require('../js/global.js'),
-    {extract_threads, parse_pgn} = require('../js/game.js');
+    {fixMoveFormat} = require('../js/global.js'),
+    {extractThreads, parsePgn} = require('../js/game.js');
 
 let engine_check = 'LCZero 0.27.0d-Tilps-dje-magic_JH.94-100',
     OPTIONS = {},
@@ -65,7 +65,7 @@ function getMultiPgnStats(data, result, origin) {
  * @returns {!Object}
  */
 function getPgnStats(data, origin) {
-    let dico = parse_pgn('', data, 7, origin);
+    let dico = parsePgn('', data, 7, origin);
     if (!dico || !dico.Headers || !dico.Moves)
         return {};
 
@@ -96,7 +96,7 @@ function getPgnStats(data, origin) {
         sum_times = [0, 0];
 
     moves.slice(0, Floor(num_move * 0.8)).forEach((move, ply) => {
-        fix_move_format(move);
+        fixMoveFormat(move);
         if (!move || isNaN(move.n) || move.n < 2 || isNaN(move.s))
             return;
         let time = move.n / move.s;
@@ -123,7 +123,7 @@ function getPgnStats(data, origin) {
         // collect hardware info
         let options = dico[`${color}EngineOptions`] || {},
             gpus = options.GPUCores,
-            threads = extract_threads(options);
+            threads = extractThreads(options);
 
         if (OPTIONS.discover && !threads && !gpus) {
             let keys = Keys(options).filter(key => !skipped_keys[key]);
@@ -391,7 +391,7 @@ function done(result, filenames) {
 
     LS(lines);
     fs.writeFile('analyse_pgn.txt', text, () => {
-        LS(`elapsed: ${(Now(true) - OPTIONS.start).toFixed(3)} sec`);
+        LS(`elapsed: ${(Now(1) - OPTIONS.start).toFixed(3)} sec`);
     });
 }
 
@@ -404,7 +404,7 @@ function main() {
         filenames = [],
         num_arg = args.length,
         options = {
-            start: Now(true),
+            start: Now(1),
         };
 
     for (let i = 2; i < num_arg; i ++) {

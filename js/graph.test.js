@@ -1,6 +1,6 @@
 // graph.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-01-10
+// @version 2021-08-02
 //
 /*
 globals
@@ -9,9 +9,9 @@ expect, global, require, test,
 'use strict';
 
 let {Assign, Keys} = require('./common.js'),
-    {Y} = require('./engine.js'),
+    {Z} = require('./engine.js'),
     {
-        calculate_win, chart_data, check_first_num, clamp_eval, fix_labels, invert_eval, scale_boom,
+        calculateWin, chart_data, checkFirstNum, clampEval, fixLabels, invertEval, scaleBoom,
     } = require('./graph.js');
 
 global.xboards = {
@@ -22,7 +22,7 @@ global.xboards = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// calculate_win
+// calculateWin
 [
     [0, '', -1, 0],
     [0, NaN, -1, 100],
@@ -45,14 +45,14 @@ global.xboards = {
     [0, '#18', -1, 100],
     [0, '#-18', -1, -100],
 ].forEach(([feature, eval_, ply, answer], id) => {
-    test(`calculate_win:${id}`, () => {
-        Y.s = 'live';
+    test(`calculateWin:${id}`, () => {
+        Z.s = 'live';
         global.xboards.live.players[0].feature = feature;
-        expect(calculate_win(0, eval_, ply)).toEqual(answer);
+        expect(calculateWin(0, eval_, ply)).toEqual(answer);
     });
 });
 
-// check_first_num
+// checkFirstNum
 [
     [
         12,
@@ -83,8 +83,8 @@ global.xboards = {
         ],
     ],
 ].forEach(([first_num, num, answer], id) => {
-    test(`check_first_num:${id}`, () => {
-        check_first_num(first_num);
+    test(`checkFirstNum:${id}`, () => {
+        checkFirstNum(first_num);
 
         Assign(chart_data, {
             eval: {
@@ -109,13 +109,13 @@ global.xboards = {
             data[key] = dico[key];
         });
 
-        check_first_num(num);
+        checkFirstNum(num);
         expect(chart_data.eval.labels).toEqual(answer[0]);
         expect(chart_data.eval.datasets[0].data).toEqual(answer[1]);
     });
 });
 
-// clamp_eval
+// clampEval
 [
     [undefined, undefined],
     [null, undefined],
@@ -142,25 +142,25 @@ global.xboards = {
     ['M19', 128],
     ['-M19', -128],
 ].forEach(([eval_, answer], id) => {
-    test(`clamp_eval:${id}`, () => {
-        expect(clamp_eval(eval_)).toEqual(answer);
+    test(`clampEval:${id}`, () => {
+        expect(clampEval(eval_)).toEqual(answer);
     });
 });
 
-// fix_labels
+// fixLabels
 [
     [[7, 8, 9, undefined, undefined, 12], [7, 8, 9, 10, 11, 12]],
     [[undefined, 10, 11], [9, 10, 11]],
     [[undefined, undefined, 11], [9, 10, 11]],
     [[undefined, 10, undefined], [undefined, 10, undefined]],
 ].forEach(([labels, answer], id) => {
-    test(`fix_labels:${id}`, () => {
-        fix_labels(labels);
+    test(`fixLabels:${id}`, () => {
+        fixLabels(labels);
         expect(labels).toEqual(answer);
     });
 });
 
-// invert_eval
+// invertEval
 [
     ['', -0],
     [NaN, NaN],
@@ -174,12 +174,12 @@ global.xboards = {
     ['M#33', '-M#33'],
     ['-M#33', 'M#33'],
 ].forEach(([eval_, answer], id) => {
-    test(`invert_eval:${id}`, () => {
-        expect(invert_eval(eval_)).toEqual(answer);
+    test(`invertEval:${id}`, () => {
+        expect(invertEval(eval_)).toEqual(answer);
     });
 });
 
-// scale_boom
+// scaleBoom
 [
     [undefined, undefined],
     [null, undefined],
@@ -210,9 +210,9 @@ global.xboards = {
     [-15, -9.764822541439909],
     [-1, -2.211992169285951],
 ].forEach(([x, answer], id) => {
-    test(`scale_boom:${id}`, () => {
-        let clamp = clamp_eval(x),
-            result = scale_boom(clamp);
+    test(`scaleBoom:${id}`, () => {
+        let clamp = clampEval(x),
+            result = scaleBoom(clamp);
         if (isNaN(result))
             expect(result).toEqual(answer);
         else

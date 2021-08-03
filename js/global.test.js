@@ -1,6 +1,6 @@
 // global.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 /*
 globals
@@ -11,21 +11,21 @@ expect, global, require, test
 let {Assign, Keys} = require('./common.js'),
     {Y} = require('./engine.js'),
     {
-        add_player_eval, allie_cp_to_score, assign_move, calculate_feature_q, convert_checkmate, fix_move_format,
-        format_eval, format_unit, get_fen_ply, get_move_ply, leela_cp_to_score, split_move_string, stockfish_wdl,
-        stockfish_win_rate_model, stoof_cp_to_score
+        addPlayerEval, allieCpToScore, assignMove, calculateFeatureQ, convertCheckmate, fixMoveFormat, formatEval,
+        formatUnit, getFenPly, getMovePly, leelaCpToScore, splitMoveString, stockfishWdl, stockfishWinRateModel,
+        stoofCpToScore
     } = require('./global.js');
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// add_player_eval
+// addPlayerEval
 [
     [{}, 1, undefined, {}],
     [{}, 2, 5.6, {2: 5.6}],
     [{}, 2, '6.3', {2: '6.3'}],
 ].forEach(([player, ply, eval_, answer], id) => {
-    test(`add_player_eval:${id}`, () => {
-        add_player_eval(player, ply, eval_);
+    test(`addPlayerEval:${id}`, () => {
+        addPlayerEval(player, ply, eval_);
         let vector = [];
         Keys(answer).forEach(key => {
             vector[key] = answer[key];
@@ -34,7 +34,7 @@ let {Assign, Keys} = require('./common.js'),
     });
 });
 
-// allie_cp_to_score
+// allieCpToScore
 // https://github.com/manyoso/allie/blob/be656ec3042e0422c8275d6362ca4f69b2e43f0d/tests/testbasics.cpp#L120
 [
     [0, 0],
@@ -51,12 +51,12 @@ let {Assign, Keys} = require('./common.js'),
     [25600, 1.0],
     [-25600, -1.0],
 ].forEach(([cp, answer], id) => {
-    test(`allie_cp_to_score:${id}`, () => {
-        expect(allie_cp_to_score(cp)).toBeCloseTo(answer, 5);
+    test(`allieCpToScore:${id}`, () => {
+        expect(allieCpToScore(cp)).toBeCloseTo(answer, 5);
     });
 });
 
-// assign_move
+// assignMove
 [
     [{}, {}, {}],
     [{}, {text: ''}, {}],
@@ -68,13 +68,13 @@ let {Assign, Keys} = require('./common.js'),
     [{ply: 55}, {ply: -2}, {ply: 55}],
     [{ply: 55}, {ply: -3}, {ply: 55}],
 ].forEach(([move, dico, answer], id) => {
-    test(`assign_move:${id}`, () => {
-        assign_move(move, dico);
+    test(`assignMove:${id}`, () => {
+        assignMove(move, dico);
         expect(move).toEqual(answer);
     });
 });
 
-// calculate_feature_q
+// calculateFeatureQ
 [
     [0, 0, -1, 0],
     [0, 0, 0, 0],
@@ -95,12 +95,12 @@ let {Assign, Keys} = require('./common.js'),
     [5, 256, -1, 50],
     [9, 0.27, -1, 4.4446967802372015],
 ].forEach(([feature, eval_, ply, answer], id) => {
-    test(`calculate_feature_q:${id}`, () => {
-        expect(calculate_feature_q(feature, eval_, ply)).toBeCloseTo(answer, 3);
+    test(`calculateFeatureQ:${id}`, () => {
+        expect(calculateFeatureQ(feature, eval_, ply)).toBeCloseTo(answer, 3);
     });
 });
 
-// convert_checkmate
+// convertCheckmate
 [
     // plies
     [1, 'M1', 0, 'M1'],
@@ -175,13 +175,13 @@ let {Assign, Keys} = require('./common.js'),
     [1, '-M#8', 1, '-M16'],
     [0, '-M16', 1, '-M#8'],
 ].forEach(([want_ply, value, ply, answer], id) => {
-    test(`convert_checkmate:${id}`, () => {
+    test(`convertCheckmate:${id}`, () => {
         Y.checkmate = want_ply? 'plies': 'moves';
-        expect(convert_checkmate(value, ply)).toEqual(answer);
+        expect(convertCheckmate(value, ply)).toEqual(answer);
     });
 });
 
-// fix_move_format
+// fixMoveFormat
 [
     [
         {
@@ -378,16 +378,17 @@ let {Assign, Keys} = require('./common.js'),
         },
     ],
 ].forEach(([move, answer], id) => {
-    test(`fix_move_format:${id}`, () => {
-        fix_move_format(move);
+    test(`fixMoveFormat:${id}`, () => {
+        fixMoveFormat(move);
         expect(move).toEqual(answer);
     });
 });
 
-// format_eval
+// formatEval
 [
-    [{}, null, 0, undefined, 'null'],
-    [{}, NaN, 0, undefined, 'NaN'],
+    [{}, null, 0, undefined, '-'],
+    [{}, undefined, 0, undefined, '-'],
+    [{}, NaN, 0, undefined, '-'],
     [{}, Infinity, 0, undefined, 'Infinity'],
     [{}, '', 0, undefined, ''],
     [{}, 0, 0, undefined, '0.00'],
@@ -413,13 +414,13 @@ let {Assign, Keys} = require('./common.js'),
     [{checkmate: 'moves', small_decimal: 1}, 'M43', 0, true, 'M#21'],
     [{checkmate: 'plies', small_decimal: 1}, 'M43', 0, true, 'M43'],
 ].forEach(([y, value, ply, process, answer], id) => {
-    test(`format_eval:${id}`, () => {
+    test(`formatEval:${id}`, () => {
         Assign(Y, y);
-        expect(format_eval(value, ply, process)).toEqual(answer);
+        expect(formatEval(value, ply, process)).toEqual(answer);
     });
 });
 
-// format_unit
+// formatUnit
 [
     [true, 1000000000, undefined, undefined, '1G'],
     [false, 1000000000, undefined, undefined, '1B'],
@@ -430,13 +431,13 @@ let {Assign, Keys} = require('./common.js'),
     [true, undefined, '-', undefined, '-'],
     [true, undefined, undefined, undefined, 'undefined'],
 ].forEach(([is_si, number, def, keep_decimal, answer], id) => {
-    test(`format_unit:${id}`, () => {
+    test(`formatUnit:${id}`, () => {
         Y.SI_units = is_si;
-        expect(format_unit(number, def, keep_decimal)).toEqual(answer);
+        expect(formatUnit(number, def, keep_decimal)).toEqual(answer);
     });
 });
 
-// get_fen_ply
+// getFenPly
 [
     [null, -2],
     ['', -2],
@@ -448,12 +449,12 @@ let {Assign, Keys} = require('./common.js'),
     ['8/1p2Bp2/p4pkp/4b3/P7/1P1R2PP/2r2PK1/8 b - - 0 35', 68],
     ['8/1p2Bp2/p4pkp/4b3/P7/1P1R2PP/2r2PK1/8 b - -', 0],
 ].forEach(([fen, answer], id) => {
-    test(`get_fen_ply:${id}`, () => {
-        expect(get_fen_ply(fen)).toEqual(answer);
+    test(`getFenPly:${id}`, () => {
+        expect(getFenPly(fen)).toEqual(answer);
     });
 });
 
-// get_move_ply
+// getMovePly
 [
     [null, -2],
     [{}, -2],
@@ -471,14 +472,14 @@ let {Assign, Keys} = require('./common.js'),
     [{fen: '8/1p2Bp2/p4pkp/4b3/P7/1P1R2PP/2r2PK1/8 b - - 0 35', ply: -2}, 68],
     [{fen: '8/1p2Bp2/p4pkp/4b3/P7/1P1R2PP/2r2PK1/8 b - - 0 35', ply: -3}, 68],
 ].forEach(([move, answer], id) => {
-    test(`get_move_ply:${id}`, () => {
-        expect(get_move_ply(move)).toEqual(answer);
+    test(`getMovePly:${id}`, () => {
+        expect(getMovePly(move)).toEqual(answer);
         if (answer >= -1)
             expect(move.ply).toEqual(answer);
     });
 });
 
-// leela_cp_to_score
+// leelaCpToScore
 [
     [0, 0],
     [100, 0.5358778448223716],
@@ -492,12 +493,12 @@ let {Assign, Keys} = require('./common.js'),
     [12800, 1.0],
     [-12800, -1.0],
 ].forEach(([cp, answer], id) => {
-    test(`leela_cp_to_score:${id}`, () => {
-        expect(leela_cp_to_score(cp)).toBeCloseTo(answer, 4);
+    test(`leelaCpToScore:${id}`, () => {
+        expect(leelaCpToScore(cp)).toBeCloseTo(answer, 4);
     });
 });
 
-// split_move_string
+// splitMoveString
 [
     ['9...d5 10. O-O-O dxe4 11. g5 Nd5', 0, [17, ['9', '...', 'd5', '10.', 'O-O-O', 'dxe4', '11.', 'g5', 'Nd5']]],
     ['9...d5 10. O-O-O dxe4 11. g5 Nd5', 1, [17, ['d5', 'O-O-O', 'dxe4', 'g5', 'Nd5']]],
@@ -515,14 +516,14 @@ let {Assign, Keys} = require('./common.js'),
     ['2...Nc6 3. Bb5', 1, [3, ['Nc6', 'Bb5']]],
     ['Nc6', 0, [-2, ['Nc6']]],
 ].forEach(([text, no_number, answer], id) => {
-    test(`split_move_string:${id}`, () => {
-        let split = split_move_string(text, no_number);
+    test(`splitMoveString:${id}`, () => {
+        let split = splitMoveString(text, no_number);
         expect(split.ply).toEqual(answer[0]);
         expect(split.items).toEqual(answer[1]);
     });
 });
 
-// stockfish_wdl
+// stockfishWdl
 [
     [0, 0, [106, 788, 106]],
     [0, 90, [41, 918, 41]],
@@ -540,12 +541,12 @@ let {Assign, Keys} = require('./common.js'),
     [12800, 90, [1000, 0, 0]],
     [-12800, 90, [0, 0, 1000]],
 ].forEach(([cp, ply, answer], id) => {
-    test(`stockfish_wdl:${id}`, () => {
-        expect(stockfish_wdl(cp, ply)).toEqual(answer);
+    test(`stockfishWdl:${id}`, () => {
+        expect(stockfishWdl(cp, ply)).toEqual(answer);
     });
 });
 
-// stockfish_win_rate_model
+// stockfishWinRateModel
 [
     [398, 239, 840],
     [507, 178, 992],
@@ -568,12 +569,12 @@ let {Assign, Keys} = require('./common.js'),
     [-489, 55, 0],
     [-366, 277, 0],
 ].forEach(([cp, ply, answer], id) => {
-    test(`stockfish_win_rate_model:${id}`, () => {
-        expect(stockfish_win_rate_model(cp, ply)).toBe(answer);
+    test(`stockfishWinRateModel:${id}`, () => {
+        expect(stockfishWinRateModel(cp, ply)).toBe(answer);
     });
 });
 
-// stoof_cp_to_score
+// stoofCpToScore
 [
     [0, 0],
     [100, 0.30594615173109363],
@@ -587,7 +588,7 @@ let {Assign, Keys} = require('./common.js'),
     [12800, 1.0],
     [-12800, -1.0],
 ].forEach(([cp, answer], id) => {
-    test(`stoof_cp_to_score:${id}`, () => {
-        expect(stoof_cp_to_score(cp)).toBeCloseTo(answer, 4);
+    test(`stoofCpToScore:${id}`, () => {
+        expect(stoofCpToScore(cp)).toBeCloseTo(answer, 4);
     });
 });

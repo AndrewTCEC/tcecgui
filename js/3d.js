@@ -1,6 +1,6 @@
 // 3d.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 // general 3d rendering code
 //
@@ -8,10 +8,10 @@
 // jshint -W069
 /*
 globals
-_, Abs, add_timeout, AnimationFrame, Assign, Attrs, Audio, C, CacheId, CameraControls, clear_timeout,
-DefaultInt, DEV, document, Events, Exp, exports, Format, global, has_clicked, HTML, IsString, KEY_TIMES, Keys, KEYS,
-LoadLibrary, LS, navigator, Now, require,
-S, set_modal_events, Show, Stats, Style, T:true, THREE, translate_nodes, Vector2:true, Visible, window, Y, y_x
+_, Abs, AnimationFrame, Assign, Audio, C, CameraControls,
+DefaultInt, DEV, document, Events, Exp, exports, Format, global, has_clicked, HTML, Id, IsString, KEY_TIMES, Keys, KEYS,
+LoadLibrary, LS, navigator, node_modal, node_overlay, Now, require,
+S, setModalEvents, Show, Stats, T:true, THREE, Vector2:true, Visible, window, Y, y_x
 */
 'use strict';
 
@@ -23,11 +23,23 @@ if (typeof global != 'undefined' && typeof require != 'undefined') {
 }
 // >>
 
+let CAMERA_NULL = 0,
+    CAMERA_COCKPIT = 1,
+    CAMERA_FLOOR = 2,
+    CAMERA_HOOD = 3,
+    CAMERA_NEAR = 4,
+    CAMERA_FAR = 5,
+    CAMERA_FARTHER = 6,
+    CAMERA_TRACK = 7,
+    CAMERA_SPLINE = 8,
+    CAMERA_AUTO = 9,
+    CAMERA_BEHIND = 10,
+    CAMERA_STATIC = 11;
+
 let audiobox = {
         sounds: {},
     },
     axes = [0, 0, 0, 0],
-    AXIS_DEAD_ZONE = 0.2,
     AXIS_MAPPING = [
         [37, 39],
         [38, 40],
@@ -35,7 +47,11 @@ let audiobox = {
         [38, 40],
     ],
     bodies = [],
-    BUTTON_MAPPING = {
+    BUTTON_INVERSES = {
+        38: 12,
+        40: 13,
+    },
+    BUTTON_MAPPINGS = {
         0: 83,          // X
         1: 69,          // O
         2: 32,          // square
@@ -53,7 +69,7 @@ let audiobox = {
         14: 37,         // left
         15: 39,         // right
         16: 27,         // home
-        17: 27,         // touch bar
+        17: 9,          // touch bar
     },
     button_repeat,
     button_repeat_time,
@@ -62,46 +78,51 @@ let audiobox = {
     camera_auto,
     camera_control,
     camera_id,
-    camera_id2,
     camera_look,
     camera_pos,
     camera_reverse,
     camera_target,
     CAMERAS = {
-        'static': {
+        [CAMERA_STATIC]: {
             dir: [0, 0, 0],
             lerp: [-1, -1, 0],
             pos: [0, 0, 0],
         },
     },
-    canvas,
     clock,
     clock2,
     controls,
     /** @type {Cube} */cube,
+    cube_names = {},
     /** @type {!Array<Cube>} */cubes = [],
     debugs = {},
-    deltas = [0, 0, 0],
+    deltas = [0, 0, 0, 0, 0],                   // prev_now=frame/fps, current, target_now, Now_0, Now_curr
     dirty = 0,
     draco_loader,
     frame = 0,
     gamepad_id,
-    gamepads = {},
+    gamepads = [],
     gltf_loader,
     is_octo,
     is_paused,
+    last_frame = -1,
+    last_gamepad_time = 0,
     light_ambient,
     /** @type {Light} */light_main,
     light_target,
     light_under,
     modal_name,
-    models = {},
+    model_filenames = {},                       // mapping of {name: filename}
+    model_remains = new Set(),                  // models left to be loaded: name
+    models = {},                                // loaded models: name
     next_paused,
+    node_canvas,
+    node_debug,
     now,
     now2,
     /** @type {Vector3} */old_pos,
     /** @type {Vector3} */old_rot,
-    PARENT_3D = 'body',
+    parent_3d,
     /** @type {!Array<string>} */PARTS = [],
     raycaster,
     rendered = 0,
@@ -121,6 +142,7 @@ let audiobox = {
     STEPS = {},
     T,
     t_quat,
+    t_quat2,
     t_rot,
     t_sphere,
 	t_vector,
@@ -129,6 +151,7 @@ let audiobox = {
     t_vector4,
     t_vector5,
     three_loaded,
+    TIMEOUT_key = 0.3,
     u_vector,
     use_controls = true,
     VECTOR_0,
@@ -136,26 +159,26 @@ let audiobox = {
     VECTOR_Y,
     VECTOR_Z,
     VECTORS,
-    vibration,
-    virtual_animate_scenery,
-    virtual_can_render_simulate,
-    virtual_game_action_key,
-    virtual_game_action_keyup,
-    virtual_game_actions,
-    virtual_init_3d_special,
-    virtual_init_lights_special,
-    virtual_post_render,
-    virtual_post_simulation,
-    virtual_pre_render,
-    virtual_pre_simulation,
-    virtual_random_position,
-    virtual_resize_3d_special,
-    virtual_show_modal_special,
-    virtual_simulate_object,
-    virtual_update_camera,
-    virtual_update_debug_special,
-    virtual_update_light_settings_special,
-    virtual_update_renderer_special,
+    vi_animateScenery,
+    vi_canPause = () => true,
+    vi_canRenderSimulate,
+    vi_gameActionKey,
+    vi_gameActionKeyup,
+    vi_gameActions,
+    vi_init3dSpecial,
+    vi_initLightsSpecial,
+    vi_postRender,
+    vi_postSimulation,
+    vi_preRender,
+    vi_preSimulation,
+    vi_randomPosition,
+    vi_resize3dSpecial,
+    vi_showModalSpecial,
+    vi_simulateObject,
+    vi_updateCamera,
+    vi_updateDebugSpecial,
+    vi_updateLightSettingsSpecial,
+    vi_updateRendererSpecial,
     world,
     world_transform,
     y_three;
@@ -226,17 +249,17 @@ let Light;
  * camera: (number|undefined),
  * floor: (number|undefined),
  * health: (number|undefined),
- * is_ai: (boolean|undefined),
- * is_control: (boolean|undefined),
+ * is_ai: (number|undefined),
+ * is_control: (number|undefined),
  * keys: (Object|undefined),
  * material_none: (Object|undefined),
  * material_tex: (Object|undefined),
  * nick: string,
- * number: (number|undefined),
+ * number: (number|string|undefined),
  * position: Vector3,
  * quaternion: Quaternion,
  * rotation: *,
- * see: (boolean|undefined),
+ * see: (number|undefined),
  * shape: (Object|undefined),
  * sounds: (Object|undefined),
  * speed: Vector3,
@@ -253,16 +276,50 @@ let Cube;
 /////
 
 /**
+ * Add a cube to the list
+ * @param {Cube} cube
+ * @param {string=} unique_name replace existing cube with this one
+ * @returns {boolean}
+ */
+function addCube(cube, unique_name) {
+    let index = cubes.indexOf(cube);
+    if (index >= 0)
+        return false;
+    if (unique_name)
+        delete cubes[unique_name];
+    cubes.push(cube);
+    return true;
+}
+
+/**
  * Create a directional light
  * @param {string} name
  * @returns {Light}
  */
-function create_light(name) {
+function createLight(name) {
     let light = /** @type {Light} */(new T.DirectionalLight(0xfff0f0, 4));
     light.name = name;
     light.ui = true;
     light.position.set(0, 0, 1666);
     return light;
+}
+
+/**
+ * Delete a cube from the list
+ * @param {Cube} cube
+ * @param {Object3D=} scene
+ */
+function deleteCube(cube, scene) {
+    let index = cubes.indexOf(cube);
+    if (index >= 0)
+        delete cubes[index];
+    delete cube_names[cube.nick];
+
+    if (scene) {
+        scene.remove(cube);
+        scene.remove(cube.arrow_group);
+        scene.remove(cube.extra_group);
+    }
 }
 
 /**
@@ -272,7 +329,7 @@ function create_light(name) {
  * + create the renderer
  * @param {boolean=} force true if the 3d library has been loaded + request a render
  */
-function init_3d(force) {
+function init3d(force) {
     if (Vector3)
         return;
     if (force)
@@ -281,21 +338,21 @@ function init_3d(force) {
         return;
 
     // vars
-    update_three();
+    updateThree();
     Object3D = T.Object3D;
     Quaternion = T.Quaternion;
     Vector2 = T.Vector2;
     Vector3 = T.Vector3;
 
-    camera_look = new_vector3();
-    camera_pos = new_vector3();
+    camera_look = new_Vector3();
+    camera_pos = new_Vector3();
     clock = new T.Clock();
     clock2 = new T.Clock();
     raycaster = new T.Raycaster();
-    VECTOR_0 = new_vector3(0, 0, 0);
-    VECTOR_X = new_vector3(1, 0, 0);
-    VECTOR_Y = new_vector3(0, 1, 0);
-    VECTOR_Z = new_vector3(0, 0, 1);
+    VECTOR_0 = new_Vector3(0, 0, 0);
+    VECTOR_X = new_Vector3(1, 0, 0);
+    VECTOR_Y = new_Vector3(0, 1, 0);
+    VECTOR_Z = new_Vector3(0, 0, 1);
     VECTORS = {
         0: VECTOR_0,
         x: VECTOR_X,
@@ -305,28 +362,28 @@ function init_3d(force) {
     Object3D.DefaultUp.copy(VECTOR_Z);
 
     // memory objects
-    old_pos = new_vector3();
-    old_rot = new_vector3();
-    t_quat = new_quaternion();
+    old_pos = new_Vector3();
+    old_rot = new_Vector3();
+    t_quat = new_Quaternion();
+    t_quat2 = new_Quaternion();
     t_rot = new T.Euler();
     t_sphere = new T.Sphere();
-    t_vector = new_vector3();
-    t_vector2 = new_vector3();
-    t_vector3 = new_vector3();
-    t_vector4 = new_vector3();
-    t_vector5 = new_vector3();
-    u_vector = new_vector2();
+    t_vector = new_Vector3();
+    t_vector2 = new_Vector3();
+    t_vector3 = new_Vector3();
+    t_vector4 = new_Vector3();
+    t_vector5 = new_Vector3();
+    u_vector = new_Vector2();
 
     // scene
     scene = new T.Scene();
-    init_lights();
+    initLights();
 
     // renderer
-    canvas = CacheId('canvas');
-    let context = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    let context = node_canvas.getContext('webgl2') || node_canvas.getContext('webgl');
     renderer = new T.WebGLRenderer({
         antialias: false,
-        canvas: canvas,
+        canvas: node_canvas,
         context: context,
     });
     Assign(renderer, {
@@ -339,8 +396,8 @@ function init_3d(force) {
     renderer.shadowMap.enabled = !!Y['shadow'];
     // renderer.shadowMap.type = T.PCFSoftShadowMap;
 
-    if (virtual_init_3d_special)
-        virtual_init_3d_special();
+    if (vi_init3dSpecial)
+        vi_init3dSpecial();
 
     // more
     if (DEV['frame']) {
@@ -351,16 +408,16 @@ function init_3d(force) {
             document.body.appendChild(stats.dom);
         }
     }
-    resize_3d();
+    resize3d();
 
     if (force)
-        AnimationFrame(render);
+        AnimationFrame('render', render);
 }
 
 /**
  * Initialise the lights
  */
-function init_lights() {
+function initLights() {
     //
     light_ambient = new T.AmbientLight(0xffffff);
     light_ambient.name = 'ambient';
@@ -373,12 +430,12 @@ function init_lights() {
     scene.add(light_target);
 
     // follows the target in front of the ship
-    light_main = create_light('direction');
+    light_main = createLight('direction');
     scene.add(light_main);
-    update_light_settings();
+    updateLightSettings();
 
-    if (virtual_init_lights_special)
-        virtual_init_lights_special();
+    if (vi_initLightsSpecial)
+        vi_initLightsSpecial();
 }
 
 /**
@@ -407,7 +464,7 @@ function interpolate(part, epsilon) {
  * Restore the latest position/quaternion
  * @param {Object3D} part
  */
-function interpolate_restore(part) {
+function interpolateRestore(part) {
     if (!part)
         return;
     if (part.pos3)
@@ -420,7 +477,7 @@ function interpolate_restore(part) {
  * Store previous position/quaternion
  * @param {Object3D} part
  */
-function interpolate_store(part) {
+function interpolateStore(part) {
     if (!part)
         return;
     if (part.pos2)
@@ -435,7 +492,9 @@ function interpolate_store(part) {
  * @param {string} filename
  * @param {Function} callback
  */
-function load_model(name, filename, callback) {
+function loadModel(name, filename, callback) {
+    model_filenames[name] = filename;
+
     // 0) need T
     if (!T) {
         if (callback)
@@ -447,9 +506,10 @@ function load_model(name, filename, callback) {
     let model = models[name];
     if (model) {
         if (callback)
-            callback(model, false);
+            callback(model, true);
         return;
     }
+    model_remains.add(name);
 
     // 2) load libraries
     if (!gltf_loader)
@@ -467,8 +527,10 @@ function load_model(name, filename, callback) {
             if (object.scene)
                 object = object.scene;
             models[name] = object;
-            if (callback)
-                callback(object, true);
+            if (callback) {
+                model_remains.delete(name);
+                callback(object);
+            }
         },
         xhr => {
             // LS(`${name} : ${Format(xhr.loaded / xhr.total * 100)}% loaded`);
@@ -489,7 +551,7 @@ function load_model(name, filename, callback) {
  * @param {number=} w
  * @returns {Quaternion}
  */
-function new_quaternion(x, y, z, w) {
+function new_Quaternion(x, y, z, w) {
     return new Quaternion(x, y, z, w);
 }
 
@@ -499,7 +561,7 @@ function new_quaternion(x, y, z, w) {
  * @param {number=} y
  * @returns {Vector2}
  */
-function new_vector2(x, y) {
+function new_Vector2(x, y) {
     return new Vector2(x, y);
 }
 
@@ -510,8 +572,35 @@ function new_vector2(x, y) {
  * @param {number=} z
  * @returns {Vector3}
  */
-function new_vector3(x, y, z) {
+function new_Vector3(x, y, z) {
     return new Vector3(x, y, z);
+}
+
+/**
+ * Do a raycasting from the camera
+ * @param {Vector2} point
+ * @param {!Array<Object>} targets
+ * @returns {Object}
+ */
+function pickObject(point, targets) {
+    let rect = parent_3d.getBoundingClientRect(),
+        pos = {
+            x: (point.x - rect.left) / parent_3d.clientWidth * 2 - 1,
+            y: (point.y - rect.top) / parent_3d.clientHeight * -2 + 1,
+        };
+
+    raycaster.setFromCamera(pos, camera);
+
+    let intersects = [];
+    for (let target of targets)
+        if (target)
+            raycaster.intersectObject(target, true, intersects);
+
+    if (!intersects.length)
+        return null;
+
+    intersects.sort((a, b) => a.distance - b.distance);
+    return intersects[0];
 }
 
 /**
@@ -521,13 +610,13 @@ function render() {
     if (!cube || !clock || !T || !y_three)
         return;
 
-    let [can_render, can_simulate] = virtual_can_render_simulate? virtual_can_render_simulate(): [true, true],
+    let [can_render, can_simulate] = vi_canRenderSimulate? vi_canRenderSimulate(): [true, true],
         has_controls,
         delta = clock.getDelta(),
         epsilon = 0;
 
     if (!can_render)
-        is_paused = true;
+        pause(1);
 
     if (next_paused && delta * SIMULATION_HZ > 1)
         delta = 1 / SIMULATION_HZ;
@@ -536,11 +625,11 @@ function render() {
 
     // moved the camera with the mouse?
     if (controls) {
-        controls.enabled = (is_paused || camera_id == 'static') && !is_overlay_visible();
+        controls.enabled = (is_paused || camera_id == CAMERA_STATIC) && !isOverlayVisible();
         if (controls.enabled) {
             has_controls = controls.update(delta);
             if (has_controls) {
-                if (is_paused || camera_id == 'static') {
+                if (is_paused || camera_id == CAMERA_STATIC) {
                     camera_pos.copy(camera.position);
                     next_paused = false;
                 }
@@ -550,7 +639,7 @@ function render() {
         }
     }
 
-    debugs.fps = [delta, (delta > 0)? 1.0/delta: 0];
+    debugs.fps = [delta, (delta > 0)? 1.0 / delta: 0];
 
     if (!cube)
         return;
@@ -565,50 +654,54 @@ function render() {
             dirty = 0;
 
         if (can_simulate) {
-            if (virtual_pre_simulation)
-                virtual_pre_simulation();
-            gamepad_update();
+            if (vi_preSimulation)
+                vi_preSimulation();
+            gamepadUpdate();
 
             if (!is_paused) {
-                update_time(delta);
+                updateTime(delta);
 
                 let step = 0;
                 clock2.start();
 
                 while (deltas[1] + 0.05 / SIMULATION_HZ < now2) {
                     now = deltas[1];
-                    if (virtual_animate_scenery)
-                        virtual_animate_scenery();
+                    if (vi_animateScenery)
+                        vi_animateScenery();
 
                     // objects
                     for (let cube of cubes) {
-                        interpolate_store(cube);
+                        if (!cube.visible)
+                            continue;
+
+                        interpolateStore(cube);
                         for (let part of PARTS)
-                            interpolate_store(cube[part]);
+                            interpolateStore(cube[part]);
 
                         // game step
-                        if (virtual_simulate_object)
-                            virtual_simulate_object(cube);
+                        if (vi_simulateObject)
+                            vi_simulateObject(cube);
                     }
 
                     // camera
-                    interpolate_store(camera);
-                    if (virtual_update_camera)
-                        virtual_update_camera(camera_target);
+                    interpolateStore(camera);
+                    if (vi_updateCamera)
+                        vi_updateCamera(camera_target);
 
-                    if (camera_id != 'static') {
+                    if (camera_id != CAMERA_STATIC) {
                         camera.position.copy(camera_pos);
                         camera.lookAt(camera_look);
                     }
 
                     frame ++;
                     deltas[1] = frame / SIMULATION_HZ;
+                    deltas[4] = Now(2);
                     step ++;
                 }
                 STEPS[step] = (STEPS[step] || 0) + 1;
 
                 if (is_octo)
-                    update_physics(delta);
+                    updatePhysics(delta);
                 else
                     epsilon = (deltas[1] - now2) * SIMULATION_HZ;
 
@@ -621,8 +714,8 @@ function render() {
                 }
             }
 
-            if (virtual_post_simulation)
-                virtual_post_simulation();
+            if (vi_postSimulation)
+                vi_postSimulation();
         }
     }
 
@@ -650,24 +743,24 @@ function render() {
             interpolate(camera, epsilon);
         }
 
-        update_light();
+        updateLight();
 
         // actual render
-        if (virtual_pre_render)
-            virtual_pre_render();
+        if (vi_preRender)
+            vi_preRender();
         renderer.render(scene, camera);
         rendered ++;
-        if (virtual_post_render)
-            virtual_post_render();
+        if (vi_postRender)
+            vi_postRender();
 
         // undo interpolation
         if (epsilon > 0) {
             for (let cube of cubes) {
-                interpolate_restore(cube);
+                interpolateRestore(cube);
                 for (let part of PARTS)
-                    interpolate_restore(cube[part]);
+                    interpolateRestore(cube[part]);
             }
-            interpolate_restore(camera);
+            interpolateRestore(camera);
         }
 
         // pause next frame?
@@ -675,31 +768,32 @@ function render() {
             if (controls)
                 controls.enabled = true;
             dirty = 0;
-            is_paused = true;
+            pause(1);
         }
 
-        if (virtual_game_actions)
-            virtual_game_actions();
+        if (vi_gameActions)
+            vi_gameActions();
     }
 
     if (stats)
         stats.end();
 
     if (dirty)
-        AnimationFrame(render);
+        AnimationFrame('render', render);
+    last_frame = frame;
 }
 
 /**
  * Request a render
  * @param {Object|number=} timer
  */
-function request_render(timer) {
+function requestRender(timer) {
     if (dirty & 4)
         return;
     if (dirty && (!timer || isNaN(timer)))
         return;
     dirty = 2;
-    AnimationFrame(render);
+    AnimationFrame('render', render);
 }
 
 /**
@@ -707,16 +801,15 @@ function request_render(timer) {
  * + create the camera
  * + create the camera controls
  */
-function resize_3d() {
+function resize3d() {
     if (!three_loaded)
         return;
 
-    let parent = _(PARENT_3D),
-        height = parent.clientHeight,
-        width = parent.clientWidth;
+    let height = parent_3d.clientHeight,
+        width = parent_3d.clientWidth;
 
-    if (virtual_resize_3d_special)
-        [width, height] = virtual_resize_3d_special();
+    if (vi_resize3dSpecial)
+        [width, height] = vi_resize3dSpecial();
 
     // round it to multiple of 10
     width -= 5;
@@ -724,7 +817,7 @@ function resize_3d() {
 
     if (renderer) {
         renderer.setSize(width, height);
-        update_renderer();
+        updateRenderer();
     }
 
     // camera + controls
@@ -734,18 +827,18 @@ function resize_3d() {
     }
     else {
         // camera = new T.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0.01, 2048576);
-        camera = new T.PerspectiveCamera(60, width / height, 0.1, 40000);
+        camera = new T.PerspectiveCamera(60, width / height, 0.05, 40000);
         camera.rotation.reorder('ZXY');
 
-        if (virtual_random_position)
-            camera.position.copy(virtual_random_position(1));
+        if (vi_randomPosition)
+            camera.position.copy(vi_randomPosition(1));
 
         Assign(camera, {
             pos2: camera.position.clone(),
             pos3: camera.position.clone(),
-            quat: new_quaternion(),
-            quat2: new_quaternion(),
-            quat3: new_quaternion(),
+            quat: new_Quaternion(),
+            quat2: new_Quaternion(),
+            quat3: new_Quaternion(),
         });
     }
     camera.height = height;
@@ -758,8 +851,8 @@ function resize_3d() {
             controls = new CameraControls(camera, renderer.domElement);
             controls.dampingFactor = 0.1;
             controls.dollyTransition = true;
-            controls.addEventListener('control', () => request_render());
-            controls.addEventListener('controlstart', () => request_render());
+            controls.addEventListener('control', () => requestRender());
+            controls.addEventListener('controlstart', () => requestRender());
             controls.update();
         }
     }
@@ -768,7 +861,7 @@ function resize_3d() {
 /**
  * Update the light target
  */
-function update_light() {
+function updateLight() {
     let camera_forward = t_vector.copy(VECTOR_Z).negate().applyQuaternion(camera.quaternion);
     if (light_target)
         light_target.position.copy(camera.position).addScaledVector(camera_forward, light_main.shadow.camera.right);
@@ -777,13 +870,13 @@ function update_light() {
 /**
  * Update the light shadow settings
  */
-function update_light_settings() {
+function updateLightSettings() {
     if (!light_main)
         return;
 
     let exists = light_main.quality,
         [main_intensity, under_intensity, quality] =
-        virtual_update_light_settings_special? virtual_update_light_settings_special(): [1, 1, Y['shadow']];
+        vi_updateLightSettingsSpecial? vi_updateLightSettingsSpecial(): [1, 1, Y['shadow']];
 
     light_main.intensity = main_intensity;
     light_main.castShadow = !!quality;
@@ -798,7 +891,7 @@ function update_light_settings() {
         else {
             // HACK: remove the old light + create a new one
             scene.remove(light_main);
-            light_main = create_light(quality);
+            light_main = createLight(quality);
             scene.add(light_main);
         }
     }
@@ -823,7 +916,7 @@ function update_light_settings() {
 /**
  * Update some renderer settings depending on the page
  */
-function update_renderer() {
+function updateRenderer() {
     if (renderer) {
         let ratio = 2;
         if (y_x == 'play')
@@ -836,19 +929,21 @@ function update_renderer() {
         renderer.setPixelRatio(window.devicePixelRatio / ratio);
         renderer.shadowMap.enabled = !!Y['shadow'];
     }
-    update_light_settings();
+    updateLightSettings();
 
-    if (virtual_update_renderer_special)
-        virtual_update_renderer_special();
+    if (vi_updateRendererSpecial)
+        vi_updateRendererSpecial();
 }
 
 /**
  * Synchronise the time
  * @param {number} delta
  */
-function update_time(delta) {
+function updateTime(delta) {
     deltas[0] += delta * SIMULATION_HZ / 60;
     deltas[2] += delta;
+    deltas[3] = Now(2);
+    deltas[4] = deltas[3];
     now = deltas[0];
     now2 = deltas[2];
 }
@@ -862,7 +957,7 @@ function update_time(delta) {
  * @param {Object=} target
  * @returns {!Object}
  */
-function three_quat(quaternion, target) {
+function threeQuat(quaternion, target) {
     target = target || t_quat;
     target.set(quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w());
     return target;
@@ -874,7 +969,7 @@ function three_quat(quaternion, target) {
  * @param {Vector3=} target
  * @returns {Vector3}
  */
-function three_vector(vector, target) {
+function threeVector(vector, target) {
     target = target || t_vector;
     target.set(vector.x(), vector.y(), vector.z());
     return target;
@@ -884,7 +979,7 @@ function three_vector(vector, target) {
  * Update physics
  * @param {number} delta
  **/
-function update_physics(delta) {
+function updatePhysics(delta) {
     if (!world)
         return;
 
@@ -903,8 +998,8 @@ function update_physics(delta) {
         state.getWorldTransform(world_transform);
         let pos = world_transform.getOrigin(),
             quat = world_transform.getRotation();
-        three_vector(pos, body.position);
-        three_quat(quat, body.quaternion);
+        threeVector(pos, body.position);
+        threeQuat(quat, body.quaternion);
     }
 }
 
@@ -912,43 +1007,78 @@ function update_physics(delta) {
 /////////////////
 
 /**
+ * Pause or unpause or toggle pause
+ * @param {number} mode 0:unpause, 1:pause, 2:toggle
+ */
+function pause(mode) {
+    switch (mode) {
+    case 0:
+        is_paused = false;
+        break;
+    case 1:
+        if (vi_canPause())
+            is_paused = true;
+        break;
+    case 2:
+        if (is_paused)
+            is_paused = false;
+        else if (vi_canPause())
+            is_paused = true;
+        break;
+    }
+}
+
+/**
+ * Forget keys that were released a long time ago
+ * @param {Cube} cube
+ * @param {!Object} keys keys being pushed
+ */
+function forgetKeys(cube, keys) {
+    let cube_keys = cube.keys || [],
+        id = cube_keys.length - 1,
+        prev = now;
+
+    while (id >= 0) {
+        let key = cube_keys[id];
+        if (key[1] >= prev - TIMEOUT_key)
+            prev = key[1];
+        else if (!keys[key[0]])
+            cube_keys[id] = null;
+        id --;
+    }
+
+    cube.keys = cube_keys.filter(value => value);
+}
+
+/**
  * Check gamepad inputs
  */
-function gamepad_update() {
-    let gamepads = navigator.getGamepads(),
-        time = is_paused? Now(true): now;
+function gamepadUpdate() {
+    let axis_trigger = Y['axis_trigger'],
+        dead_zone = Y['axis_dead_zone'],
+        pads = navigator.getGamepads(),
+        time = Now(1);
 
-    for (let pad of gamepads) {
+    for (let pad of pads) {
         if (!pad || pad.index != gamepad_id)
             continue;
-
-        if (vibration) {
-            let actuator = pad['vibrationActuator'];
-            if (actuator)
-                actuator.playEffect("dual-rumble", {
-                    startDelay: 0,
-                    duration: 100,
-                    weakMagnitude: 0.1,
-                    strongMagnitude: 1.0
-                });
-            vibration = false;
-        }
+        gamepads[gamepad_id] = pad;
 
         // convert buttons to binary KEYS
         pad.buttons.forEach((button, id) => {
-            let code = BUTTON_MAPPING[id];
+            let code = BUTTON_MAPPINGS[id];
             if (button.pressed) {
                 if (!buttons[id]) {
-                    if (virtual_game_action_key)
-                        virtual_game_action_key(code);
+                    if (vi_gameActionKey)
+                        vi_gameActionKey(code);
                     buttons[id] = time;
                     KEYS[code] = 1;
-                    KEY_TIMES[code] = Now(true);
+                    KEY_TIMES[code] = Now(1);
                 }
             }
             else if (buttons[id]) {
-                if (virtual_game_action_keyup)
-                    virtual_game_action_keyup(code);
+                if (vi_gameActionKeyup)
+                    vi_gameActionKeyup(code);
                 buttons[id] = 0;
                 KEYS[code] = 0;
             }
@@ -958,22 +1088,29 @@ function gamepad_update() {
         pad.axes.forEach((axis, id) => {
             let absolute = Abs(axis),
                 codes = AXIS_MAPPING[id],
-                index = (axis < 0)? 0: 1;
+                index = (axis < 0)? 0: 1,
+                code = codes[index],
+                dual = codes[1 - index];
 
-            if (absolute > AXIS_DEAD_ZONE) {
-                if (Abs(axes[id]) < AXIS_DEAD_ZONE)
-                    if (virtual_game_action_key)
-                        virtual_game_action_key(codes[index]);
-                KEYS[codes[index]] = absolute;
-                KEYS[codes[1 - index]] = 0;
-            }
-            else {
-                if (Abs(axes[id]) >= AXIS_DEAD_ZONE) {
-                    if (virtual_game_action_keyup)
-                        virtual_game_action_keyup(codes[index]);
-                    KEYS[codes[0]] = 0;
-                    KEYS[codes[1]] = 0;
+            if (absolute >= dead_zone) {
+                if (vi_gameActionKey && absolute >= axis_trigger && (!KEYS[code] || KEYS[code] < axis_trigger)) {
+                    vi_gameActionKey(code, 1);
+                    let invert = BUTTON_INVERSES[code];
+                    if (invert)
+                        buttons[invert] = time;
                 }
+                KEYS[code] = absolute;
+                KEYS[dual] = 0;
+            }
+            else if (Abs(axes[id]) >= dead_zone) {
+                if (vi_gameActionKeyup && KEYS[code]) {
+                    vi_gameActionKeyup(code);
+                    let invert = BUTTON_INVERSES[code];
+                    if (invert)
+                        buttons[invert] = 0;
+                }
+                KEYS[code] = 0;
+                KEYS[dual] = 0;
             }
         });
         axes = pad.axes;
@@ -990,21 +1127,28 @@ function gamepad_update() {
  * @param {number=} obj.cycle end of the cycle
  * @param {boolean=} obj.inside
  * @param {boolean=} obj.interrupt play the sound again even if it's being played
- * @param {Function=} obj.loaded only load the audio
+ * @param {Function=} obj.onended callback when audio ends or errors
+ * @param {Function=} obj.onloaded only load the audio
+ * @param {Function=} obj.onplay callback when audio is playing
  * @param {number=} obj.start start of the 2nd cycle
  * @param {boolean=} obj.voice
  * @param {number=} obj.volume
  * @returns {boolean}
  */
-function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded, start=0, voice, volume=1}={}) {
-    if (!has_clicked || !cube || !cube.sounds || !name || Y['silent_mode'])
+function playSound(cube, name, {
+            _, cycle, ext='ogg', inside, interrupt, onended, onloaded, onplay, start=0, voice, volume=1,
+        }={}) {
+    if (!has_clicked || !cube || !cube.sounds || Y['silent_mode'])
         return false;
 
     // ext can be in the name
+    let name_ = name;
     if (IsString(name)) {
         let items = name.split('.');
-        if (items.length == 1)
-            name = `${name}.${ext}`;
+        if (items.length > 1) {
+            name = items[0];
+            ext = items[1];
+        }
     }
 
     let audio = cube.sounds[name];
@@ -1032,7 +1176,7 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
 
     // load & seek
     if (!audio) {
-        audio = new Audio(`sound/${_ || name}`);
+        audio = new Audio(`sound/${_ || name}.${ext}`);
         audio.promise = Promise.resolve();
         cube.sounds[name] = audio;
     }
@@ -1047,13 +1191,20 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
         audio.volume = volume;
 
     // only load, don't play
-    if (loaded) {
+    if (onloaded) {
         if (audio.readyState >= 2)
-            loaded();
+            onloaded();
         else
-            audio.onloadeddata = loaded;
+            audio.onloadeddata = onloaded;
         return true;
     }
+
+    if (onended) {
+        audio.onended = () => onended(name_);
+        audio.onerror = () => onended(name_);
+    }
+    if (onplay)
+        audio.onplay = () => onplay(name_);
 
     // play
     audio.promise = audio.promise.then(() => {
@@ -1071,22 +1222,28 @@ function play_sound(cube, name, {_, cycle, ext='ogg', inside, interrupt, loaded,
 /**
  * Check gamepad inputs at regular intervals when the menu is visible
  */
-function gamepad_modal() {
-    if (!is_overlay_visible()) {
-        [37, 38, 39, 40].forEach(code => {
-            KEYS[code] = 0;
-        });
+function gamepadModal() {
+    let time = Now(1);
+    if (time < last_gamepad_time) {
+        AnimationFrame('gamepad', gamepadModal);
         return;
     }
 
-    // forget old buttons
-    let time = Now(true);
+    if (!isOverlayVisible()) {
+        if (is_paused)
+            [37, 38, 39, 40].forEach(code => {
+                KEYS[code] = 0;
+            });
+        return;
+    }
+
+    // handle button repeat
     Keys(buttons).forEach(key => {
         let button = buttons[key];
         if (!button)
             return;
 
-        let code = BUTTON_MAPPING[key];
+        let code = BUTTON_MAPPINGS[key];
         if (code < 37 || code > 40)
             return;
 
@@ -1098,73 +1255,79 @@ function gamepad_modal() {
         }
     });
 
-    gamepad_update();
-    add_timeout('pad', gamepad_modal, 50);
+    gamepadUpdate();
+    last_gamepad_time = time + 0.05;
+    AnimationFrame('gamepad', gamepadModal);
 }
 
 /**
  * Check if the overlay is visible
  * @returns {boolean}
  */
-function is_overlay_visible() {
-    return !!Visible(CacheId('overlay'));
+function isOverlayVisible() {
+    return !node_overlay || !!Visible(node_overlay);
 }
 
 /**
  * Close the modal and resume the game
  */
-function resume_game() {
-    is_paused = false;
-    if (is_overlay_visible())
-        show_modal();
+function resumeGame() {
+    pause(0);
+    if (isOverlayVisible())
+        showModal();
 }
 
 /**
  * Show the menu
  * + pause the game unless the session has ended
  */
-function show_menu() {
-    show_modal(true);
+function showMenu() {
+    showModal(true);
 }
 
 /**
  * Show / hide the modal
  * @param {boolean=} show
- * @param {string=} text show modal2 instead of modal, and use this text
- * @param {string=} title set the modal2 title
+ * @param {string=} text use this text
  * @param {string=} name
  */
-function show_modal(show, text, title, name) {
-    S(CacheId('overlay'), show);
-
-    let node = CacheId('modal');
-    if (IsString(text)) {
-        Attrs(CacheId('modal-title'), {'data-t': title? title: ''});
-        HTML(node, text);
-        translate_nodes(node);
-    }
-
-    Style(node, [['opacity', show? 1: 0]]);
+function showModal(show, text, name) {
+    S(node_overlay, show);
 
     if (show) {
-        add_timeout('pad', gamepad_modal, 300);
-        set_modal_events();
-        if (virtual_game_action_key)
-            virtual_game_action_key(0);
+        last_gamepad_time = Now(1) + 0.3;
+        AnimationFrame('gamepad', gamepadModal);
+        setModalEvents();
+        if (vi_gameActionKey)
+            vi_gameActionKey(0);
     }
-    else
-        clear_timeout('pad');
 
-    if (virtual_show_modal_special)
-        virtual_show_modal_special(show);
+    if (vi_showModalSpecial)
+        vi_showModalSpecial(show, text, name);
 
     modal_name = name;
 }
 
 /**
+ * Toggle the modal menu
+ */
+function toggleModal() {
+    if (_('[data-t="BACK"]', node_modal))
+        showModal(true);
+    else if (isOverlayVisible())
+        resumeGame();
+    else
+        showModal(true);
+}
+
+/**
  * Update debug information
  */
-function update_debug() {
+function updateDebug() {
+    let cube = camera_target || cubes.find(item => item && item.see);
+    if (!cube)
+        return;
+
     // general
     let lines = [],
         sep = ' : ';
@@ -1172,6 +1335,7 @@ function update_debug() {
     // gamepad
     if (DEV['input']) {
         lines.push('&nbsp;');
+        lines.push(`nick=${cube.nick}`);
         lines.push(`id=${gamepad_id}`);
         lines.push(`axes=${Format(axes, sep)}`);
         let text = Keys(buttons).map(key => `${buttons[key]? `${key} `: ''}`).join('');
@@ -1192,18 +1356,18 @@ function update_debug() {
         }
     }
 
-    if (virtual_update_debug_special)
-        lines = [...lines, ...virtual_update_debug_special()];
+    if (vi_updateDebugSpecial)
+        lines = [...lines, ...vi_updateDebugSpecial()];
 
-    HTML(CacheId('debug'), `<div>${lines.join('</div><div>')}</div>`);
+    HTML(node_debug, `<div>${lines.join('</div><div>')}</div>`);
 }
 
 /**
  * Update the T global variable
  */
-function update_three() {
+function updateThree() {
     if (!T)
-        T = window.T = window['THREE'];
+        T = window['T'] || window['THREE'];
 }
 
 // EVENTS
@@ -1212,7 +1376,7 @@ function update_three() {
 /**
  * 3d UI events
  */
-function set_3d_events() {
+function set3dEvents() {
     // controller
     Events(window, 'gamepadconnected', e => {
         let pad = e.gamepad;
@@ -1227,15 +1391,7 @@ function set_3d_events() {
     });
 
     // game menu
-    C('#menu', () => {
-        if (is_overlay_visible())
-            resume_game();
-        else
-            show_menu();
-    });
-
-    // modal
-    C('#back', () =>  show_modal(true));
+    C('#menu', toggleModal);
 }
 
 // STARTUP
@@ -1244,18 +1400,21 @@ function set_3d_events() {
 /**
  * Start the 3D engine
  */
-function start_3d() {
+function start3d() {
+    parent_3d = _('body');
     if (T)
-        init_3d(true);
+        init3d(true);
     else
-        LoadLibrary('./js/4d_.js?version=1', () => init_3d(true));
+        LoadLibrary('./js/4d_.js?version=1', () => init3d(true));
 }
 
 /**
  * Initialise structures
  */
-function startup_3d() {
-    update_three();
+function startup3d() {
+    node_canvas = Id('canvas');
+    node_debug = Id('debug');
+    updateThree();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1263,9 +1422,12 @@ function startup_3d() {
 // <<
 if (typeof exports != 'undefined') {
     Assign(exports, {
+        addCube: addCube,
         audiobox: audiobox,
-        play_sound: play_sound,
+        deleteCube: deleteCube,
+        playSound: playSound,
         SHADOW_QUALITIES: SHADOW_QUALITIES,
+        y_three: y_three,
     });
 }
 // >>

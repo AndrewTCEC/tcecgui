@@ -1,6 +1,6 @@
 // game.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 /*
 globals
 expect, global, require, test
@@ -8,17 +8,17 @@ expect, global, require, test
 'use strict';
 
 let {Assign, Clear, FromTimestamp, IsArray, IsString, Keys, ParseJSON, Stringify, Undefined} = require('./common.js'),
-    {DEV, load_defaults, set_section, Y} = require('./engine.js'),
+    {DEV, loadDefaults, setSection, Y} = require('./engine.js'),
     {
-        analyse_log, calculate_h2h, calculate_probability, calculate_seeds, check_adjudication, check_boom,
-        check_explosion, check_explosion_boom, copy_pgn, create_boards, create_game_link, create_seek,
-        current_archive_link, extract_threads, fix_header_opening, fix_zero_moves, format_engine, format_fen,
-        format_hhmmss, format_opening, get_short_name, parse_date_time, parse_pgn, parse_pgn_moves, parse_time_control,
-        tour_info, update_live_eval, update_materials, update_pgn, update_player_eval,
+        analyseLog, calculateH2h, calculateProbability, calculateSeeds, checkAdjudication, checkBoom, checkExplosion,
+        checkExplosionBoom, copyPgn, createBoards, createGameLink, createSeek, currentArchiveLink, extractThreads,
+        fixHeaderOpening, fixZeroMoves, formatEngine, formatFen, formatHhmmss, formatOpening, getShortName,
+        parseDateTime, parsePgn, parsePgnMoves, parseTimeControl, tour_info, updateLiveEval, updateMaterials, updatePgn,
+        updatePlayerEval,
     } = require('./game.js'),
-    {get_fen_ply, xboards} = require('./global.js'),
-    {create_chart_data} = require('./graph.js'),
-    {prepare_settings} = require('./startup.js'),
+    {getFenPly, xboards} = require('./global.js'),
+    {createChartData} = require('./graph.js'),
+    {prepareSettings} = require('./startup.js'),
     {START_FEN} = require('./xboard.js');
 
 global.T = null;
@@ -38,15 +38,15 @@ let PGN_HEADERS = [
     '',
 ];
 
-prepare_settings();
-load_defaults();
+prepareSettings();
+loadDefaults();
 Y.volume = 0;
-create_boards('text');
-create_chart_data();
+createBoards('text');
+createChartData();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function init_players(ply, players, evals) {
+function initPlayers(ply, players, evals) {
     evals.forEach((eval_, id) => {
         let player = players[id];
         Assign(player, {
@@ -64,7 +64,7 @@ function init_players(ply, players, evals) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// analyse_log
+// analyseLog
 [
     [
         'Q7/8/8/1k3p2/3Q4/3n4/6P1/6K1 b - - 2 73',
@@ -446,10 +446,10 @@ function init_players(ply, players, evals) {
         'e4 | e5 Nc3',
     ],
 ].forEach(([fen, players_, line, player_id, answer, answer_san], id) => {
-    test(`analyse_log:${id}`, () => {
+    test(`analyseLog:${id}`, () => {
         let main = xboards.live,
             players = xboards.live.players,
-            ply = get_fen_ply(fen);
+            ply = getFenPly(fen);
 
         main.moves.length = 0;
         if (ply >= 0)
@@ -476,7 +476,7 @@ function init_players(ply, players, evals) {
         }
         main.setFen(fen);
 
-        analyse_log(line);
+        analyseLog(line);
         let info = ParseJSON(Stringify(players[player_id].info || {})),
             pvs = info.pvs,
             moves = info.moves,
@@ -497,7 +497,7 @@ function init_players(ply, players, evals) {
     });
 });
 
-// calculate_h2h
+// calculateH2h
 [
     [
         ['Counter', 'Marvin'],
@@ -516,19 +516,19 @@ function init_players(ply, players, evals) {
         ['0.5', '1.5'],
     ],
 ].forEach(([names, rows, answer, answer2], id) => {
-    test(`calculate_h2h:${id}`, () => {
+    test(`calculateH2h:${id}`, () => {
         let players = xboards.live.players;
         for (let i = 0; i < names.length; i ++)
             players[i].name = names[i];
 
-        expect(calculate_h2h('live', rows)).toEqual(answer);
+        expect(calculateH2h('live', rows)).toEqual(answer);
 
         for (let i = 0; i < answer2.length; i ++)
             expect(players[i].score).toEqual(answer2[i]);
     });
 });
 
-// calculate_probability
+// calculateProbability
 [
     ['AllieStein', 0.27, 0, undefined, '13.7% W | 86.3% D | 0.0% B'],
     ['AllieStein', 128, 0, undefined, '91.6% W | 8.4% D | 0.0% B'],
@@ -548,12 +548,12 @@ function init_players(ply, players, evals) {
     ['Stoofvlees', 0.27, 0, undefined, '8.9% W | 91.1% D | 0.0% B'],
     ['Stoofvlees', 128, 0, undefined, '100.0% W | 0.0% D | 0.0% B'],
 ].forEach(([short_engine, eval_, ply, wdl, answer], id) => {
-    test(`calculate_probability:${id}`, () => {
-        expect(calculate_probability(short_engine, eval_, ply, wdl)).toEqual(answer);
+    test(`calculateProbability:${id}`, () => {
+        expect(calculateProbability(short_engine, eval_, ply, wdl)).toEqual(answer);
     });
 });
 
-// calculate_seeds
+// calculateSeeds
 [
     [2, 0, [1, 2]],
     [4, 0, [1, 4, 2, 3]],
@@ -579,24 +579,24 @@ function init_players(ply, players, evals) {
     [46, 0, [1, 0, 32, 33, 16, 0, 17, 0, 8, 0, 25, 40, 9, 0, 24, 41, 4, 0, 29, 36, 13, 0, 20, 45, 5, 0, 28, 37, 12, 0, 21, 44, 2, 0, 31, 34, 15, 0, 18, 0, 7, 0, 26, 39, 10, 0, 23, 42, 3, 0, 30, 35, 14, 0, 19, 46, 6, 0, 27, 38, 11, 0, 22, 43]],
     [46, 1, [1, 33, 17, 0, 9, 41, 25, 0, 5, 37, 21, 0, 13, 45, 29, 0, 3, 35, 19, 0, 11, 43, 27, 0, 7, 39, 23, 0, 15, 0, 31, 0, 2, 34, 18, 0, 10, 42, 26, 0, 6, 38, 22, 0, 14, 46, 30, 0, 4, 36, 20, 0, 12, 44, 28, 0, 8, 40, 24, 0, 16, 0, 32, 0]],
 ].forEach(([num_team, new_mode, answer], id) => {
-    test(`calculate_seeds:${id}`, () => {
-        expect(calculate_seeds(num_team, new_mode)).toEqual(answer);
+    test(`calculateSeeds:${id}`, () => {
+        expect(calculateSeeds(num_team, new_mode)).toEqual(answer);
     });
 });
 
-// check_adjudication
+// checkAdjudication
 [
     [undefined, 30, {}],
     [{R50: 50, Rd: -11, Rr: -11,}, 30, {50: 50, draw: '-', win: '-'}],
     [{adjudication: {Draw: -10, FiftyMoves: 49, ResignOrWin: -11}}, 30, {50: 49, draw: '-', win: '-'}],
     [{R50: 45, Rd: 9, Rr: -11}, 106, {50: 45, draw: '9p', win: '-'}],
 ].forEach(([dico, total_moves, answer], id) => {
-    test(`check_adjudication:${id}`, () => {
-        expect(check_adjudication(dico, total_moves)).toEqual(answer);
+    test(`checkAdjudication:${id}`, () => {
+        expect(checkAdjudication(dico, total_moves)).toEqual(answer);
     });
 });
 
-// check_boom
+// checkBoom
 [
     [12, {boom_threshold: 1.2}, [{9: 3, 10: 3, 11: 5, 12: 5.5}], 2, 0, null],
     [11, {}, [{10: 3, 11: 5}], 2, 0, null],
@@ -633,16 +633,16 @@ function init_players(ply, players, evals) {
     // 30
     [6, {}, [{0: 'book', 2: 'book', 4: 'book', 6: "0.92"}], 2, 0, null],
 ].forEach(([ply, y, evals, answer, answer_boomed, answer_more], id) => {
-    test(`check_boom:${id}`, () => {
+    test(`checkBoom:${id}`, () => {
         DEV.boom = (id >= 31)? 3: 0;
         let main = xboards.live,
             players = main.players;
-        init_players(ply, players, evals);
+        initPlayers(ply, players, evals);
         main.moves.length = ply;
         Assign(Y, y);
 
         let player = players[0],
-            result = check_boom('live', 0);
+            result = checkBoom('live', 0);
         expect(result[0]).toEqual(answer);
         expect(player.boomed).toBeCloseTo(answer_boomed, 3);
         if (player.boomed)
@@ -654,7 +654,7 @@ function init_players(ply, players, evals) {
     });
 });
 
-// check_explosion
+// checkExplosion
 [
     [0, 0, {explosion_threshold: 0, x: 'live'}, {exploded: 0}, [5, 5, 0.5, 0.5], [], 1, 0],
     [0, 0, {explosion_threshold: 2.3, x: 'archive'}, {exploded: 0}, [5, 5, 0.5, 0.5], [], 2, 0],
@@ -692,7 +692,7 @@ function init_players(ply, players, evals) {
     [2, 0, {explosion_buildup: 1}, {}, [5, 5, 5, 5], [], 3, 8],
     [76, 0, {}, {exploded: 0}, ['10.01', '1.56', 10.92, 6.31], ['LCZero', 'Stoofvlees', 'LCZero', 'Crystal'], 0, 8.16],
 ].forEach(([ply, is_boom, y, states, evals, shorts, answer, answer_boomed], id) => {
-    test(`check_explosion:${id}`, () => {
+    test(`checkExplosion:${id}`, () => {
         DEV.explode = (id >= 32)? 1: 0;
         let main = xboards.live,
             players = main.players;
@@ -706,14 +706,14 @@ function init_players(ply, players, evals) {
         Assign(main, states);
         Assign(Y, y);
         if (y.x)
-            set_section(y.x);
+            setSection(y.x);
 
-        expect(check_explosion('live', !!is_boom)).toEqual(answer);
+        expect(checkExplosion('live', !!is_boom)).toEqual(answer);
         expect(main.exploded).toBeCloseTo(answer_boomed, 3);
     });
 });
 
-// check_explosion_boom
+// checkExplosionBoom
 [
     [1, 11, {boom_threshold: 1.2, x: 'archive'}, 0, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 0, 0],
     [1, 11, {x: 'live'}, 0, 3, [{8: 3, 9: 3, 10: 3, 11: 5}], 1, 1.8586],
@@ -727,20 +727,20 @@ function init_players(ply, players, evals) {
     [1, 13, {}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9, 12: 'M25'}], 0, 0],
     [1, 13, {boom_threshold: 0.5}, -1, 3, [{8: 3, 9: 3, 10: 3, 11: 8.9, 12: 'M25'}], 1, 1.0807],
 ].forEach(([reset, ply, y, offset, mode, evals, answer, answer_boomed], id) => {
-    test(`check_explosion_boom:${id}`, () => {
+    test(`checkExplosionBoom:${id}`, () => {
         DEV.boom = 0;
         let main = xboards.live,
             players = main.players;
-        init_players(ply, players, evals);
+        initPlayers(ply, players, evals);
         main.moves.length = ply;
         Assign(Y, y);
         if (y.x)
-            set_section(y.x);
+            setSection(y.x);
         if (reset)
             main.seens.clear();
 
         let player = players[0],
-            result = check_explosion_boom(Y.x, offset, mode);
+            result = checkExplosionBoom(Y.x, offset, mode);
         if (IsArray(result))
             result = result[0];
         expect(result).toEqual(answer);
@@ -748,7 +748,7 @@ function init_players(ply, players, evals) {
     });
 });
 
-// copy_pgn
+// copyPgn
 [
     [START_FEN, [], [], '', ''],
     [START_FEN, [], [{m: 'e4', ply: 0}, {m: 'e5', ply: 1}], '', '1. e4 e5\n*'],
@@ -814,8 +814,8 @@ function init_players(ply, players, evals) {
         '2... Nf6 3. d3\n*',
     ],
 ].forEach(([start_fen, main_moves, board_moves, fen, answer], id) => {
-    test(`copy_pgn:${id}`, () => {
-        set_section('live');
+    test(`copyPgn:${id}`, () => {
+        setSection('live');
         for (let [name, moves] of [['live', main_moves], ['pv0', board_moves]]) {
             let board = xboards[name];
             board.start_fen = start_fen;
@@ -831,12 +831,12 @@ function init_players(ply, players, evals) {
         let header = headers.join('\n')
                 .replace('{DATE}', FromTimestamp()[0].replace(/-/g, '.'))
                 .replace('{FEN}', fen),
-            text = copy_pgn(xboards.pv0, false, false);
+            text = copyPgn(xboards.pv0, false, false);
         expect(text).toEqual(header + answer);
     });
 });
 
-// create_game_link
+// createGameLink
 [
     [{}, 'live', 1, '', undefined, undefined, '<a class="game" href="#game=1">1</a>'],
     [{}, 'live', 1, '', 4, undefined, '<a class="game" href="#game=1">[1]</a>'],
@@ -845,23 +845,23 @@ function init_players(ply, players, evals) {
     [{}, 'live', 1, '', 6, 'yes', ['#game=1', 'yes', '<i class="game">[1]</i>']],
     [{link: 'season=18&div=l3'}, 'live', 1, '', 0, '', '<a class="game" href="#div=l3&game=1&season=18">1</a>'],
 ].forEach(([info, section, game, text, mode, prefix, answer], id) => {
-    test(`create_game_link:${id}`, () => {
+    test(`createGameLink:${id}`, () => {
         Assign(tour_info[section], info);
-        expect(create_game_link(section, game, text, mode, prefix)).toEqual(answer);
+        expect(createGameLink(section, game, text, mode, prefix)).toEqual(answer);
     });
 });
 
-// create_seek
+// createSeek
 [
     [0, 10, 'dec=x', ['', 0, '']],
     [1, 10, 'dec=x', ['dec=x', '<i class="seek">1</i>', '10%']],
 ].forEach(([value, total, data, answer], id) => {
-    test(`create_seek:${id}`, () => {
-        expect(create_seek(value, total, data)).toEqual(answer);
+    test(`createSeek:${id}`, () => {
+        expect(createSeek(value, total, data)).toEqual(answer);
     });
 });
 
-// current_archive_link
+// currentArchiveLink
 [
     [{}, 'archive', undefined, ''],
     [{}, 'archive', true, ''],
@@ -870,13 +870,13 @@ function init_players(ply, players, evals) {
     [{div: '', game: 1, round: 'fl', season: 'cup5', stage: ''}, 'archive', undefined, 'season=cup5&round=fl'],
     [{div: '', game: 7, round: '', season: '10', stage: '2'}, 'archive', true, 'season=10&stage=2&game=7'],
 ].forEach(([y, section, is_game, answer], id) => {
-    test(`current_archive_link:${id}`, () => {
+    test(`currentArchiveLink:${id}`, () => {
         Assign(Y, y);
-        expect(current_archive_link(section, is_game)).toEqual(answer);
+        expect(currentArchiveLink(section, is_game)).toEqual(answer);
     });
 });
 
-// extract_threads
+// extractThreads
 [
     [
         {
@@ -945,12 +945,12 @@ function init_players(ply, players, evals) {
         88,
     ],
 ].forEach(([options, answer], id) => {
-    test(`extract_threads:${id}`, () => {
-        expect(extract_threads(options)).toEqual(answer);
+    test(`extractThreads:${id}`, () => {
+        expect(extractThreads(options)).toEqual(answer);
     });
 });
 
-// fix_header_opening
+// fixHeaderOpening
 [
     [{FEN: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'}, 'FRC #518'],
     [{FEN: 'rqnbbknr/pppppppp/8/8/8/8/PPPPPPPP/RQNBBKNR w KQkq - 0 1'}, 'FRC #505'],
@@ -958,14 +958,14 @@ function init_players(ply, players, evals) {
     [{FEN: 'nrbnkbqr/pppppppp/8/8/8/8/PPPPPPPP/NRBNKBQR w HBhb - 0 1'}, 'FRC #166'],
     [{FEN: '2k5/3nRp1r/r1p2n2/1p1pBPRp/pP3P1P/P6K/2P1B3/8 b - - 18 42'}, undefined],
 ].forEach(([headers, answer], id) => {
-    test(`fix_header_opening:${id}`, () => {
+    test(`fixHeaderOpening:${id}`, () => {
         let board = xboards.live;
-        fix_header_opening(board, headers);
+        fixHeaderOpening(board, headers);
         expect(headers.Opening).toEqual(answer);
     });
 });
 
-// fix_zero_moves
+// fixZeroMoves
 [
     [{}, {}, {}],
     [
@@ -984,7 +984,7 @@ function init_players(ply, players, evals) {
         {101: {n: 1e6, mt: 1000, ply: 101, wv: '0.00'}},
     ],
 ].forEach(([moves, main_moves, answer], id) => {
-    test(`fix_zero_moves:${id}`, () => {
+    test(`fixZeroMoves:${id}`, () => {
         let answer2 = [],
             main_moves2 = [],
             moves2 = [];
@@ -995,7 +995,7 @@ function init_players(ply, players, evals) {
         Keys(main_moves).forEach(key => {
             main_moves2[key] = main_moves[key];
         });
-        fix_zero_moves(moves2, main_moves2);
+        fixZeroMoves(moves2, main_moves2);
         Keys(answer).forEach(key => {
             answer2[key] = answer[key];
         });
@@ -1003,7 +1003,7 @@ function init_players(ply, players, evals) {
     });
 });
 
-// format_engine
+// formatEngine
 [
     ['', undefined, undefined, undefined, ''],
     [undefined, undefined, undefined, undefined, ''],
@@ -1033,12 +1033,12 @@ function init_players(ply, players, evals) {
     ['Stoofvlees II a14', true, -2, false, 'Stoofvlees<div class="version2">II a14</div>'],
     ['SuperBaronizer', undefined, undefined, false, 'SuperBaronizer'],
 ].forEach(([text, multi_line, scale, split, answer], id) => {
-    test(`format_engine:${id}`, () => {
-        expect(format_engine(text, multi_line, scale, split)).toEqual(answer);
+    test(`formatEngine:${id}`, () => {
+        expect(formatEngine(text, multi_line, scale, split)).toEqual(answer);
     });
 });
 
-// format_fen
+// formatFen
 [
     [
         '1r4k1/8/1P1p1pP1/p2P4/2P2P2/P4N2/5K2/4R3 w - - 0 48',
@@ -1049,12 +1049,12 @@ function init_players(ply, players, evals) {
         '<i class="nowrap">8</i>/<i class="nowrap">3R2r1</i>/<i class="nowrap">8</i>/<i class="nowrap">4p1k1</i>/<i class="nowrap">4P3</i>/<i class="nowrap">5K2</i>/<i class="nowrap">8</i>/<i class="nowrap">8</i> <i class="nowrap">b - - 0 91</i>',
     ],
 ].forEach(([fen, answer], id) => {
-    test(`format_fen:${id}`, () => {
-        expect(format_fen(fen)).toEqual(answer);
+    test(`formatFen:${id}`, () => {
+        expect(formatFen(fen)).toEqual(answer);
     });
 });
 
-// format_hhmmss
+// formatHhmmss
 [
     [null, '-'],
     [NaN, '-'],
@@ -1067,12 +1067,12 @@ function init_players(ply, players, evals) {
     [31415, '08:43:35'],
     [314159, '3d, 15:15:59'],
 ].forEach(([seconds, answer], id) => {
-    test(`format_hhmmss:${id}`, () => {
-        expect(format_hhmmss(seconds)).toEqual(answer);
+    test(`formatHhmmss:${id}`, () => {
+        expect(formatHhmmss(seconds)).toEqual(answer);
     });
 });
 
-// format_opening
+// formatOpening
 [
     ['', ''],
     [undefined, ''],
@@ -1089,12 +1089,12 @@ function init_players(ply, players, evals) {
         '<i class="nowrap">Sicilian</i><i class="small">, Nimzovich-Rossolimo&nbsp;attack (with&nbsp;...g6,&nbsp;without&nbsp;...d6)</i>',
     ],
 ].forEach(([text, answer], id) => {
-    test(`format_opening:${id}`, () => {
-        expect(format_opening(text)).toEqual(answer);
+    test(`formatOpening:${id}`, () => {
+        expect(formatOpening(text)).toEqual(answer);
     });
 });
 
-// get_short_name
+// getShortName
 [
     ['', ''],
     [undefined, ''],
@@ -1104,12 +1104,12 @@ function init_players(ply, players, evals) {
     ['Stoofvlees II a14', 'Stoofvlees'],
     ['SuperBaronizer', 'Baron'],
 ].forEach(([text, answer], id) => {
-    test(`get_short_name:${id}`, () => {
-        expect(get_short_name(text)).toEqual(answer);
+    test(`getShortName:${id}`, () => {
+        expect(getShortName(text)).toEqual(answer);
     });
 });
 
-// parse_date_time
+// parseDateTime
 [
     ['', 0],
     [undefined, 0],
@@ -1120,12 +1120,12 @@ function init_players(ply, players, evals) {
     ['2020-06-11 01:43:15 UTC', 1591839795],
     ['2020-06-11 01:43:15Z', 1591839795],
 ].forEach(([text, answer], id) => {
-    test(`parse_date_time:${id}`, () => {
-        expect(parse_date_time(text)).toEqual(answer);
+    test(`parseDateTime:${id}`, () => {
+        expect(parseDateTime(text)).toEqual(answer);
     });
 });
 
-// parse_pgn
+// parsePgn
 [
     [null, {}, null],
     [
@@ -2219,18 +2219,18 @@ function init_players(ply, players, evals) {
         },
     ],
 ].forEach(([data, obj, answer], id) => {
-    test(`parse_pgn:${id}`, () => {
+    test(`parsePgn:${id}`, () => {
         if (answer && answer.Moves) {
             let moves = [];
             for (let move of answer.Moves)
                 moves[move.ply] = move;
             answer.Moves = moves;
         }
-        expect(parse_pgn('archive', data, obj)).toEqual(answer);
+        expect(parsePgn('archive', data, obj)).toEqual(answer);
     });
 });
 
-// parse_pgn_moves
+// parsePgnMoves
 [
     [null, {}, []],
     [
@@ -2250,25 +2250,25 @@ function init_players(ply, players, evals) {
         ],
     ],
 ].forEach(([data, obj, answer], id) => {
-    test(`parse_pgn_moves:${id}`, () => {
+    test(`parsePgnMoves:${id}`, () => {
         let moves = [];
         for (let move of answer)
             moves[move.ply] = move;
-        expect(parse_pgn_moves('archive', data, obj)).toEqual(moves);
+        expect(parsePgnMoves('archive', data, obj)).toEqual(moves);
     });
 });
 
-// parse_time_control
+// parseTimeControl
 [
     ['900+5', {dico: {tc: 900, tc2: 5, tc3: 0}, text: `15'+5"`}],
     ['40/900', {dico: {tc: 900, tc2: 0, tc3: 40}, text: `40/900'`}],
 ].forEach(([value, answer], id) => {
-    test(`parse_time_control:${id}`, () => {
-        expect(parse_time_control(value)).toEqual(answer);
+    test(`parseTimeControl:${id}`, () => {
+        expect(parseTimeControl(value)).toEqual(answer);
     });
 });
 
-// update_live_eval
+// updateLiveEval
 [
     [
         `
@@ -2333,13 +2333,13 @@ function init_players(ply, players, evals) {
         false,
     ],
 ].forEach(([data, section, edata, eid, force_ply, answer], id) => {
-    test(`update_live_eval:${id}`, () => {
-        update_pgn(section, data);
-        expect(update_live_eval(section, edata, eid, force_ply)).toEqual(answer);
+    test(`updateLiveEval:${id}`, () => {
+        updatePgn(section, data);
+        expect(updateLiveEval(section, edata, eid, force_ply)).toEqual(answer);
     });
 });
 
-// update_materials
+// updateMaterials
 [
     [{}, undefined],
     [{mb: '+1-1-1+2+0'}, '+1-1-1+2+0'],
@@ -2349,13 +2349,13 @@ function init_players(ply, players, evals) {
     [{fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1'}, '+0+0+0+0+0'],
     [{fen: '4b1k1/4q1R1/8/p2Pn3/5pQ1/7P/6P1/6RK b - - 0 43'}, '+1-1-1+2+0'],
 ].forEach(([move, answer], id) => {
-    test(`update_materials:${id}`, () => {
-        update_materials(move);
+    test(`updateMaterials:${id}`, () => {
+        updateMaterials(move);
         expect(move.mb).toEqual(answer);
     });
 });
 
-// update_pgn
+// updatePgn
 [
     ['live', {}, null, false, 0],
     ['live', {}, '', false, 0],
@@ -2410,7 +2410,7 @@ function init_players(ply, players, evals) {
 ].forEach(([section, board_data, data, answer, num_move], id) => {
     if (id != 2)
         return;
-    test(`update_pgn:${id}`, () => {
+    test(`updatePgn:${id}`, () => {
         let main = xboards[section];
         main.moves.length = 0;
 
@@ -2419,12 +2419,12 @@ function init_players(ply, players, evals) {
         else
             Clear(main.pgn);
 
-        expect(update_pgn(section, data)).toEqual(answer);
+        expect(updatePgn(section, data)).toEqual(answer);
         expect(main.moves.length).toEqual(num_move);
     });
 });
 
-// update_player_eval
+// updatePlayerEval
 [
     [
         {x: 'archive'},
@@ -2461,10 +2461,10 @@ function init_players(ply, players, evals) {
         true,
     ],
 ].forEach(([states, section, data, answer], id) => {
-    test(`update_player_eval:${id}`, () => {
+    test(`updatePlayerEval:${id}`, () => {
         Assign(Y, states);
         if (states.x)
-            set_section(states.x);
-        expect(update_player_eval(section, data)).toEqual(answer);
+            setSection(states.x);
+        expect(updatePlayerEval(section, data)).toEqual(answer);
     });
 });

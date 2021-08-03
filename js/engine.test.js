@@ -1,6 +1,6 @@
 // engine.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 /*
 globals
@@ -10,14 +10,14 @@ expect, require, test
 
 let {Assign, CACHE_IDS, Clear, CreateNode, Id} = require('./common.js'),
     {
-        add_history, add_move, AUTO_ON_OFF, cannot_click, cannot_popup, create_field_value, create_page_array,
-        create_svg_icon, create_url_list, DEFAULTS, detect_device, DEV, DEV_NAMES, done_touch, fill_combo, find_area,
-        get_area, get_changed_touches, get_float, get_int, get_object, get_string, guess_types, ICONS, import_settings,
-        KEYS, LANGUAGES, load_defaults, merge_settings, mix_hex_colors, ON_OFF, option_number, parse_dev, reset_default,
-        reset_defaults, reset_settings, resize_text, restore_history, sanitise_data, save_default, save_option,
-        set_section, show_popup, show_settings, stop_drag, touch_event, touch_handle, touch_moves, translate,
-        translate_default, translate_expression, translate_node, translate_nodes, translates, TYPES, update_svg,
-        X_SETTINGS, Y, y_states,
+        addHistory, addMove, AUTO_ON_OFF, cannotClick, cannotPopup, createFieldValue, createPageArray, createSvgIcon,
+        createUrlList, DEFAULTS, detectDevice, DEV, DEV_NAMES, doneTouch, fillCombo, findArea, getArea,
+        getChangedTouches, getFloat, getInt, getObject, getString, guessTypes, handlePing, ICONS, importSettings, KEYS,
+        LANGUAGES, loadDefaults, mergeSettings, mixHexColors, ON_OFF, optionNumber, parseDev, ping_diff, ping_values,
+        pings, resetDefault, resetDefaults, resetSettings, resizeText, restoreHistory, sanitiseData, saveDefault,
+        saveOption, server_diffs, setSection, showPopup, showSettings, stopDrag, touch_moves, touchEvent, touchHandle,
+        translate, translateDefault, translateExpression, translateNode, translateNodes, translates, TYPES, updateSvg,
+        X_SETTINGS, Y, y_states, Z,
     } = require('./engine.js');
 
 Assign(DEFAULTS, {
@@ -73,28 +73,28 @@ Assign(Y, {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// add_history
+// addHistory
 [
     {chat_height: 10, twitch_chat: 1},
 ].forEach((y, id) => {
-    test(`add_history:${id}`, () => {
+    test(`addHistory:${id}`, () => {
         let length = y_states.length;
         Assign(Y, y);
-        add_history();
+        addHistory();
         expect(y_states.length).toBe(length + 1);
     });
 });
 
-// add_move
+// addMove
 [
     [null, {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
     [[5, 5, 100], {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
 ].forEach(([drag, change, stamp, ratio_x, ratio_y, answer, answer_array], id) => {
-    test(`add_move:${id}`, () => {
+    test(`addMove:${id}`, () => {
         if (!drag)
-            stop_drag();
+            stopDrag();
         else {
-            touch_handle({
+            touchHandle({
                 clientX: drag[0],
                 clientY: drag[1],
                 target: {},
@@ -102,39 +102,39 @@ Assign(Y, {
                 type: 'mousedown',
             });
         }
-        expect(add_move(change, stamp, ratio_x, ratio_y)).toEqual(answer);
+        expect(addMove(change, stamp, ratio_x, ratio_y)).toEqual(answer);
         expect(touch_moves).toEqual(answer_array);
     });
 });
 
-// cannot_click
+// cannotClick
 [
     [0, true],
     [-0.4, true],
     [-0.6, false],
     [-1, false],
 ].forEach(([delta, answer], id) => {
-    test(`cannot_click:${id}`, () => {
-        done_touch(delta);
-        expect(cannot_click()).toBe(answer);
+    test(`cannotClick:${id}`, () => {
+        doneTouch(delta);
+        expect(cannotClick()).toBe(answer);
     });
 });
 
-// cannot_popup
+// cannotPopup
 [
     [{popup_right_click: 0}, {17: 0}, true],
     [{popup_right_click: 0}, {17: 1}, true],
     [{popup_right_click: 1}, {17: 0}, false],
     [{popup_right_click: 1}, {17: 1}, true],
 ].forEach(([y, keys, answer], id) => {
-    test(`cannot_popup:${id}`, () => {
+    test(`cannotPopup:${id}`, () => {
         Assign(Y, y);
         Assign(KEYS, keys);
-        expect(!!cannot_popup()).toBe(answer);
+        expect(!!cannotPopup()).toBe(answer);
     });
 });
 
-// create_field_value
+// createFieldValue
 [
     ['G#', ['g', 'G#']],
     ['wev=Ev', ['wev', 'Ev']],
@@ -157,12 +157,12 @@ Assign(Y, {
     ['rmobility_result=rMobility', ['rmobility_result', 'rMobility']],
     ['rmobility_score=rMobility <hsub>[{Diff}]</hsub>', ['rmobility_score', 'rMobility <hsub>[{Diff}]</hsub>']],
 ].forEach(([text, answer], id) => {
-    test(`create_field_value:${id}`, () => {
-        expect(create_field_value(text)).toEqual(answer);
+    test(`createFieldValue:${id}`, () => {
+        expect(createFieldValue(text)).toEqual(answer);
     });
 });
 
-// create_page_array
+// createPageArray
 [
     [1, 0, 0, [2]],
     [2, 0, 0, [2, 2]],
@@ -183,12 +183,12 @@ Assign(Y, {
     [9, 6, 2, [2, 1, 0, 0, 2, 2, 2, 2, 2]],
     [9, 5, 4, [2, 2, 2, 2, 2, 2, 2, 2, 2]],
 ].forEach(([num_page, page, extra, answer], id) => {
-    test(`create_page_array:${id}`, () => {
-        expect(create_page_array(num_page, page, extra)).toEqual(answer);
+    test(`createPageArray:${id}`, () => {
+        expect(createPageArray(num_page, page, extra)).toEqual(answer);
     });
 });
 
-// create_svg_icon
+// createSvgIcon
 [
     ['', ''],
     ['next', ''],
@@ -199,75 +199,77 @@ Assign(Y, {
         + '</svg>',
     ],
 ].forEach(([name, answer], id) => {
-    test(`create_svg_icon:${id}`, () => {
-        expect(create_svg_icon(name)).toEqual(answer);
+    test(`createSvgIcon:${id}`, () => {
+        expect(createSvgIcon(name)).toEqual(answer);
     });
 });
 
-// create_url_list
+// createUrlList
 [
     [null, ''],
     [{}, '<vert class="fastart"></vert>'],
     [{a: 1}, '<vert class="fastart"><hr></vert>'],
 ].forEach(([dico, answer], id) => {
-    test(`create_url_list:${id}`, () => {
-        expect(create_url_list(dico)).toEqual(answer);
+    test(`createUrlList:${id}`, () => {
+        expect(createUrlList(dico)).toEqual(answer);
     });
 });
 
-// detect_device
+// detectDevice
 [
     {iphone: false, mobile: false, os: '?'},
 ].forEach((answer, id) => {
-    test(`detect_device:${id}`, () => {
-        expect(detect_device()).toEqual(answer);
+    test(`detectDevice:${id}`, () => {
+        expect(detectDevice()).toEqual(answer);
     });
 });
 
-// fill_combo
+// fillCombo
 [
     [
-        '', null, ['wipeout', 'wipeout x'], 'wipeout', undefined, true,
+        '', null, ['wipeout', 'wipeout x'], 'wipeout', {no_translate: true},
         '<option value="wipeout" selected="selected">wipeout</option>'
         + '<option value="wipeout x">wipeout x</option>',
     ],
     [
-        '<select id="cog"></select>', 'g', ['a', 'b'], 'b', undefined, undefined,
+        '<select id="cog"></select>', 'g', ['a', 'b'], 'b', {},
         '<select id="cog">'
             + '<option value="a" data-t="a">a</option>'
             + '<option value="b" selected="selected" data-t="b">b</option>'
         + '</select>',
     ],
     [
-        '<select id="cog"></select>', '#cog', ['a', 'b'], 'b', undefined, undefined,
+        '<select id="cog"></select>', '#cog', ['a', 'b'], 'b', {},
         '<select id="cog">'
             + '<option value="a" data-t="a">a</option>'
             + '<option value="b" selected="selected" data-t="b">b</option>'
         + '</select>',
     ],
     [
-        '<select id="cog"></select>', '#other', ['a', 'b'], 'b', undefined, undefined,
+        '<select id="cog"></select>', '#other', ['a', 'b'], 'b', {},
         '<select id="cog"></select>',
     ],
-].forEach(([html, letter, values, select, dico, no_translate, answer], id) => {
-    test(`fill_combo:${id}`, () => {
+].forEach(([html, letter, values, select, options, answer], id) => {
+    test(`fillCombo:${id}`, () => {
         let soup = CreateNode('a', html);
-        fill_combo((letter == null)? soup: letter, values, select, dico, no_translate, soup);
+        options.parent = soup;
+        fillCombo((letter == null)? soup: letter, values, select, options);
         expect(soup.innerHTML).toEqual(answer);
     });
 });
 
-// find_area
+
+// findArea
 [
     ['test', {id: -1}],
     ['shortcut_2', {area: ['shortcut_2', 1, 1], id: 2, key: 'right0'}],
 ].forEach(([name, answer], id) => {
-    test(`find_area:${id}`, () => {
-        expect(find_area(name)).toEqual(answer);
+    test(`findArea:${id}`, () => {
+        expect(findArea(name)).toEqual(answer);
     });
 });
 
-// get_area
+// getArea
 [
     ['<div id="area"><a id="child"></a></div>', null],
     ['<vert id="area" class="area"><a id="child"></a></vert>', 'area'],
@@ -275,15 +277,15 @@ Assign(Y, {
     ['<vert id="area" class="area2"><div><a id="child"></a></div></vert>', null],
     ['<vert id="area" class="area"><div><a id="child2"></a></div></vert>', null],
 ].forEach(([html, answer], id) => {
-    test(`get_area:${id}`, () => {
+    test(`getArea:${id}`, () => {
         let soup = CreateNode('div', html),
             area = answer? Id(answer, soup): null,
             node = Id('child', soup);
-        expect(get_area(node)).toEqual(area);
+        expect(getArea(node)).toEqual(area);
     });
 });
 
-// get_changed_touches
+// getChangedTouches
 [
     [{}, [{x: undefined, y: undefined}]],
     [{clientX: 50, clientY: 60}, [{x: 50, y: 60}]],
@@ -291,12 +293,12 @@ Assign(Y, {
     [{touches: [{clientX: 100, clientY: 70}, {clientX: 90, clientY: 60}]}, [{x: 100, y: 70}, {x: 90, y: 60}]],
     [{changedTouches: [{clientX: 5, clientY: 6}], touches: [{clientX: 90, clientY: 60}]}, [{x: 5, y: 6}]],
 ].forEach(([e, answer], id) => {
-    test(`get_changed_touches:${id}`, () => {
-        expect(get_changed_touches(e)).toEqual(answer);
+    test(`getChangedTouches:${id}`, () => {
+        expect(getChangedTouches(e)).toEqual(answer);
     });
 });
 
-// get_float
+// getFloat
 [
     ['x', '', 6.1, 6.1],
     ['x', null, undefined, undefined],
@@ -313,13 +315,13 @@ Assign(Y, {
     ['x', 'live', 9.4, 9.4],
     ['x', 'live', {error: 1}, {error: 1}],
 ].forEach(([name, value, def, answer], id) => {
-    test(`get_float:${id}`, () => {
-        save_option(name, value);
-        expect(get_float(name, def)).toEqual(answer);
+    test(`getFloat:${id}`, () => {
+        saveOption(name, value);
+        expect(getFloat(name, def)).toEqual(answer);
     });
 });
 
-// get_int
+// getInt
 [
     ['x', '', 6, true, 6],
     ['x', null, undefined, false, 'null'],
@@ -336,13 +338,13 @@ Assign(Y, {
     ['x', 'live', 9, false, 'live'],
     ['x', 'live', 9, true, 9],
 ].forEach(([name, value, def, force, answer], id) => {
-    test(`get_int:${id}`, () => {
-        save_option(name, value);
-        expect(get_int(name, def, force)).toEqual(answer);
+    test(`getInt:${id}`, () => {
+        saveOption(name, value);
+        expect(getInt(name, def, force)).toEqual(answer);
     });
 });
 
-// get_object
+// getObject
 [
     ['x', '', {good: true}, {good: true}],
     ['x', null, undefined, null],
@@ -359,13 +361,13 @@ Assign(Y, {
     ['x', 'live', 9.3, 9.3],
     ['x', 'live', {error: 1}, {error: 1}],
 ].forEach(([name, value, def, answer], id) => {
-    test(`get_object:${id}`, () => {
-        save_option(name, value);
-        expect(get_object(name, def)).toEqual(answer);
+    test(`getObject:${id}`, () => {
+        saveOption(name, value);
+        expect(getObject(name, def)).toEqual(answer);
     });
 });
 
-// get_string
+// getString
 [
     ['x', 'undefined', 'good', 'good'],
     ['x', null, undefined, 'null'],
@@ -382,13 +384,13 @@ Assign(Y, {
     ['x', 'live', 9.3, 'live'],
     ['x', 'live', {error: 1}, 'live'],
 ].forEach(([name, value, def, answer], id) => {
-    test(`get_string:${id}`, () => {
-        save_option(name, value);
-        expect(get_string(name, def)).toEqual(answer);
+    test(`getString:${id}`, () => {
+        saveOption(name, value);
+        expect(getString(name, def)).toEqual(answer);
     });
 });
 
-// guess_types
+// guessTypes
 [
     [
         {
@@ -446,37 +448,74 @@ Assign(Y, {
         },
     ],
 ].forEach(([settings, answer], id) => {
-    test(`guess_types:${id}`, () => {
-        guess_types(settings);
+    test(`guessTypes:${id}`, () => {
+        guessTypes(settings);
         expect(TYPES).toEqual(expect.objectContaining(answer));
     });
 });
 
-// import_settings
+// handlePing
+[
+    [1627143725985, [58123, 63462], [75, 75, 5264]],
+    [1627143726863, [59130, 64339], [10, 10, 5199]],
+    [1627143728058, [60135, 65476], [105, 105, 5236]],
+    [1627143728878, [61125, 814], [20, 20, 5205]],
+    [1627143729864, [62130, 1798], [11, 11, 5193]],
+    [1627143731052, [63135, 2987], [102, 102, 5286]],
+    [1627143731844, [64125, 3788], [3, 3, 5196]],
+    [1627143732937, [65131, 4855], [47, 47, 5213]],
+    [1627143733901, [600, 5836], [26, 26, 5210]],
+    [1627143735134, [1593, 7076], [146, 146, 5337]],
+    [1627143735905, [2601, 7838], [28, 28, 5209]],
+    [1627143736879, [3593, 8809], [19, 19, 5197]],
+    [1627143737984, [4588, 9923], [74, 74, 5261]],
+    [1627143738877, [5597, 10815], [16, 16, 5202]],
+    [1627143739938, [6589, 11868], [50, 50, 5229]],
+    [1627143741079, [7600, 13019], [115, 46, 5220]],
+    [1627143757249, [23935, 29165], [33, 46, 5212]],
+    [1627143769978, [36237, 41919], [246, 63, 5220]],
+    [1627143785891, [52628, 57835], [7, 48, 5216]],
+    [1627143798245, [64941, 4651], [28, 49, 5217]],
+    [1627143810544, [11701, 16931], [29, 51, 5217]],
+    [1627143822904, [24001, 29309], [59, 55, 5216]],
+].forEach(([pong_time, data, answer], id) => {
+    test(`handlePing:${id}`, () => {
+        if (id == 0) {
+            pings.fill(0);
+            ping_values.fill(0);
+            server_diffs.fill(0);
+        }
+        pings[1] = pong_time;
+        handlePing(data);
+        expect(ping_diff).toEqual(answer);
+    });
+});
+
+// importSettings
 [
     [{}, true, {}],
     [{width: 100}, undefined, {width: 100}],
     [{height: '500px'}, undefined, {height: '500px', width: 100}],
 ].forEach(([data, reset, answer], id) => {
-    test(`import_settings:${id}`, () => {
-        import_settings(data, reset);
+    test(`importSettings:${id}`, () => {
+        importSettings(data, reset);
         expect(Y).toEqual(expect.objectContaining(answer));
     });
 });
 
-// load_defaults
+// loadDefaults
 [
     {language: 'eng', limit: 20},
 ].forEach((answer, id) => {
-    test(`load_defaults:${id}`, () => {
+    test(`loadDefaults:${id}`, () => {
         Clear(Y);
-        guess_types(DEFAULTS);
-        load_defaults();
+        guessTypes(DEFAULTS);
+        loadDefaults();
         expect(Y).toEqual(expect.objectContaining(answer));
     });
 });
 
-// merge_settings
+// mergeSettings
 [
     [{}, {}, {}, {}],
     [{advanced: {debug: ''}}, {advanced: {debug: ''}}, {}, {}],
@@ -518,12 +557,12 @@ Assign(Y, {
                 source_color: {
                     _multi: 2,
                     source_color: [{type: 'color'}, '#ffb400'],
-                    source_opacity: option_number(0.7, 0, 1, 0.01),
+                    source_opacity: optionNumber(0.7, 0, 1, 0.01),
                 },
                 turn_color: {
                     _multi: 2,
                     turn_color: [{type: 'color'}, '#ff5a00'],
-                    turn_opacity: option_number(0, 0, 1, 0.01),
+                    turn_opacity: optionNumber(0, 0, 1, 0.01),
                 },
             },
         },
@@ -545,12 +584,12 @@ Assign(Y, {
                 source_color: {
                     _multi: 2,
                     source_color: [{type: 'color'}, '#ffb400'],
-                    source_opacity: option_number(0.7, 0, 1, 0.01),
+                    source_opacity: optionNumber(0.7, 0, 1, 0.01),
                 },
                 turn_color: {
                     _multi: 2,
                     turn_color: [{type: 'color'}, '#ff5a00'],
-                    turn_opacity: option_number(0, 0, 1, 0.01),
+                    turn_opacity: optionNumber(0, 0, 1, 0.01),
                 },
             },
         },
@@ -564,15 +603,15 @@ Assign(Y, {
         },
     ],
 ].forEach(([x_settings, answer, answer_def, answer_type], id) => {
-    test(`merge_settings:${id}`, () => {
-        merge_settings(x_settings);
+    test(`mergeSettings:${id}`, () => {
+        mergeSettings(x_settings);
         expect(X_SETTINGS).toEqual(answer);
         expect(DEFAULTS).toEqual(expect.objectContaining(answer_def));
         expect(TYPES).toEqual(expect.objectContaining(answer_type));
     });
 });
 
-// mix_hex_colors
+// mixHexColors
 [
     ['#ffffff', '#000000', 0.5, '#808080'],
     ['#000000', '#ffffff', 0.5, '#808080'],
@@ -582,12 +621,12 @@ Assign(Y, {
     ['#ff0000', '#0000ff', 1, '#0000ff'],
     ['#ff0000', '#0000ff', 2, '#0000ff'],
 ].forEach(([color1, color2, mix, answer], id) => {
-    test(`mix_hex_colors:${id}`, () => {
-        expect(mix_hex_colors(color1, color2, mix)).toEqual(answer);
+    test(`mixHexColors:${id}`, () => {
+        expect(mixHexColors(color1, color2, mix)).toEqual(answer);
     });
 });
 
-// option_number
+// optionNumber
 [
     [150, 0, 2000, undefined, undefined, undefined, [{max: 2000, min: 0, step: 1, type: 'number'}, 150, '']],
     [-200, -1000, 1000, undefined, undefined, undefined, [{max: 1000, min: -1000, step: 1, type: 'number'}, -200, '']],
@@ -595,13 +634,13 @@ Assign(Y, {
     [0.055, 0, 0.4, 0.001, undefined, undefined, [{max: 0.4, min: 0, step: 0.001, type: 'number'}, 0.055, '']],
     [0.7, 0, 1, 0.01, {}, 'mix', [{max: 1, min: 0, step: 0.01, type: 'number'}, 0.7, 'mix']],
 ].forEach(([def, min, max, step, options, help, answer], id) => {
-    test(`option_number:${id}`, () => {
-        expect(option_number(def, min, max, step, options, help)).toEqual(answer);
+    test(`optionNumber:${id}`, () => {
+        expect(optionNumber(def, min, max, step, options, help)).toEqual(answer);
     });
 });
 
 
-// parse_dev
+// parseDev
 [
     ['', {}],
     ['E', {engine: 1}],
@@ -616,14 +655,14 @@ Assign(Y, {
     ['E5S100Z', {}],
     ['E5S100Zw3', {wasm: 3, wasm2: 3}],
 ].forEach(([dev, answer], id) => {
-    test(`parse_dev:${id}`, () => {
+    test(`parseDev:${id}`, () => {
         Y.dev = dev;
-        parse_dev();
+        parseDev();
         expect(DEV).toEqual(answer);
     });
 });
 
-// reset_default
+// resetDefault
 [
     ['language', undefined, 'eng'],
     ['language', 'fra', 'eng'],
@@ -631,15 +670,15 @@ Assign(Y, {
     ['limit', 500, 20],
     ['limit', undefined, 20],
 ].forEach(([name, value, answer], id) => {
-    test(`reset_default:${id}`, () => {
+    test(`resetDefault:${id}`, () => {
         Y[name] = value;
-        expect(reset_default(name)).toEqual(answer);
+        expect(resetDefault(name)).toEqual(answer);
         expect(Y[name]).toEqual(answer);
-        expect(get_string(name)).toBeUndefined();
+        expect(getString(name)).toBeUndefined();
     });
 });
 
-// reset_defaults
+// resetDefaults
 [
     [{language: 'fra', limit: 40, skip: 10}, /language|limit/, {language: 'eng', limit: 20, skip: 10}],
     [{language: 'fra', limit: 40, skip: 10}, /language/, {language: 'eng', limit: 40, skip: 10}],
@@ -650,25 +689,25 @@ Assign(Y, {
         {background_color: '#000000', background_image: '', background_opacity: 0},
     ],
 ].forEach(([y, pattern, answer], id) => {
-    test(`reset_defaults:${id}`, () => {
+    test(`resetDefaults:${id}`, () => {
         Assign(Y, y);
-        reset_defaults(pattern);
+        resetDefaults(pattern);
         expect(Y).toEqual(expect.objectContaining(answer));
     });
 });
 
-// reset_settings
+// resetSettings
 [
     [{'language': 'fra', 'theme': 'dark'}, true, {language: 'eng', theme: ''}],
 ].forEach(([data, reset, answer], id) => {
-    test(`reset_settings:${id}`, () => {
+    test(`resetSettings:${id}`, () => {
         Assign(Y, data);
-        reset_settings(data, reset);
+        resetSettings(data, reset);
         expect(Y).toEqual(expect.objectContaining(answer));
     });
 });
 
-// resize_text
+// resizeText
 [
     [null, 4, undefined, null],
     [12, 2, undefined, '12'],
@@ -684,27 +723,27 @@ Assign(Y, {
     ['KomodoDragonArmageddon', 0, undefined, 'KomodoDragonArmageddon'],
     ['KomodoDragonArmageddon', 15, undefined, '<span class="resize">KomodoDragonArmageddon</span>'],
 ].forEach(([text, resize, class_, answer], id) => {
-    test(`resize_text:${id}`, () => {
-        expect(resize_text(text, resize, class_)).toEqual(answer);
+    test(`resizeText:${id}`, () => {
+        expect(resizeText(text, resize, class_)).toEqual(answer);
     });
 });
 
-// restore_history
+// restoreHistory
 [
     [{theme: 'light', volume: 5}, {theme: 'dark', volume: 10}],
 ].forEach(([y, y2], id) => {
-    test(`restore_history:${id}`, () => {
+    test(`restoreHistory:${id}`, () => {
         Assign(Y, y);
-        add_history();
+        addHistory();
         Assign(Y, y2);
-        add_history();
+        addHistory();
         expect(Y).toEqual(expect.objectContaining(y2));
-        restore_history(-1);
+        restoreHistory(-1);
         expect(Y).toEqual(expect.objectContaining(y));
     });
 });
 
-// sanitise_data
+// sanitiseData
 [
     [{width: ''}, {width: 600}, {width: 'f'}, {width: 600}],
     [{width: '700.5'}, {width: 600}, {width: 'f'}, {width: 700.5}],
@@ -712,16 +751,16 @@ Assign(Y, {
     [{width: 700.5}, {width: 600}, {width: 'i'}, {width: 700.5}],
     [{width: '700.5'}, {width: undefined}, {width: undefined}, {width: '700.5'}],
 ].forEach(([y, defaults, types, answer], id) => {
-    test(`sanitise_data:${id}`, () => {
+    test(`sanitiseData:${id}`, () => {
         Assign(Y, y);
         Assign(DEFAULTS, defaults);
         Assign(TYPES, types);
-        sanitise_data();
+        sanitiseData();
         expect(Y).toEqual(expect.objectContaining(answer));
     });
 });
 
-// save_default
+// saveDefault
 [
     ['language', undefined, 'eng', undefined],
     ['language', 'eng', 'eng', undefined],
@@ -733,26 +772,26 @@ Assign(Y, {
     ['limit', 20, 20, undefined],
     ['limit', undefined, 20, undefined],
 ].forEach(([name, value, answer, answer_storage], id) => {
-    test(`save_default:${id}`, () => {
-        save_default(name, value);
+    test(`saveDefault:${id}`, () => {
+        saveDefault(name, value);
         expect(Y[name]).toEqual(answer);
-        expect(get_string(name)).toEqual(answer_storage);
+        expect(getString(name)).toEqual(answer_storage);
     });
 });
 
-// save_option
+// saveOption
 [
     ['width', 100, '100'],
     ['x', 'live', 'live'],
 ].forEach(([name, value, answer], id) => {
-    test(`save_option:${id}`, () => {
-        save_option(name, value);
+    test(`saveOption:${id}`, () => {
+        saveOption(name, value);
         expect(Y[name]).toEqual(value);
-        expect(get_string(name)).toEqual(answer);
+        expect(getString(name)).toEqual(answer);
     });
 });
 
-// set_section
+// setSection
 [
     ['app', '', ['app', '']],
     [null, undefined, ['app', '']],
@@ -762,14 +801,14 @@ Assign(Y, {
     ['live', null, ['live', 'pva']],
     [null, '', ['live', '']],
 ].forEach(([section, subsection, answer], id) => {
-    test(`set_section:${id}`, () => {
-        set_section(section, subsection);
+    test(`setSection:${id}`, () => {
+        setSection(section, subsection);
         expect(Y.x).toEqual(answer[0]);
-        expect(Y.s).toEqual(answer[1]);
+        expect(Z.s).toEqual(answer[1]);
     });
 });
 
-// show_popup
+// showPopup
 [
     ['me', true, {node_id: 'pop'}, '<a id="pop" style="transform: unset;" data-ev="1"></a>'],
     ['me', true, {center: 1, html: 'hi', node_id: 'pop'}, '<a id="pop" style="transform: unset;" data-ev="1">hi</a>'],
@@ -786,27 +825,37 @@ Assign(Y, {
         '<a id="modal" style="transform: translate(0%, 0%) translate(508px, 384px);" data-center="1" data-my="" data-xy="150,120" class="instant popup-show popup-enable" data-id="" data-name="me" data-ev="1">hi</a>',
     ],
 ].forEach(([name, show, options, answer], id) => {
-    test(`show_popup:${id}`, () => {
+    test(`showPopup:${id}`, () => {
         Clear(CACHE_IDS);
         let html = `<a id="${options.node_id}"></a>`,
             soup = CreateNode('div', html);
         options.parent = soup;
-        show_popup(name, show, options);
+        showPopup(name, show, options);
         expect(soup.innerHTML).toEqual(answer);
     });
 });
 
-// show_settings
+// showSettings
 [
     [
-        'unknown', {},
+        {title_add: ''},
+        'unknown',
+        '<grid class="options">'
+            + '<div class="item-title span" data-set="" data-n="unknown" data-t="Unknown"></div>'
+            + '<a class="item item-title span" data-set="-1" data-t="OK"></a>'
+        + '</grid>',
+    ],
+    [
+        {title_add: ' options'},
+        'unknown',
         '<grid class="options">'
             + '<div class="item-title span" data-set="" data-n="unknown" data-t="Unknown options"></div>'
             + '<a class="item item-title span" data-set="-1" data-t="OK"></a>'
         + '</grid>',
     ],
     [
-        'audio', {},
+        {},
+        'audio',
         '<grid class="options">'
             + '<div class="item-title span" data-set="" data-n="audio" data-t="Audio options"></div>'
             + '<a class="item"><i data-t="Volume"></i></a>'
@@ -817,19 +866,20 @@ Assign(Y, {
             + '<vert class="fcenter">'
                 + '<select name="music">'
                     + '<option value="1" data-t="on"></option>'
-                    + '<option value="0" selected data-t="off"></option>'
+                    + '<option value="0" selected="selected" data-t="off"></option>'
                 + '</select>'
             + '</vert>'
             + '<a class="item item-title span" data-set="-1" data-t="OK"></a>'
         + '</grid>',
     ],
-].forEach(([name, dico, answer], id) => {
-    test(`show_settings:${id}`, () => {
-        expect(show_settings(name, dico)).toEqual(answer);
+].forEach(([z, name, answer], id) => {
+    test(`showSettings:${id}`, () => {
+        Assign(Z, z);
+        expect(showSettings(name, {})).toEqual(answer);
     });
 });
 
-// touch_event
+// touchEvent
 [
     [{}, {change: {x: undefined, y: undefined}, error: -1, stamp: undefined}],
     [{clientX: 50, clientY: 60, timeStamp: 100}, {change: {x: 50, y: 60}, error: -1, stamp: 100}],
@@ -846,8 +896,8 @@ Assign(Y, {
         {change: {x: 5, y: 6}, error: -1, stamp: 100},
     ],
 ].forEach(([e, answer], id) => {
-    test(`touch_event:${id}`, () => {
-        expect(touch_event(e)).toEqual(answer);
+    test(`touchEvent:${id}`, () => {
+        expect(touchEvent(e)).toEqual(answer);
     });
 });
 
@@ -864,20 +914,20 @@ Assign(Y, {
     });
 });
 
-// translate_default
+// translateDefault
 [
     [{}, null, null],
     [{}, '', ''],
     [{'language': 'fra'}, 'Italy', 'Italy'],
     [{}, 'Japan', 'Japon'],
 ].forEach(([y, text, answer], id) => {
-    test(`translate_default:${id}`, () => {
+    test(`translateDefault:${id}`, () => {
         Assign(Y, y);
-        expect(translate_default(text)).toEqual(answer);
+        expect(translateDefault(text)).toEqual(answer);
     });
 });
 
-// translate_expression
+// translateExpression
 [
     [{}, null, ''],
     [{}, '', ''],
@@ -893,13 +943,13 @@ Assign(Y, {
         '<i class="breakall"><i class="nowrap">Animations</i><i class="nowrap">geschwindigkeit</i></i>',
     ],
 ].forEach(([y, text, answer], id) => {
-    test(`translate_expression:${id}`, () => {
+    test(`translateExpression:${id}`, () => {
         Assign(Y, y);
-        expect(translate_expression(text)).toEqual(answer);
+        expect(translateExpression(text)).toEqual(answer);
     });
 });
 
-// translate_node
+// translateNode
 [
     ['', {}, '<a></a>'],
     ['hi', {}, '<a>hi</a>'],
@@ -917,14 +967,14 @@ Assign(Y, {
         '<a><a data-t="Japan">X</a><a data-t="Belgium">Y</a></a>',
     ],
 ].forEach(([html, attrs, answer], id) => {
-    test(`translate_node:${id}`, () => {
+    test(`translateNode:${id}`, () => {
         let soup = CreateNode('a', html, attrs);
-        translate_node(soup);
+        translateNode(soup);
         expect(soup.outerHTML).toEqual(answer);
     });
 });
 
-// translate_nodes
+// translateNodes
 [
     ['', {}, '<a></a>'],
     ['hi', {}, '<a>hi</a>'],
@@ -942,14 +992,14 @@ Assign(Y, {
         '<a><a data-t="Japan">Japon</a><a data-t="Belgium">Belgique</a></a>',
     ],
 ].forEach(([html, attrs, answer], id) => {
-    test(`translate_nodes:${id}`, () => {
+    test(`translateNodes:${id}`, () => {
         let soup = CreateNode('a', html, attrs);
-        translate_nodes(soup);
+        translateNodes(soup);
         expect(soup.outerHTML).toEqual(answer);
     });
 });
 
-// update_svg
+// updateSvg
 [
     [
         '<a data-svg="play"></a><a data-svg="next"></a>',
@@ -957,9 +1007,9 @@ Assign(Y, {
         + '<a data-svg="next"></a>',
     ],
 ].forEach(([html, answer], id) => {
-    test(`update_svg:${id}`, () => {
+    test(`updateSvg:${id}`, () => {
         let soup = CreateNode('a', html);
-        update_svg(soup);
+        updateSvg(soup);
         expect(soup.innerHTML).toEqual(answer);
     });
 });

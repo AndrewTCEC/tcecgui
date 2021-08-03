@@ -1,6 +1,6 @@
 // startup.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 // Startup
 // - start everything: 3d, game, ...
@@ -12,31 +12,27 @@
 // jshint -W069
 /*
 globals
-_, __PREFIX:true, A, action_key, action_key_no_input, action_keyup_no_input, activate_tabs, add_history, add_timeout,
-adjust_popups, ANCHORS, api_times:true, api_translate_get, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
-C, CacheId, cannot_popup, change_page, change_queue, change_setting, change_setting_game, change_theme, changed_hash,
-changed_section, charts, check_hash, check_socket_io, Clamp, Class, clear_timeout, close_popups, context_areas,
-context_target:true,
-DEFAULT_SCALES, DefaultArray, DEFAULTS, detect_device, DEV, DEV_NAMES, device, document, download_tables,
-drag_source:true, E, Events, export_settings, exports, FileReader, find_area, Floor, From, game_action_key,
-game_action_keyup, get_area, get_drop_id, get_object, global, guess_types, handle_board_events, HasClass, HasClasses,
-hashes, Hide, hide_element, HIDES, HTML, ICONS:true, import_settings, Index, init_graph, IsObject, KEY_TIMES, Keys,
-KEYS,
-LANGUAGES:true, listen_log, load_defaults, load_library, load_preset, LOCALHOST, location, Max, merge_settings, Min,
-move_pane, navigator, NO_IMPORTS, Now, ON_OFF, open_table, option_number, order_boards, PANES, Parent, ParseJSON, PD,
-PIECE_THEMES, populate_areas, POPUP_ADJUSTS, require, reset_defaults, reset_old_settings, reset_settings,
-resize_bracket, resize_game, resize_move_lists, resize_table, resume_sleep,
-S, SafeId, save_option, scroll_adjust, ScrollDocument, set_drag_events, set_draggable, set_engine_events,
-set_fullscreen_events, set_game_events, set_section, SHADOW_QUALITIES, Show, show_banner, show_board_info,
-show_filtered_games, show_popup, SP, start_3d, start_game, startup_3d, startup_config, startup_game, startup_global,
-startup_graph, startup_network, Style,
-TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timers, toggle_fullscreen, translate_nodes,
-TRANSLATE_SPECIALS, translates:true, TYPES, Undefined, update_board_theme, update_debug, update_pgn, update_theme,
-update_twitch, VERSION, virtual_change_setting_special:true, virtual_check_hash_special:true, virtual_hide_areas:true,
-virtual_import_settings:true, virtual_opened_table_special:true, virtual_populate_areas_special:true,
-virtual_reset_settings_special:true, virtual_resize:true, virtual_set_modal_events_special:true,
-virtual_window_click_dataset:true, virtual_window_click_parent:true, virtual_window_click_parent_dataset:true, Visible,
-VisibleWidth, WB_LOWER, window, window_click, X_SETTINGS, xboards, Y, y_three:true, y_x
+_, __PREFIX:true, A, actionKey, actionKeyNoInput, actionKeyupNoInput, activateTabs, addHistory, AddTimeout,
+adjustPopups, ANCHORS, api_times:true, apiTranslateGet, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
+C, CacheId, cannotPopup, change_queue, changedHash, changedSection, changePage, changeSetting, changeSettingGame,
+charts, checkHash, checkSocketIo, Clamp, Class, ClearTimeout, closePopups, context_areas, context_target:true,
+DEFAULT_SCALES, DefaultArray, DEFAULTS, detectDevice, DEV, DEV_NAMES, device, document, downloadTables,
+drag_source:true, E, Events, exports, exportSettings, FileReader, findArea, Floor, From, gameActionKey,
+gameActionKeyup, getArea, getDropId, getObject, global, guessTypes, handleBoardEvents, HasClass, HasClasses, hashes,
+Hide, hideElement, HIDES, HTML, ICONS:true, importSettings, Index, initGraph, IsObject, KEY_TIMES, Keys, KEYS,
+LANGUAGES:true, listenLog, loadDefaults, loadLibrary, loadPreset, LOCALHOST, location, Max, mergeSettings, Min,
+movePane, navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, openTable, optionNumber, orderBoards, PANES,
+Parent, ParseJSON, PD, PIECE_THEMES, populateAreas, POPUP_ADJUSTS, require, resetDefaults, resetOldSettings,
+resetSettings, resizeBracket, resizeGame, resizeMoveLists, resizeTable, resumeSleep,
+S, SafeId, saveOption, scrollAdjust, ScrollDocument, setDragEvents, setDraggable, setEngineEvents, setFullscreenEvents,
+setGameEvents, setSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames, showPopup, SP, start3d,
+startGame, startup3d, startupConfig, startupEngine, startupGame, startupGlobal, startupGraph, startupNetwork, Style,
+TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, toggleFullscreen, TRANSLATE_SPECIALS,
+translateNodes, translates:true, TYPES, Undefined, updateBoardTheme, updateDebug, updatePgn, updateTheme, updateTwitch,
+VERSION, vi_changeSettingSpecial:true, vi_checkHashSpecial:true, vi_hideAreas:true, vi_importSettings:true,
+vi_openedTableSpecial:true, vi_populateAreasSpecial:true, vi_resetSettingsSpecial:true, vi_resize:true,
+vi_setModalEventsSpecial:true, vi_windowClickDataset:true, vi_windowClickParent:true, vi_windowClickParentDataset:true,
+Visible, VisibleWidth, WB_LOWER, window, windowClick, X_SETTINGS, xboards, Y, y_three:true, y_x, Z
 */
 'use strict';
 
@@ -153,21 +149,21 @@ let AD_STYLES = {},
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Same as action_key_no_input, but when the key is up
+ * Same as actionKeyNoInput, but when the key is up
  * @param {number} code hardware keycode
  */
-function action_keyup_no_input(code) {
+function actionKeyupNoInput(code) {
 }
 
 /**
  * Handle keys, even when an input is active
  * @param {number} code hardware keycode
  */
-function action_key(code) {
+function actionKey(code) {
     switch (code) {
     // escape
     case 27:
-        close_popups();
+        closePopups();
         break;
     }
 }
@@ -176,7 +172,7 @@ function action_key(code) {
  * Use an audio set
  * @param {string|number} set custom, bamboo
  */
-function audio_set(set) {
+function audioSet(set) {
     let audio_settings = X_SETTINGS['audio'],
         prefix = `${set} - `;
 
@@ -185,7 +181,7 @@ function audio_set(set) {
             return;
         let choice = audio_settings[key][0].filter(value => value.slice(0, prefix.length) == prefix)[0];
         if (choice != undefined) {
-            save_option(key, choice);
+            saveOption(key, choice);
             _(`select[name="${key}"]`).value = choice;
         }
     });
@@ -198,8 +194,8 @@ function audio_set(set) {
  * @param {boolean=} close close the popup
  * @returns {boolean} true if we've handled the setting
  */
-function change_setting_special(name, value, close) {
-    clear_timeout('close_popup');
+function changeSettingSpecial(name, value, close) {
+    ClearTimeout('close_popup');
     if (!name)
         return false;
 
@@ -207,7 +203,7 @@ function change_setting_special(name, value, close) {
     if (close) {
         let modal = SafeId('modal');
         if (modal.dataset['xy'] || close == 2)
-            close_popups();
+            closePopups();
     }
 
     //
@@ -220,7 +216,7 @@ function change_setting_special(name, value, close) {
         result = true,
         svalue = /** @type {string} */(value);
 
-    add_history();
+    addHistory();
 
     switch (name) {
     case 'animate':
@@ -229,7 +225,7 @@ function change_setting_special(name, value, close) {
     case 'highlight_size':
     case 'notation':
     case 'piece_theme':
-        update_board_theme(1);
+        updateBoardTheme(1);
         break;
     case 'animate_pv':
     case 'board_theme_pv':
@@ -237,7 +233,7 @@ function change_setting_special(name, value, close) {
     case 'highlight_size_pv':
     case 'notation_pv':
     case 'piece_theme_pv':
-        update_board_theme(2);
+        updateBoardTheme(2);
         break;
     case 'animate_pva':
     case 'board_theme_pva':
@@ -245,18 +241,18 @@ function change_setting_special(name, value, close) {
     case 'highlight_size_pva':
     case 'notation_pva':
     case 'piece_theme_pva':
-        update_board_theme(4);
+        updateBoardTheme(4);
         break;
     case 'audio_set':
-        audio_set(svalue);
+        audioSet(svalue);
         break;
     case 'background_color':
     case 'background_opacity':
-        update_background();
+        updateBackground();
         break;
     case 'background_reset':
-        reset_defaults(/^background_/);
-        update_background();
+        resetDefaults(/^background_/);
+        updateBackground();
         break;
     case 'chat_height':
     case 'column_bottom':
@@ -279,9 +275,9 @@ function change_setting_special(name, value, close) {
         resize();
         break;
     case 'click_here_to_RESET_everything':
-        reset_settings(true);
-        save_option('last_preset', '');
-        add_timeout('quick', () => quick_setup(true), TIMEOUT_quick);
+        resetSettings(true);
+        saveOption('last_preset', '');
+        AddTimeout('quick', () => quickSetup(true), TIMEOUT_quick);
         break;
     case 'custom_black':
     case 'custom_black_pv':
@@ -292,23 +288,23 @@ function change_setting_special(name, value, close) {
         let is_pv = (name.slice(-2) == 'pv'),
             is_pva = (name.slice(-3) == 'pva'),
             field = `board_theme${is_pva? '_pva': (is_pv? '_pv': '')}`;
-        save_option(field, 'custom');
+        saveOption(field, 'custom');
         (_(`select[name="${field}"]`) || {}).value = Y[field];
-        update_board_theme(is_pva? 4: (is_pv? 2: 1));
+        updateBoardTheme(is_pva? 4: (is_pv? 2: 1));
         break;
     case 'default_positions':
         Y['areas'] = Assign({}, DEFAULTS['areas']);
-        populate_areas(true);
+        populateAreas(true);
         break;
     case 'drag_and_drop':
-        set_draggable();
+        setDraggable();
         break;
     case 'engine_font':
     case 'engine_spacing':
     case 'graph_aspect_ratio':
     case 'panel_adjust':
     case 'status_pv':
-        resize_panels();
+        resizePanels();
         break;
     case 'eval':
     case 'eval_left':
@@ -319,11 +315,11 @@ function change_setting_special(name, value, close) {
     case 'percent':
     case 'percent_width':
     case 'single_line':
-        resize_panels();
-        resize_game();
+        resizePanels();
+        resizeGame();
         break;
     case 'export_settings':
-        export_settings(Y['last_preset'] || 'tcec-settings');
+        exportSettings(Y['last_preset'] || 'tcec-settings');
         break;
     case 'game_960':
         pva.frc = ivalue;
@@ -341,7 +337,7 @@ function change_setting_special(name, value, close) {
         configure('e', svalue);
         break;
     case 'game_level':
-        configure_string(svalue);
+        configureString(svalue);
         break;
     case 'game_new_FEN':
     case 'game_new_game':
@@ -375,76 +371,76 @@ function change_setting_special(name, value, close) {
     case 'move_height_pv':
     case 'move_height_pva':
     case 'PV_height':
-        resize_move_lists();
+        resizeMoveLists();
         break;
     case 'hardware':
         resize();
         break;
     case 'hide':
-        hide_element(context_target);
+        hideElement(context_target);
         break;
     case 'import_settings':
         let json = ParseJSON(svalue);
         if (IsObject(json))
-            import_settings(json, true);
+            importSettings(json, true);
         break;
     case 'join_next':
-        tab_element(context_target);
+        tabElement(context_target);
         break;
     case 'live_log':
         if (Visible(CacheId('table-log')))
-            listen_log();
+            listenLog();
         break;
     case 'mobility':
-        update_visible();
+        updateVisible();
         break;
     case 'moves_copy':
-        populate_areas();
+        populateAreas();
         break;
     case 'network':
-        check_socket_io();
+        checkSocketIo();
         break;
     case 'preset':
-        load_preset(svalue);
-        save_option('last_preset', svalue);
+        loadPreset(svalue);
+        saveOption('last_preset', svalue);
         break;
     case 'shortcut_1':
     case 'shortcut_2':
     case 'shortcut_3':
-        update_shortcuts();
+        updateShortcuts();
         break;
     // refresh the Engine tab
     case 'SI_units':
     case 'small_decimal':
-        handle_board_events(main, 'ply', main.moves[main.ply]);
+        handleBoardEvents(main, 'ply', main.moves[main.ply]);
         break;
     case 'theme':
-        change_theme(svalue);
+        changeTheme(svalue);
         break;
     case 'twitch_chat':
     case 'twitch_dark':
     case 'twitch_video':
-        update_twitch();
+        updateTwitch();
         break;
     case 'unhide':
         Keys(context_areas).forEach(key => {
             context_areas[key][2] |= 1;
         });
-        populate_areas(true);
+        populateAreas(true);
         break;
     case 'use_for_arrow':
         for (let id of [2, 3])
-            save_option(`arrow_color_${id}`, Y[`graph_color_${id}`]);
+            saveOption(`arrow_color_${id}`, Y[`graph_color_${id}`]);
         break;
     default:
-        result = change_setting_game(name, value);
+        result = changeSettingGame(name, value);
     }
 
     // show custom colors
     if (name.includes('board_theme'))
-        show_custom_colors(name);
+        showCustomColors(name);
 
-    add_history();
+    addHistory();
     return !!result;
 }
 
@@ -453,10 +449,10 @@ function change_setting_special(name, value, close) {
  * - if we're in the archive, then also add the [theme]-archive.css
  * @param {string=} theme
  */
-function change_theme(theme) {
+function changeTheme(theme) {
     let def = THEMES[0];
     if (theme != undefined)
-        save_option('theme', theme || def);
+        saveOption('theme', theme || def);
 
     theme = Y['theme'] || '';
     let themes = [theme];
@@ -472,15 +468,15 @@ function change_theme(theme) {
 
     S(CacheId('theme0'), theme != def);
     S(CacheId('theme1'), theme == def);
-    update_theme(themes);
+    updateTheme(themes);
 }
 
 /**
  * Called whenever the page loads and whenever the hash changes
  * @param {!Object} dico
  */
-function check_hash_special(dico) {
-    check_stream();
+function checkHashSpecial(dico) {
+    checkStream();
 
     // handle a short url
     let archive_keys = ARCHIVE_KEYS.filter(key => dico[key] != undefined),
@@ -497,72 +493,72 @@ function check_hash_special(dico) {
     if (!['archive', 'live'].includes(section))
         section = 'live';
     hashes[section] = dico;
-    set_section(section);
-    Y.s = section;
+    setSection(section);
+    Z.s = section;
 
     let is_live = (section == 'live'),
         parent = CacheId('tables');
     Class(CacheId('nav-archive'), 'yellow', !is_live);
     Class(CacheId('nav-live'), 'red', is_live);
-    change_theme();
+    changeTheme();
 
-    populate_areas();
+    populateAreas();
     S('.tab[data-x="season"]', !is_live, parent);
     S('.tab[data-x="log"]', is_live, parent);
 
     Attrs('[data-x="sched"] i[data-t]', {'data-t': is_live? 'Schedule': 'Games'});
-    translate_nodes(CacheId('table-tabs'));
+    translateNodes(CacheId('table-tabs'));
 
     // changed section
     if (ready)
-        changed_hash();
+        changedHash();
 
     if (section != old_x) {
         old_x = section;
         if (old_x == 'live')
             Y['game'] = 0;
 
-        changed_section();
-        close_popups();
+        changedSection();
+        closePopups();
     }
 
     if (!ready)
-        activate_tabs();
+        activateTabs();
 }
 
 /**
  * Check stream settings
  */
-function check_stream() {
+function checkStream() {
     // stream.html => also activates stream=1
     if (location.pathname.includes('stream.html')) {
-        Y.stream = 1;
-        set_section('live');
-        Y.s = 'live';
+        Y['stream'] = 1;
+        setSection('live');
+        Z.s = 'live';
     }
 
-    let stream = Y.stream;
+    let stream = Y['stream'];
     if (stream == old_stream)
         return;
-    Y.stream = stream;
+    Y['stream'] = stream;
 
     if (!stream) {
-        clear_timeout('stream');
+        ClearTimeout('stream');
         return;
     }
 
-    load_preset('stream2');
+    loadPreset('stream2');
     Assign(Y, {
         'language': 'eng',
         'twitch_chat': 0,
         'twitch_video': 0,
     });
-    scroll_adjust('#overview');
+    scrollAdjust('#overview');
     Hide('.adblock, .google-ad');
 
     // alternate between shortcut_1/2/3
-    if (!timers['stream'])
-        add_timeout('stream', () => {
+    if (!timeouts['stream'])
+        AddTimeout('stream', () => {
             stream_click ++;
 
             let shortcuts = [1, 2, 3].map(id => _(`.tab[data-x="shortcut_${id}"]`)).filter(node => Visible(node)),
@@ -570,8 +566,8 @@ function check_stream() {
             if (target)
                 target.click();
 
-            if (!Y.stream)
-                clear_timeout('stream');
+            if (!Y['stream'])
+                ClearTimeout('stream');
         }, TIMEOUT_stream, true);
 }
 
@@ -601,7 +597,7 @@ function configure(name, value, only_color) {
         // create the command line
         let line = Keys(result).sort().map(key => `${key}=${result[key]}`).join(' '),
             node = _(`textarea[name="${key}"]`);
-        save_option(key, line);
+        saveOption(key, line);
         if (node)
             node.value = Y[key];
 
@@ -622,7 +618,7 @@ function configure(name, value, only_color) {
  * Configure a game preset
  * @param {string} name
  */
-function configure_string(name) {
+function configureString(name) {
     let level = LEVELS[name],
         options = level.split(' ');
 
@@ -633,7 +629,7 @@ function configure_string(name) {
                 input = _(`#modal [name="${key}"]`);
             if (input)
                 input.value = level;
-            save_option(key, level);
+            saveOption(key, level);
         }
 
     // other inputs
@@ -647,14 +643,14 @@ function configure_string(name) {
             value = items[1];
         if (input)
             input.value = value;
-        save_option(key, value);
+        saveOption(key, value);
     }
 }
 
 /**
  * Create the swap elements for each panel
  */
-function create_swaps() {
+function createSwaps() {
     let swaps = ['end|1', 'next|1', 'next', 'end', 'minus', 'plus'].map(svg => {
         let items = svg.split('|');
         return [
@@ -677,7 +673,7 @@ function create_swaps() {
             node = this.parentNode.parentNode;
         // 1, 2, 3, 4 => <<[-3] <[-1] >[1] >>[3]
         if (index <= 4)
-            move_pane(node, index * 2 - 5);
+            movePane(node, index * 2 - 5);
         // 5, 6 => -[-1] +[1]
         else if (index <= 6) {
             let add = index * 2 - 11,
@@ -692,10 +688,10 @@ function create_swaps() {
             else
                 value += add * 10;
 
-            save_option(name, Clamp(value, -1, 1200));
+            saveOption(name, Clamp(value, -1, 1200));
             TEXT(sizer, Y[name]);
             Show(sizer);
-            add_timeout('size', () => Hide('.size'), TIMEOUT_size);
+            AddTimeout('size', () => Hide('.size'), TIMEOUT_size);
             resize();
         }
         SP(e);
@@ -705,7 +701,7 @@ function create_swaps() {
 /**
  * Fix old settings
  */
-function fix_old_settings() {
+function fixOldSettings() {
     // 1) add missing panel
     let areas = Y['areas'],
         default_areas = DEFAULTS['areas'],
@@ -716,7 +712,7 @@ function fix_old_settings() {
     });
 
     // 2) insert "agree" somewhere if doesn't exist
-    let found = find_area('table-agree');
+    let found = findArea('table-agree');
     if (found.id < 0) {
         for (let key of Keys(areas)) {
             let id, prev,
@@ -741,9 +737,9 @@ function fix_old_settings() {
 
     // 3) insert shortcut_3 after shortcut_2
     let name = 'shortcut_3',
-        found3 = find_area(name);
+        found3 = findArea(name);
     if (found3.id < 0) {
-        let found = find_area('shortcut_2');
+        let found = findArea('shortcut_2');
         if (found.id >= 0) {
             let area = found.area,
                 vector = areas[found.key];
@@ -755,14 +751,14 @@ function fix_old_settings() {
     }
 
     if (populate && ready)
-        populate_areas();
+        populateAreas();
 
     // 4) move height from em => px
     // - guess, min height is 39px normally, so anything under that = old setting, but will miss values over
     Keys(Y).filter(key => key.slice(0, 11) == 'move_height').forEach(key => {
         let value = Y[key];
         if (value < 39)
-            save_option(key, Floor(value * 26) / 2);
+            saveOption(key, Floor(value * 26) / 2);
     });
 }
 
@@ -770,12 +766,12 @@ function fix_old_settings() {
  * Handle a drop event
  * @param {Event} e
  */
-function handle_drop(e) {
+function handleDrop(e) {
     if (!Y['drag_and_drop'])
         return;
-    add_history();
+    addHistory();
 
-    let child = get_drop_id(e.target).node;
+    let child = getDropId(e.target).node;
     if (!child)
         return;
 
@@ -796,7 +792,7 @@ function handle_drop(e) {
     if (parent && drag_source != child) {
         let next,
             parent_areas = new Set([
-                get_area(drag_source).id,
+                getArea(drag_source).id,
                 parent.id,
             ]),
             prev_source = drag_source.previousElementSibling,
@@ -841,21 +837,21 @@ function handle_drop(e) {
                 return [child.id, context_area[1] || 0, Undefined(context_area[2], 1)];
             });
 
-        populate_areas();
+        populateAreas();
     }
 
-    set_draggable();
+    setDraggable();
     SP(e);
     PD(e);
-    add_history();
+    addHistory();
 }
 
 /**
  * Which elements should be hidden dynamically?
- * - used at the start of populate_areas
+ * - used at the start of populateAreas
  * @param {!Object} hides
  */
-function hide_areas(hides) {
+function hideAreas(hides) {
     if (!Y['moves_copy'])
         hides[`moves-${y_x}`] = 1;
 }
@@ -863,9 +859,9 @@ function hide_areas(hides) {
 /**
  * Happens after the settings are imported
  */
-function import_settings_special() {
-    fix_old_settings();
-    activate_tabs();
+function importSettingsSpecial() {
+    fixOldSettings();
+    activateTabs();
     resize();
 }
 
@@ -873,24 +869,24 @@ function import_settings_special() {
  * Init custom settings
  * @param {boolean=} initial
  */
-function init_customs(initial) {
-    add_timeout('twitch', update_twitch, initial? TIMEOUT_twitch: 0);
-    change_theme();
-    resize_move_lists();
-    show_live_engines();
-    set_draggable();
-    populate_areas();
-    update_board_theme(7);
-    update_background();
+function initCustoms(initial) {
+    AddTimeout('twitch', updateTwitch, initial? TIMEOUT_twitch: 0);
+    changeTheme();
+    resizeMoveLists();
+    showLiveEngines();
+    setDraggable();
+    populateAreas();
+    updateBoardTheme(7);
+    updateBackground();
 }
 
 /**
  * Ran once at the last initialisation step
  */
-function init_globals() {
-    changed_hash();
-    api_translate_get(Y.new_version, resize);
-    check_socket_io();
+function initGlobals() {
+    changedHash();
+    apiTranslateGet(Z.new_version, resize);
+    checkSocketIo();
 
     TEXT(CacheId('version'), VERSION);
     HTML(CacheId('champions'), CHAMPIONS.map(text => {
@@ -899,57 +895,57 @@ function init_globals() {
     }).join(' | '));
 
     // load local data directly, and later online data
-    download_tables(true);
-    download_tables(false, 2);
-    add_timeout('tables', () => download_tables(false, 1), TIMEOUT_tables);
+    downloadTables(true);
+    downloadTables(false, 2);
+    AddTimeout('tables', () => downloadTables(false, 1), TIMEOUT_tables);
 
     // delayed loading
-    show_banner();
-    update_twitch(null, null, true);
+    showBanner();
+    updateTwitch(null, null, true);
     if (y_three)
-        add_timeout('three', () => set_3d_scene, TIMEOUT_three);
+        AddTimeout('three', () => set3dScene, TIMEOUT_three);
 
     // google ads
-    if (!Y.no_ad && !DEV['ad'] && !LOCALHOST) {
-        add_timeout('adblock', () => {
+    if (!DEV['ad'] && !LOCALHOST) {
+        AddTimeout('adblock', () => {
             if (_('.google-ad').clientHeight <= 0) {
                 HTML('.adblock', HTML(CacheId('adblock')));
                 Show('.adblock');
             }
         }, TIMEOUT_adblock);
 
-        add_timeout('ad', insert_google_ads, TIMEOUT_google_ad);
+        AddTimeout('ad', insertGoogleAds, TIMEOUT_google_ad);
     }
-    // load_google_analytics();
+    // loadGoogleAnalytics();
 
     // font size detector
-    add_timeout('font', () => {
+    AddTimeout('font', () => {
         let font_height = SafeId('text').offsetHeight;
         if (font_height != old_font_height || window.innerHeight != old_window_height)
             resize();
 
-        if (Y.stream)
-            ScrollDocument(CacheId('overview'));
+        if (Y['stream'])
+            ScrollDocument(node_overview);
     }, TIMEOUT_font, true);
 
     // suspend/resume
-    add_timeout('resume', () => {
+    AddTimeout('resume', () => {
         let now = Now(),
             diff = now - resume_time;
         if (diff * 1000 > TIMEOUT_resume * 3)
-            resume_sleep(resume_time);
+            resumeSleep(resume_time);
         resume_time = now;
     }, TIMEOUT_resume, true);
 
     if (ready == 1)
-        create_swaps();
+        createSwaps();
 }
 
 /**
  * Insert one google ad
  * @param {number} id
  */
-function insert_google_ad(id) {
+function insertGoogleAd(id) {
     let [suffix, width, height] = [
             [9, 252, 210],
             [2021, 438, 250],
@@ -974,17 +970,17 @@ function insert_google_ad(id) {
 /**
  * Insert google ads after some time
  */
-function insert_google_ads() {
-    insert_google_ad(0);
-    insert_google_ad(1);
+function insertGoogleAds() {
+    insertGoogleAd(0);
+    insertGoogleAd(1);
 
-    // load_library('//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', null, {async: ''});
+    // loadLibrary('//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', null, {async: ''});
 }
 
 /**
  * Load Google Analytics library
  */
-function load_google_analytics() {
+function loadGoogleAnalytics() {
     window._gaq = window._gaq || [];
     window._gaq.push(
         ['_setAccount', 'UA-37458566-1'],
@@ -993,7 +989,7 @@ function load_google_analytics() {
         ['b._trackPageview']
     );
 
-    load_library(('https:' == location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js');
+    loadLibrary(('https:' == location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js');
 }
 
 /**
@@ -1002,18 +998,18 @@ function load_google_analytics() {
  * @param {string} name
  * @param {Node} tab
  */
-function opened_table_special(node, name, tab) {
+function openedTableSpecial(node, name, tab) {
     if (['chat', 'information', 'winner'].includes(name))
-        update_twitch(null, null, true);
+        updateTwitch(null, null, true);
 }
 
 /**
- * Called after populate_areas
+ * Called after populateAreas
  */
-function populate_areas_special() {
-    show_archive_live();
-    update_shortcuts();
-    add_timeout('populate', resize, 100);
+function populateAreasSpecial() {
+    showArchiveLive();
+    updateShortcuts();
+    AddTimeout('populate', resize, 100);
 }
 
 /**
@@ -1021,27 +1017,28 @@ function populate_areas_special() {
  * - except if #seen=1, or if in the archive
  * @param {boolean=} force
  */
-function quick_setup(force) {
-    let old = Y.new_version;
-    if (!force && (old == undefined || old >= '20210109e' || Y.seen || y_x == 'archive' || Y.stream))
+function quickSetup(force) {
+    let old = Z.new_version;
+    if (!force && (old == undefined || old >= '20210109e' || Y['seen'] || y_x == 'archive' || Y['stream']))
         return;
-    activate_tabs();
-    show_popup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
+    activateTabs();
+    showPopup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
+    saveOption('seen', 1);
 }
 
 /**
  * Reset to the default/other settings
  * @param {boolean=} is_default
  */
-function reset_settings_special(is_default) {
+function resetSettingsSpecial(is_default) {
     if (is_default) {
-        load_settings();
-        check_hash();
-        init_globals();
+        loadSettings();
+        checkHash();
+        initGlobals();
     }
 
-    init_customs();
-    close_popups();
+    initCustoms();
+    closePopups();
     resize();
 }
 
@@ -1072,8 +1069,8 @@ function resize() {
     Style('#chat, #chat2', [['height', `${chat_height}px`], ['width', '100%']]);
 
     // 4) resize panels + stats
-    resize_panels();
-    resize_table('stats');
+    resizePanels();
+    resizeTable('stats');
 
     // 5) resize charts
     E('.chart', node => {
@@ -1084,11 +1081,11 @@ function resize() {
     });
 
     if (Visible('#table-brak'))
-        resize_bracket();
+        resizeBracket();
 
     // 6) resize game
-    adjust_popups();
-    show_board_info(y_x, 1);
+    adjustPopups();
+    showBoardInfo(y_x, 1);
 
     old_font_height = SafeId('text').offsetHeight;
     old_window_height = window.innerHeight;
@@ -1097,8 +1094,8 @@ function resize() {
 /**
  * Resize the left & right panels
  */
-function resize_panels() {
-    update_visible();
+function resizePanels() {
+    updateVisible();
 
     // panel full + width
     let panel_gap = Y['panel_gap'],
@@ -1136,12 +1133,12 @@ function resize_panels() {
     let node = CacheId('engine');
     if (node) {
         Attrs(CacheId('eval'), {'data-t': (node.clientWidth > 330)? 'Evaluation': 'Eval'});
-        translate_nodes(node);
+        translateNodes(node);
     }
 
     // column/row mode
     E('.status', node => {
-        let area = get_area(node);
+        let area = getArea(node);
         Style(node, [['margin-bottom', '1em'], ['margin-top', 0]], area.clientWidth < 390);
     });
     Keys(xboards).forEach(key => {
@@ -1149,24 +1146,24 @@ function resize_panels() {
         if (!board.sub || board.manual)
             return;
         let node = board.node,
-            area_width = get_area(node).clientWidth;
+            area_width = getArea(node).clientWidth;
         Class(board.xmoves, 'column', area_width < 390);
         Class(node, 'fcol', area_width >= 390);
     });
     E('#table-kibitz, #table-pv', node => {
-        let area = get_area(node);
+        let area = getArea(node);
         Class(node, 'frow fastart', area.clientWidth >= 390);
     });
 
-    order_boards();
-    resize_move_lists();
+    orderBoards();
+    resizeMoveLists();
 
     Style(CacheId('engine'), [['font-size', `${Y['engine_font']}px`]]);
     Style('#engine > div', `padding:${Y['engine_spacing']}em`);
 
     // resize all charts
     E('.chart', node => {
-        let area = get_area(node);
+        let area = getArea(node);
         if (area && !['bottom', 'top'].includes(area.id)) {
             let width = area.clientWidth;
             Style(node, [['height', `${width / Max(0.5, Y['graph_aspect_ratio'])}px`], ['width', `${width}px`]]);
@@ -1180,28 +1177,28 @@ function resize_panels() {
  * + start the 3d engine if on
  * @param {boolean} three
  */
-function set_3d_scene(three) {
+function set3dScene(three) {
     if (three != undefined)
-        save_option('three', three);
+        saveOption('three', three);
 
     Style(CacheId('three'), [['color', y_three? '#fff': '#555']]);
     S(CacheId('canvas'), y_three);
     if (three)
-        start_3d();
+        start3d();
 }
 /**
  *
  * Show the About popup
  */
-function show_about() {
+function showAbout() {
     HTML(CacheId('popup-desc'), HTML(CacheId('desc')));
-    show_popup('about', true, {center: true, html: HTML(CacheId('about')), overlay: 1});
+    showPopup('about', true, {center: true, html: HTML(CacheId('about')), overlay: 1});
 }
 
 /**
  * Show / hide the archive/live boards
  */
-function show_archive_live() {
+function showArchiveLive() {
     let section = y_x,
         is_live = (section == 'live');
 
@@ -1215,11 +1212,10 @@ function show_archive_live() {
  * Show/hide custom white & black
  * @param {string} name
  */
-function show_custom_colors(name) {
-    let modal = CacheId('modal'),
-        show = (Y[name] == 'custom');
+function showCustomColors(name) {
+    let show = (Y[name] == 'custom');
     for (let color of WB_LOWER) {
-        let node = _(`[data-t="Custom ${color}"]`, modal);
+        let node = _(`[data-t="Custom ${color}"]`, node_modal);
         if (!node)
             continue;
         node = node.parentNode;
@@ -1231,7 +1227,7 @@ function show_custom_colors(name) {
 /**
  * Show live engines
  */
-function show_live_engines() {
+function showLiveEngines() {
     let main = xboards[y_x],
         players = main.players,
         single_line = Y['single_line'];
@@ -1251,8 +1247,8 @@ function show_live_engines() {
  * Add a drag element to a tab group
  * @param {Node} target
  */
-function tab_element(target) {
-    let id = get_drop_id(target).id,
+function tabElement(target) {
+    let id = getDropId(target).id,
         areas = Y['areas'];
     if (id == null)
         return;
@@ -1267,13 +1263,13 @@ function tab_element(target) {
             }
     });
 
-    populate_areas();
+    populateAreas();
 }
 
 /**
  * Update the background
  */
-function update_background() {
+function updateBackground() {
     let node = CacheId('background');
     if (!node)
         return;
@@ -1295,7 +1291,7 @@ function update_background() {
  * - copy the table html
  * TODO: delete this
  */
-function update_shortcuts() {
+function updateShortcuts() {
     let names = new Set();
 
     for (let id = 1; id <= 3; id ++) {
@@ -1311,7 +1307,7 @@ function update_shortcuts() {
             if (target) {
                 let name = target.dataset['t'];
                 tab.dataset['t'] = SHORTCUT_NAMES[name] || name;
-                translate_nodes(tab.parentNode);
+                translateNodes(tab.parentNode);
                 let node = CacheId(`shortcut_${id}`),
                     table = CacheId(`table-${shortcut}`);
 
@@ -1325,13 +1321,13 @@ function update_shortcuts() {
 
     // resize
     for (let name of names)
-        resize_table(name);
+        resizeTable(name);
 }
 
 /**
  * Show/hide stuff
  */
-function update_visible() {
+function updateVisible() {
     let eval_left = Y['eval_left'],
         hardware = Y['hardware'],
         single_line = Y['single_line'],
@@ -1355,7 +1351,7 @@ function update_visible() {
     S('#moves-pv0 .live-pv, #moves-pv1 .live-pv, #table-live0 .live-pv, #table-live1 .live-pv', Y['moves_live']);
     S('#mobil_, #mobil0, #mobil1', Y['mobility']);
 
-    show_live_engines();
+    showLiveEngines();
 }
 
 /**
@@ -1363,11 +1359,11 @@ function update_visible() {
  * @param {!Object} dataset
  * @returns {number} 0:nothing, 1:return
  */
-function window_click_dataset(dataset) {
+function windowClickDataset(dataset) {
     let id = dataset['id'];
     switch (id) {
     case 'about':
-        show_about();
+        showAbout();
         return 1;
     case 'load_pgn':
         let file = CacheId('file');
@@ -1385,7 +1381,7 @@ function window_click_dataset(dataset) {
  * @param {boolean} is_click
  * @returns {number} 0:nothing, 1:return, 2:break
  */
-function window_click_parent(parent, is_click) {
+function windowClickParent(parent, is_click) {
     if (HasClass(parent, 'fen'))
         return 1;
     if (HasClasses(parent, 'live-pv|xmoves'))
@@ -1395,7 +1391,7 @@ function window_click_parent(parent, is_click) {
         if (HasClass(parent, 'popup-close'))
             return 2;
         if (HasClass(parent, 'tab')) {
-            open_table(parent, true);
+            openTable(parent, true);
             return 2;
         }
     }
@@ -1407,10 +1403,10 @@ function window_click_parent(parent, is_click) {
  * @param {!Object} dataset
  * @returns {number} 0:nothing, 1:return, 2:break
  */
-function window_click_parent_dataset(dataset) {
+function windowClickParentDataset(dataset) {
     let seek = dataset['seek'];
     if (seek) {
-        show_filtered_games(seek);
+        showFilteredGames(seek);
         return 1;
     }
     return 0;
@@ -1422,31 +1418,30 @@ function window_click_parent_dataset(dataset) {
 /**
  * Happens after a popup is displayed
  */
-function set_modal_events_special() {
-    let modal = CacheId('modal'),
-        node = _('[data-t="Board theme"]', modal);
+function setModalEventsSpecial() {
+    let node = _('[data-t="Board theme"]', node_modal);
     if (!node)
         return;
     node = _('select', node.parentNode.nextElementSibling);
     if (node)
-        show_custom_colors(node.name);
+        showCustomColors(node.name);
 }
 
 /**
  * Global events
  */
-function set_global_events() {
+function setGlobalEvents() {
     // general
     Events(window, 'resize', resize);
-    Events(window, 'scroll', adjust_popups);
+    Events(window, 'scroll', adjustPopups);
     // it won't be triggered by pushState and replaceState
-    Events(window, 'hashchange', () => check_hash());
+    Events(window, 'hashchange', () => checkHash());
     Events(window, 'popstate', e => {
         let state = e.state;
         if (!state)
             return;
         Assign(Y, state);
-        check_hash_special(state);
+        checkHashSpecial(state);
     });
 
     // keys
@@ -1460,7 +1455,7 @@ function set_global_events() {
         if (!code)
             return;
         if (type == 'keydown')
-            action_key(code);
+            actionKey(code);
 
         // ignore keys when on inputs, except ENTER & TAB
         if (active && {INPUT: 1, TEXTAREA: 1}[active.tagName])
@@ -1468,28 +1463,28 @@ function set_global_events() {
 
         if (type == 'keydown') {
             if (is_game)
-                okay = game_action_key(code);
+                okay = gameActionKey(code);
             else
-                okay = action_key_no_input(code, active);
+                okay = actionKeyNoInput(code, active);
             if (!KEYS[code])
-                KEY_TIMES[code] = Now(true);
+                KEY_TIMES[code] = Now(1);
             KEYS[code] = 1;
         }
         else {
             if (is_game)
-                okay = game_action_keyup(code);
+                okay = gameActionKeyup(code);
             else
-                okay = action_keyup_no_input(code);
+                okay = actionKeyupNoInput(code);
             KEYS[code] = 0;
             if (change_queue)
-                change_setting(change_queue[0], change_queue[1], change_queue[2]);
+                changeSetting(change_queue[0], change_queue[1], change_queue[2]);
         }
 
         // prevent some default actions
         if ([9, 112].includes(code) || okay === false)
             PD(e);
 
-        update_debug();
+        updateDebug();
     });
 
     // popups
@@ -1498,20 +1493,20 @@ function set_global_events() {
     });
     C('#articles, #download, #info, #navigate, #options', function() {
         if (SafeId('modal').dataset['id'] == this.id)
-            show_popup('');
+            showPopup('');
         else
-            show_popup(this.id, 'toggle', {id: this.id});
+            showPopup(this.id, 'toggle', {id: this.id});
     });
-    C('#overlay', () => close_popups());
+    C('#overlay', () => closePopups());
 
     // click somewhere => close the popups
-    Events(window, 'click touchstart', window_click);
+    Events(window, 'click touchstart', windowClick);
 
     C('.pages', e => {
         let target = e.target;
         if (HasClass(target, 'page')) {
             let parent = Parent(target, {class_: 'pagin'});
-            change_page(parent.id.split('-')[0], target.dataset['p']);
+            changePage(parent.id.split('-')[0], target.dataset['p']);
         }
         SP(e);
     });
@@ -1524,19 +1519,19 @@ function set_global_events() {
 
     // theme + twitch
     C('#theme0, #theme1', function() {
-        change_theme((this.id.slice(-1) == '1')? 'dark': 'light');
+        changeTheme((this.id.slice(-1) == '1')? 'dark': 'light');
     });
     C('#twitch0, #twitch1', function() {
-        update_twitch((this.id.slice(-1) == '1') * 1);
+        updateTwitch((this.id.slice(-1) == '1') * 1);
     });
     C('#hide-chat, #hide-video, #show-chat, #show-video', function() {
         let [left, right] = this.id.split('-');
-        save_option(`twitch_${right}`, (left == 'show') * 1);
-        update_twitch();
+        saveOption(`twitch_${right}`, (left == 'show') * 1);
+        updateTwitch();
     });
-    C('#three', () => set_3d_scene(!y_three));
+    C('#three', () => set3dScene(!y_three));
     C('#full0, #full1', () => {
-        toggle_fullscreen(full => {
+        toggleFullscreen(full => {
             S(CacheId('full0'), full);
             S(CacheId('full1'), !full);
             resize();
@@ -1546,7 +1541,7 @@ function set_global_events() {
     // context menus
     Keys(CONTEXT_MENUS).forEach(key => {
         Events(key, 'contextmenu', function(e) {
-            if (cannot_popup())
+            if (cannotPopup())
                 return;
             context_target = e.target;
 
@@ -1557,14 +1552,14 @@ function set_global_events() {
             if (tag == 'A' && context_target.href)
                 return;
 
-            show_popup('options', true, {setting: CONTEXT_MENUS[key], xy: [e.clientX, e.clientY]});
+            showPopup('options', true, {setting: CONTEXT_MENUS[key], xy: [e.clientX, e.clientY]});
             PD(e);
         });
     });
     Events(
         '#archive, #live, #live0, #live1, #moves-archive, #moves-live, #moves-pv0, #moves-pv1, #pv0, #pv1, #pva,'
         + '#table-live0, #table-live1', 'contextmenu', function(e) {
-        if (cannot_popup())
+        if (cannotPopup())
             return;
         let is_pv = '01'.includes(this.id.slice(-1)),
             is_pva = (this.id == 'pva'),
@@ -1590,7 +1585,7 @@ function set_global_events() {
 
             if (name) {
                 context_target = target;
-                show_popup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
+                showPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
                 PD(e);
                 return;
             }
@@ -1598,14 +1593,14 @@ function set_global_events() {
         }
     });
     Events(window, 'contextmenu', e => {
-        if (cannot_popup())
+        if (cannotPopup())
             return;
         let node = e.target;
         if (HasClasses(node, 'tab drop')) {
             let id = node.dataset['x'],
                 name = (id.includes('shortcut') || id.includes('chat'))? 'quick': 'tab';
             context_target = node;
-            show_popup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
+            showPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
             PD(e);
         }
     });
@@ -1627,14 +1622,14 @@ function set_global_events() {
 
                 Y[id] = result;
                 if (save)
-                    save_option(id, result);
+                    saveOption(id, result);
 
                 if (!Y[sopacity]) {
                     Y[sopacity] = 0.2;
                     if (save)
-                        save_option(sopacity);
+                        saveOption(sopacity);
                 }
-                update_background();
+                updateBackground();
             };
             return;
         }
@@ -1644,21 +1639,21 @@ function set_global_events() {
             let data = /** @type {string} */(reader.result);
             switch (id) {
                 case 'import_settings':
-                    change_setting(id, data);
-                    save_option('last_preset', file.name.split('.').slice(0, -1).join('.'));
+                    changeSetting(id, data);
+                    saveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
                     break;
                 case 'language':
                     let json = ParseJSON(data);
                     if (IsObject(json))
-                        api_translate_get(false, undefined, /** @type {!Object} */(json));
+                        apiTranslateGet(false, undefined, /** @type {!Object} */(json));
                     break;
                 case 'load_pgn':
                     let new_section = 'archive';
-                    if (update_pgn(new_section, data)) {
+                    if (updatePgn(new_section, data)) {
                         Y.scroll = '#overview';
-                        set_section(new_section);
-                        Y.s = new_section;
-                        check_hash_special({x: new_section});
+                        setSection(new_section);
+                        Z.s = new_section;
+                        checkHashSpecial({x: new_section});
                     }
                     break;
                 }
@@ -1666,8 +1661,8 @@ function set_global_events() {
     });
 
     // extra events
-    set_drag_events(handle_drop);
-    set_fullscreen_events();
+    setDragEvents(handleDrop);
+    setFullscreenEvents();
 }
 
 // MAIN
@@ -1676,25 +1671,24 @@ function set_global_events() {
 /**
  * Load settings from Local Storage
  */
-function load_settings() {
-    load_defaults();
+function loadSettings() {
+    loadDefaults();
     Y['preset'] = 'custom';
-    reset_old_settings(VERSION);
-    fix_old_settings();
+    resetOldSettings(VERSION);
+    fixOldSettings();
 
-    api_times = get_object('times') || {};
-    translates = get_object('trans') || {};
+    api_times = getObject('times') || {};
+    translates = getObject('trans') || {};
 }
 
 /**
  * Prepare combined settings
  */
-function prepare_settings() {
+function prepareSettings() {
     // globals
-    Y.no_ad = 0;
     Y.scroll = 0;
     y_three = 0;
-    set_section('live');
+    setSection('live');
 
     let DEFAULT_NO_IMPORTS = {
         'div': '',                          // archive link
@@ -1760,7 +1754,7 @@ function prepare_settings() {
         'twitch_dark': 0,
         'version': '0',
     });
-    guess_types(DEFAULTS);
+    guessTypes(DEFAULTS);
 
     Assign(DEV_NAMES, {
         'a': 'arrow',
@@ -1779,7 +1773,7 @@ function prepare_settings() {
         'h': 'hold',                    // hold button
         'i': 'input',                   // gamepad input
         'j': 'json',                    // static json files
-        'l': 'log',                     // analyse_log
+        'l': 'log',                     // analyseLog
         'L': 'load',
         'm': 'mobil',
         'o': 'open',
@@ -1825,8 +1819,6 @@ function prepare_settings() {
         'import_settings': 2,
         'language': 1,
         'last_preset': 1,
-        'new_version': 1,
-        'no_ad': 1,
         'preset': 1,
         's': 1,
         'twitch_chat': 1,
@@ -1871,6 +1863,10 @@ function prepare_settings() {
         'UI': '<a href="https://github.com/TCEC-Chess/tcecgui" target="_blank">UI</a>',
     });
 
+    Assign(Z, {
+        title_add: ' options',
+    });
+
     // settings
     let agree_length = [ON_OFF, 1, 'show how many plies are in agreement between 2 players / kibitzers'],
         analyses = [{list: ['lichess', 'chessdb', 'evalguide=eguide'], type: 'list'}],
@@ -1892,7 +1888,7 @@ function prepare_settings() {
         shortcuts = [...['off'], ...[...Keys(TABLES).filter(table => table != 'overview'), ...['stats']].sort()],
         show_plies = [['first', 'diverging', 'last'], 'diverging'];
 
-    merge_settings({
+    mergeSettings({
         // new column after 10 items
         '_split': 11,
         'general': {
@@ -1908,7 +1904,7 @@ function prepare_settings() {
         'audio': {
             'silent_mode': [ON_OFF, 0],
             'audio_book': [ON_OFF, 1, 'opening moves from the book'],
-            'audio_delay': option_number(150, 0, 2000, 1, {}, 'audio delay when animation speed is 500ms'),
+            'audio_delay': optionNumber(150, 0, 2000, 1, {}, 'audio delay when animation speed is 500ms'),
             'audio_live_archive': [ON_OFF, 0, 'when in the archive, hear a sound when a Live move was played'],
             'audio_moves': [
                 ['none', 'all', 'last'], 'all',
@@ -1916,7 +1912,7 @@ function prepare_settings() {
             ],
             'audio_pva': [ON_OFF, 1, 'sound in PVA board'],
             'audio_set': [['custom', bamboo, 'kan'], 'custom'],
-            'capture_delay': option_number(-200, -1000, 1000, 1, {}, 'capture delay when animation speed is 500ms'),
+            'capture_delay': optionNumber(-200, -1000, 1000, 1, {}, 'capture delay when animation speed is 500ms'),
             'sound_capture': [['off', `${bamboo2}capture`, 'kan - capture', old], `${bamboo2}capture`],
             'sound_check': [['off', `${bamboo2}check`, old], `${bamboo2}check`],
             'sound_checkmate': [['off', `${bamboo2}checkmate`, old], `${bamboo2}checkmate`],
@@ -1924,16 +1920,16 @@ function prepare_settings() {
             'sound_move': [['off', `${bamboo2}move`, 'kan - move', old], `${bamboo2}move`, 'a non-pawn piece moved'],
             'sound_move_pawn': [['off', `${bamboo2}pawn`, 'kan - move', old], `${bamboo2}pawn`, 'a pawn moved'],
             'sound_win': [['off', 'draw', 'win'], 'win'],
-            'volume': option_number(10, 0, 20, 0.5, {}, HELP_VOLUME),
+            'volume': optionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
         },
         'video': {
             'background_color': [{type: 'color'}, '#000000'],
             'background_image': [{type: 'link'}, ''],
-            'background_opacity': option_number(0, 0, 1, 0.01, {}, HELP_OPACITY),
+            'background_opacity': optionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
             'background_reset': '1',
             'encoding': [['Gamma', 'Linear', 'sRGB'], 'sRGB', '3D'],
-            'exposure': option_number(1, 0.1, 10, 0.1, {}, '3D'),
-            'gamma': option_number(1.5, 0, 10, 0.1, {}, '3D'),
+            'exposure': optionNumber(1, 0.1, 10, 0.1, {}, '3D'),
+            'gamma': optionNumber(1.5, 0, 10, 0.1, {}, '3D'),
             'lighting': [['low', 'medium', 'high'], 'high', '3D'],
             'resolution': [['1:4', '1:3', '1:2', '1:1'], '1:2', '3D'],
             'shadow': [Keys(SHADOW_QUALITIES), 'high', '3D'],
@@ -1943,13 +1939,13 @@ function prepare_settings() {
         '_1': {},
         'arrow': {
             '_prefix': 'arrow_',
-            'arrow_base_border': option_number(0, 0, 5, 0.01),
+            'arrow_base_border': optionNumber(0, 0, 5, 0.01),
             'arrow_base_color': {
                 '_multi': 2,
                 'arrow_base_color': [{type: 'color'}, '#a5a5a5'],
-                'arrow_base_mix': option_number(0.7, 0, 1, 0.01, {}, 'mix'),
+                'arrow_base_mix': optionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
             },
-            'arrow_base_size': option_number(2.05, 0, 5, 0.05),
+            'arrow_base_size': optionNumber(2.05, 0, 5, 0.05),
             'color_01': {
                 '_label': '{Color} 0, 1',
                 '_multi': 2,
@@ -1972,19 +1968,19 @@ function prepare_settings() {
                 'arrow_color_23': [{type: 'color'}, '#007700', '{blue} + {red}'],
             },
             'arrow_from': [['none', 'all', 'kibitzer', 'player'], 'all'],
-            'arrow_from_opponent': option_number(0.6, 0, 1, 0.01, {}, 'show the ponder move'),
-            'arrow_head_border': option_number(0.5, 0, 5, 0.01),
+            'arrow_from_opponent': optionNumber(0.6, 0, 1, 0.01, {}, 'show the ponder move'),
+            'arrow_head_border': optionNumber(0.5, 0, 5, 0.01),
             'arrow_head_color': {
                 '_multi': 2,
                 'arrow_head_color': [{type: 'color'}, '#a5a5a5'],
-                'arrow_head_mix': option_number(0.7, 0, 1, 0.01, {}, 'mix'),
+                'arrow_head_mix': optionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
             },
-            'arrow_head_size': option_number(2.05, 0, 5, 0.05),
+            'arrow_head_size': optionNumber(2.05, 0, 5, 0.05),
             'arrow_history_lag':
-                option_number(1300, 0, 5000, 1, {}, 'when checking past moves, wait a bit before showing the arrow'),
+                optionNumber(1300, 0, 5000, 1, {}, 'when checking past moves, wait a bit before showing the arrow'),
             'arrow_moves': [['all', 'last'], 'all', 'show arrow for all moves or only the last move'],
-            'arrow_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
-            'arrow_width': option_number(1.6, 0, 5, 0.01),
+            'arrow_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+            'arrow_width': optionNumber(1.6, 0, 5, 0.01),
         },
         'board': {
             'analysis': analyses,
@@ -1992,8 +1988,8 @@ function prepare_settings() {
             'animation_speed': {
                 '_multi': 2,
                 '_title': 'how fast pieces can move, in ms\nspeed is adjusted between min and max',
-                'smooth_min': option_number(250, 0, 2000, 10, {}, HELP_MIN),
-                'smooth_max': option_number(500, 0, 2000, 10, {}, HELP_MAX),
+                'smooth_min': optionNumber(250, 0, 2000, 10, {}, HELP_MIN),
+                'smooth_max': optionNumber(500, 0, 2000, 10, {}, HELP_MAX),
             },
             'arrow': '',
             'board_theme': [Keys(BOARD_THEMES), 'chess24'],
@@ -2009,8 +2005,8 @@ function prepare_settings() {
             'copy': copy_download,
             'draw_right_click': [ON_OFF, 0, 'use right click to draw on the board'],
             'highlight_color': [{type: 'color'}, '#ffff00'],
-            'highlight_delay': option_number(0, -100, 1500, 100),
-            'highlight_size': option_number(0.055, 0, 0.4, 0.001),
+            'highlight_delay': optionNumber(0, -100, 1500, 100),
+            'highlight_size': optionNumber(0.055, 0, 0.4, 0.001),
             'notation': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme': [Keys(PIECE_THEMES), 'chess24'],
             'status': [AUTO_ON_OFF, 'auto', 'status bar\nauto: on when engine tab is not visible'],
@@ -2031,10 +2027,10 @@ function prepare_settings() {
             'controls_pv': [ON_OFF, 1, HELP_CONTROLS],
             'copy': copy_download,
             'highlight_color_pv': [{type: 'color'}, '#ffff00'],
-            'highlight_size_pv': option_number(0.088, 0, 0.4, 0.001),
+            'highlight_size_pv': optionNumber(0.088, 0, 0.4, 0.001),
             'notation_pv': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme_pv': [Keys(PIECE_THEMES), 'chess24'],
-            // 'show_delay': option_number(100, 0, 2000, 10),
+            // 'show_delay': optionNumber(100, 0, 2000, 10),
             'show_ply': show_plies,
             'status_pv': [ON_OFF, 1, 'status bar'],
         },
@@ -2053,68 +2049,68 @@ function prepare_settings() {
             },
             'controls_pva': [ON_OFF, 1, HELP_CONTROLS],
             'highlight_color_pva': [{type: 'color'}, '#ffff00'],
-            'highlight_size_pva': option_number(0.055, 0, 0.4, 0.001),
+            'highlight_size_pva': optionNumber(0.055, 0, 0.4, 0.001),
             'notation_pva': [ON_OFF, 1, HELP_NOTATION],
             'piece_theme_pva': [Keys(PIECE_THEMES), 'chess24'],
             'source_color': {
                 '_multi': 2,
                 '_title': 'color of the clicked piece',
                 'source_color': [{type: 'color'}, '#ffb400'],
-                'source_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+                'source_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
             },
             'status_pva': [ON_OFF, 1, 'status bar'],
             'target_color': {
                 '_multi': 2,
                 '_title': 'show legal squares that the piece can occupy',
                 'target_color': [{type: 'color'}, '#ff5a00'],
-                'target_opacity': option_number(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+                'target_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
             },
             'turn_color': {
                 '_multi': 2,
                 '_title': 'show pieces that are allowed to move',
                 'turn_color': [{type: 'color'}, '#ff5a00'],
-                'turn_opacity': option_number(0, 0, 1, 0.01, {}, HELP_OPACITY),
+                'turn_opacity': optionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
             },
         },
         'boom': {
             'disable_everything': [ON_OFF, 0],
-            'every': option_number(30, 0, 1800, 0.5, {}, 'no more than 1 sound every X seconds, -1 to disable sounds'),
+            'every': optionNumber(30, 0, 1800, 0.5, {}, 'no more than 1 sound every X seconds, -1 to disable sounds'),
             'boom_sound': [boom_sounds, 0],
-            'boom_threshold': option_number(1.2, 0, 10, 0.05, {}, 'threshold to exceed in graph scale => boom'),
+            'boom_threshold': optionNumber(1.2, 0, 10, 0.05, {}, 'threshold to exceed in graph scale => boom'),
             'boom_visual': [boom_visuals, 0],
-            'boom_volume': option_number(3.5, 0, 20, 0.5, {}, 'maximum volume'),
+            'boom_volume': optionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
             'moob_sound': [['off', 'random', 'moob', 'moob2', 'moob3'], 0],
             'moob_visual': [ON_OFF, 0],
-            'moob_volume': option_number(3.5, 0, 20, 0.5, {}, 'maximum volume'),
-            'explosion_buildup': option_number(2, 0, 10, 1, {}, 'need to exceed the threshold for X plies'),
-            'explosion_ply_reset': option_number(8, 0, 100, 1, {}, 'reactivate after X plies under threshold'),
+            'moob_volume': optionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
+            'explosion_buildup': optionNumber(2, 0, 10, 1, {}, 'need to exceed the threshold for X plies'),
+            'explosion_ply_reset': optionNumber(8, 0, 100, 1, {}, 'reactivate after X plies under threshold'),
             'explosion_sound': [boom_sounds, 'random'],
             'explosion_threshold':
-                option_number(2.3, 0, 10, 0.1, {}, 'strict majority of unique engines must exceed this eval'),
+                optionNumber(2.3, 0, 10, 0.1, {}, 'strict majority of unique engines must exceed this eval'),
             'explosion_visual': [boom_visuals, 'all'],
-            'explosion_volume': option_number(5, 0, 20, 0.5),
+            'explosion_volume': optionNumber(5, 0, 20, 0.5),
             'PVA': [ON_OFF, 0, 'enable boom in PVA board'],
             'test': [{list: ['boom', 'moob', 'explosion'], type: 'list'}],
         },
         'control': {
-            'book_every': option_number(600, 100, 5000, 50, {}, 'opening book play speed'),
+            'book_every': optionNumber(600, 100, 5000, 50, {}, 'opening book play speed'),
             'key_accelerate':
-                option_number(1.04, 0.5, 1, 0.001, {}, 'divide key repeat time by this value, 1 for no acceleration'),
-            'key_repeat': option_number(70, 10, 2000, 10, {}, 'delay for the 2nd, 3rd, ... repeats when holding a key'),
-            'key_repeat_initial': option_number(500, 10, 2000, 10, {}, 'delay for the 1st repeat when holding a key'),
-            'play_every': option_number(1200, 100, 5000, 50, {}, 'speed when clicking on PLAY'),
+                optionNumber(1.04, 0.5, 1, 0.001, {}, 'divide key repeat time by this value, 1 for no acceleration'),
+            'key_repeat': optionNumber(70, 10, 2000, 10, {}, 'delay for the 2nd, 3rd, ... repeats when holding a key'),
+            'key_repeat_initial': optionNumber(500, 10, 2000, 10, {}, 'delay for the 1st repeat when holding a key'),
+            'play_every': optionNumber(1200, 100, 5000, 50, {}, 'speed when clicking on PLAY'),
             'quick_every': {
                 '_multi': 2,
                 '_title': 'Live moves play speed\speed is adjusted between min and max',
-                'quick_min': option_number(100, 100, 50000, 10, {}, HELP_MIN),
-                'quick_max': option_number(500, 100, 50000, 10, {}, HELP_MAX),
+                'quick_min': optionNumber(100, 100, 50000, 10, {}, HELP_MIN),
+                'quick_max': optionNumber(500, 100, 50000, 10, {}, HELP_MAX),
             },
             // 'wasm': [ON_OFF, 0],
         },
         'engine': {
             'checkmate': [['moves', 'plies'], 'moves', 'moves: M#8, plies: M16'],
-            'engine_font': option_number(16, 8, 24, 0.25),
-            'engine_spacing': option_number(0.2, 0, 5, 0.0025),
+            'engine_font': optionNumber(16, 8, 24, 0.25),
+            'engine_spacing': optionNumber(0.2, 0, 5, 0.0025),
             'material_color': [['inverted', 'normal'], 'normal', 'normal will show black pieces under white player'],
             'mobility': [ON_OFF, 1, 'show r-mobility goal + mobilities'],
             'moves_left': [ON_OFF, 1, 'show moves left when Lc0 is playing'],
@@ -2135,9 +2131,9 @@ function prepare_settings() {
             'popup_right_click': [ON_OFF, 1, 'right click on elements for a popup menu'],
             'reverse_kills': [ON_OFF, 0, 'replace "double wins" with "reverse kills"'],
             'rows_per_page': [[10, 20, 50, 100, 1000], 10],
-            'scroll_inertia': option_number(0.95, 0, 0.99, 0.01, {}, HELP_ADVANCED),
+            'scroll_inertia': optionNumber(0.95, 0, 0.99, 0.01, {}, HELP_ADVANCED),
             'wheel_adjust':
-                option_number(63, 0, 240, 1, {}, 'adjust the scrolling when using wheel scroll\nmax amount in pixels'),
+                optionNumber(63, 0, 240, 1, {}, 'adjust the scrolling when using wheel scroll\nmax amount in pixels'),
             'wrap': [ON_OFF, 1, 'wrap cell content'],
             'wrap_cross': [AUTO_ON_OFF, 'auto'],
             'wrap_h2h': [AUTO_ON_OFF, 'auto'],
@@ -2152,7 +2148,7 @@ function prepare_settings() {
             'game_arrow': [['none', 'color', 'kibitz', 'color 0', 'color 1', 'color 2', 'color 3'], 'kibitz'],
             'board_pva': '',
             'copy': copy_download,
-            'game_every': option_number(200, 50, 5000, 50),
+            'game_every': optionNumber(200, 50, 5000, 50),
             'game_level': [Keys(LEVELS), 'amateur'],
             'game_new_FEN': [{type: 'text'}, '', 'FEN to be used for a new game, empty for default'],
             'game_new_game': '1',
@@ -2161,11 +2157,11 @@ function prepare_settings() {
             'parameters': '',
             'game_PV': [ON_OFF, 1, 'show the PV'],
             'game_think': '1',
-            'game_time': option_number(5, -1, 120),
+            'game_time': optionNumber(5, -1, 120),
         },
         'graph': {
             '_prefix': 'graph_',
-            'graph_aspect_ratio': option_number(1.5, 0.5, 5, 0.005, {}, '(horizontal/vertical) ratio'),
+            'graph_aspect_ratio': optionNumber(1.5, 0.5, 5, 0.005, {}, '(horizontal/vertical) ratio'),
             'color_01': {
                 '_label': '{Color} 0, 1',
                 '_multi': 2,
@@ -2180,24 +2176,24 @@ function prepare_settings() {
                 'graph_color_2': [{type: 'color'}, '#236ad6', 'blue'],
                 'graph_color_3': [{type: 'color'}, '#eb282d', 'red'],
             },
-            'graph_eval_clamp': option_number(10, 0, 256, 0.5, {}, 'limit the eval, only works with scale=linear'),
+            'graph_eval_clamp': optionNumber(10, 0, 256, 0.5, {}, 'limit the eval, only works with scale=linear'),
             'graph_eval_mode': [['percent', 'score'], 'score'],
-            'graph_line': option_number(1.5, 0, 10, 0.1, {}, 'line thickness'),
+            'graph_line': optionNumber(1.5, 0, 10, 0.1, {}, 'line thickness'),
             'marker_color': {
                 '_multi': 2,
                 'marker_color': [{type: 'color'}, '#299bff'],
-                'marker_opacity': option_number(0.5, 0, 1, 0.01, {}, HELP_OPACITY),
+                'marker_opacity': optionNumber(0.5, 0, 1, 0.01, {}, HELP_OPACITY),
             },
-            'graph_min_width': option_number(240, 40, 640),
-            'graph_radius': option_number(1.2, 0, 10, 0.1, {}, 'radius of the points'),
+            'graph_min_width': optionNumber(240, 40, 640),
+            'graph_radius': optionNumber(1.2, 0, 10, 0.1, {}, 'radius of the points'),
             'graph_scale': [SCALES, 0, '!', null, () => {
                 let name = ((context_target || {}).id || '').split('-')[1],
                     value = Y['scales'][name];
                 DEFAULTS['graph_scale'] = DEFAULT_SCALES[name];
                 return (value & 10)? 10: value;
             }],
-            'graph_tension': option_number(0.1, 0, 0.5, 0.01, {}, HELP_ADVANCED),
-            'graph_text': option_number(10, 1, 30, 1, {}, 'text size'),
+            'graph_tension': optionNumber(0.1, 0, 0.5, 0.01, {}, HELP_ADVANCED),
+            'graph_text': optionNumber(10, 1, 30, 1, {}, 'text size'),
             'use_for_arrow': '1',
         },
         'info': {
@@ -2211,44 +2207,44 @@ function prepare_settings() {
             'moves_pv': [ON_OFF, 1],
             'moves_pva': [ON_OFF, 1],
             'percent': [ON_OFF, 1, HELP_PERCENT],
-            'percent_width': option_number(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+            'percent_width': optionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
             'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
         },
         'live': {
             'agree_length': agree_length,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_live': option_number(0, 0, 10, 1, {}, HELP_GRID),
+            'grid_live': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
             'live_engine_1': [ON_OFF, 1],
             'live_engine_2': [ON_OFF, 1],
             'live_pv': [ON_OFF, 1],
-            'move_font_live': option_number(13, 6, 30, 0.1),
-            'move_height_live': option_number(52, 39, 1600, 0.5),
+            'move_font_live': optionNumber(13, 6, 30, 0.1),
+            'move_height_live': optionNumber(52, 39, 1600, 0.5),
             'moves_live': [ON_OFF, 1],
             'show_ply': show_plies,
         },
         'moves': {
             'agree_length': agree_length,
-            'grid': option_number(0, 0, 10, 1, {}, HELP_GRID),
-            'grid_copy': option_number(2, 0, 10, 1, {}, HELP_GRID),
-            'grid_live': option_number(0, 0, 10, 1, {}, HELP_GRID),
-            'grid_pv': option_number(2, 0, 10, 1, {}, HELP_GRID),
-            'grid_pva': option_number(0, 0, 10, 1, {}, HELP_GRID),
-            'move_font': option_number(13, 6, 30, 0.1),
-            'move_font_copy': option_number(13, 6, 30, 0.1),
-            'move_font_live': option_number(13, 6, 30, 0.1),
-            'move_font_pv': option_number(13, 6, 30, 0.1),
-            'move_font_pva': option_number(13, 6, 30, 0.1),
-            'move_height': option_number(70, 3, 1600, 0.5),
-            'move_height_copy': option_number(260, 39, 1600, 0.5),
-            'move_height_live': option_number(52, 39, 1600, 0.5),
-            'move_height_pv': option_number(91, 65, 1600, 0.5),
-            'move_height_pva': option_number(70, 65, 1600, 0.5),
+            'grid': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+            'grid_copy': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
+            'grid_live': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+            'grid_pv': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
+            'grid_pva': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+            'move_font': optionNumber(13, 6, 30, 0.1),
+            'move_font_copy': optionNumber(13, 6, 30, 0.1),
+            'move_font_live': optionNumber(13, 6, 30, 0.1),
+            'move_font_pv': optionNumber(13, 6, 30, 0.1),
+            'move_font_pva': optionNumber(13, 6, 30, 0.1),
+            'move_height': optionNumber(70, 3, 1600, 0.5),
+            'move_height_copy': optionNumber(260, 39, 1600, 0.5),
+            'move_height_live': optionNumber(52, 39, 1600, 0.5),
+            'move_height_pv': optionNumber(91, 65, 1600, 0.5),
+            'move_height_pva': optionNumber(70, 65, 1600, 0.5),
         },
         'network': {
             'log_auto_start':
                 [ON_OFF, 1, 'enable the LiveLog whenever the page is loaded\nlog is used for live eval+pv updates'],
-            'log_history': option_number(100, -1, 1000, 1, {}, 'max number of lines'),
+            'log_history': optionNumber(100, -1, 1000, 1, {}, 'max number of lines'),
             'log_pv': [ON_OFF, 1, 'use LiveLog to update the PV in real time'],
             'network': [
                 ['auto', 'socket.io', 'websocket'], 'websocket',
@@ -2261,57 +2257,57 @@ function prepare_settings() {
             'twitch_video': [ON_OFF, 1, 'show the Twitch stream at the bottom of the page'],
         },
         'panel': {
-            'column_bottom': option_number(4, 1, 8, 1, {}, 'number of columns in the bottom panel'),
-            'column_top': option_number(2, 1, 8, 1, {}, 'number of columns in the top panel'),
+            'column_bottom': optionNumber(4, 1, 8, 1, {}, 'number of columns in the bottom panel'),
+            'column_top': optionNumber(2, 1, 8, 1, {}, 'number of columns in the top panel'),
             'default_positions': '1',
             'drag_and_drop': [ON_OFF, 0, HELP_DRAG_AND_DROP],
             'left_2': {
                 '_multi': 2,
                 '_title': HELP_MIN_MAX,
-                'min_left_2': option_number(0, -1, 1200, 1, {}, HELP_MIN),
-                'max_left_2': option_number(0, -1, 1200, 1, {}, HELP_MAX),
+                'min_left_2': optionNumber(0, -1, 1200, 1, {}, HELP_MIN),
+                'max_left_2': optionNumber(0, -1, 1200, 1, {}, HELP_MAX),
             },
             'left': {
                 '_multi': 2,
                 '_title': HELP_MIN_MAX,
-                'min_left': option_number(300, -1, 1200, 1, {}, HELP_MIN),
-                'max_left': option_number(500, -1, 1200, 1, {}, HELP_MAX),
+                'min_left': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_left': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'center': {
                 '_multi': 2,
                 '_title': HELP_MIN_MAX,
-                'min_center': option_number(300, -1, 1200, 1, {}, HELP_MIN),
-                'max_center': option_number(500, -1, 1200, 1, {}, HELP_MAX),
+                'min_center': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_center': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'right': {
                 '_multi': 2,
                 '_title': HELP_MIN_MAX,
-                'min_right': option_number(300, -1, 1200, 1, {}, HELP_MIN),
-                'max_right': option_number(500, -1, 1200, 1, {}, HELP_MAX),
+                'min_right': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+                'max_right': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
             },
             'right_2': {
                 '_multi': 2,
                 '_title': HELP_MIN_MAX,
-                'min_right_2': option_number(0, -1, 1200, 1, {}, HELP_MIN),
-                'max_right_2': option_number(0, -1, 1200, 1, {}, HELP_MAX),
+                'min_right_2': optionNumber(0, -1, 1200, 1, {}, HELP_MIN),
+                'max_right_2': optionNumber(0, -1, 1200, 1, {}, HELP_MAX),
             },
-            'max_window': option_number(2560, 256, 32000, 1, {}, 'max width of the layout, in pixels'),
+            'max_window': optionNumber(2560, 256, 32000, 1, {}, 'max width of the layout, in pixels'),
             'panel_adjust': [ON_OFF, 0, 'show the < > - + above the panel'],
-            'panel_gap': option_number(device.mobile? 5: 10, 0, 100, 1, {}, 'spacing between each panel'),
+            'panel_gap': optionNumber(device.mobile? 5: 10, 0, 100, 1, {}, 'spacing between each panel'),
             'quick': '',
-            'tabs_per_row': option_number(7, 1, 100, 1, {}, 'max number of tabs per row'),
+            'tabs_per_row': optionNumber(7, 1, 100, 1, {}, 'max number of tabs per row'),
             'unhide': '1',
         },
         'quick': {
             'chat_height':
-                option_number(828, 100, 1600, 0.5, {}, 'height in pixels of the chat + other tabs next to the chat'),
+                optionNumber(828, 100, 1600, 0.5, {}, 'height in pixels of the chat + other tabs next to the chat'),
             'shortcut_1': [shortcuts, 'stand'],
             'shortcut_2': [shortcuts, 'stats'],
             'shortcut_3': [shortcuts, 0],
         },
         'reset': {
-            '_cancel': true,
             '_color': '#f00',
+            '_foot': 'CANCEL',
             'click_here_to_RESET_everything': '2',
         },
         // popup only
@@ -2319,9 +2315,9 @@ function prepare_settings() {
             '_pop': true,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid': option_number(0, 0, 10, 1, {}, HELP_GRID),
-            'move_font': option_number(13, 6, 30, 0.1),
-            'move_height': option_number(70, 39, 1600, 0.5),
+            'grid': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+            'move_font': optionNumber(13, 6, 30, 0.1),
+            'move_height': optionNumber(70, 39, 1600, 0.5),
             'moves': [ON_OFF, 1],
             'moves_copy': [ON_OFF, 0],
         },
@@ -2329,9 +2325,9 @@ function prepare_settings() {
             '_pop': true,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_copy': option_number(2, 0, 10, 1, {}, HELP_GRID),
-            'move_font_copy': option_number(13, 6, 30, 0.1),
-            'move_height_copy': option_number(260, 39, 1600, 0.5),
+            'grid_copy': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
+            'move_font_copy': optionNumber(13, 6, 30, 0.1),
+            'move_height_copy': optionNumber(260, 39, 1600, 0.5),
             'moves': [ON_OFF, 1],
             'moves_copy': [ON_OFF, 0],
         },
@@ -2340,9 +2336,9 @@ function prepare_settings() {
             'agree_length': agree_length,
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_pv': option_number(2, 0, 10, 1, {}, HELP_GRID),
-            'move_font_pv': option_number(13, 6, 30, 0.1),
-            'move_height_pv': option_number(91, 39, 1600, 0.5),
+            'grid_pv': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
+            'move_font_pv': optionNumber(13, 6, 30, 0.1),
+            'move_height_pv': optionNumber(91, 39, 1600, 0.5),
             'moves_pv': [ON_OFF, 1],
             'show_ply': show_plies,
         },
@@ -2351,12 +2347,12 @@ function prepare_settings() {
             '_prefix': 'game_',
             'copy': copy_moves,
             'download_PGN': '1',
-            'grid_pva': option_number(0, 0, 10, 1, {}, HELP_GRID),
-            'move_font_pva': option_number(13, 6, 30, 0.1),
-            'move_height_pva': option_number(70, 39, 1600, 0.5),
+            'grid_pva': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+            'move_font_pva': optionNumber(13, 6, 30, 0.1),
+            'move_height_pva': optionNumber(70, 39, 1600, 0.5),
             'moves_pva': [ON_OFF, 1],
             'game_PV': [ON_OFF, 1],
-            'PV_height': option_number(60, 39, 1600, 0.5),
+            'PV_height': optionNumber(60, 39, 1600, 0.5),
         },
         'eval': {
             '_pop': true,
@@ -2365,18 +2361,18 @@ function prepare_settings() {
             'hardware': [ON_OFF, 0, HELP_HARDWARE],
             'moves_live': [ON_OFF, 1],
             'percent': [ON_OFF, 1, HELP_PERCENT],
-            'percent_width': option_number(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+            'percent_width': optionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
             'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
         },
         'parameters': {
             '_pop': true,
             '_prefix': 'game_',
-            'game_depth': option_number(4, 0, 9, 1, {}, HELP_ADVANCED),
+            'game_depth': optionNumber(4, 0, 9, 1, {}, HELP_ADVANCED),
             'game_evaluation': [['nul', 'mat', 'mob', 'hce', 'att', 'paw', 'kin', 'nn'], 'att', HELP_ADVANCED],
             'game_options_black': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
             'game_options_white': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
             'game_search': [['ab=AlphaBeta', 'mm=Minimax', 'rnd=RandomMove'], 'ab', HELP_ADVANCED],
-            'game_threads': option_number(1, 1, cores),   // Max(1, cores / 2)
+            'game_threads': optionNumber(1, 1, cores),   // Max(1, cores / 2)
             'game_wasm': [ON_OFF, 1, 'WASM = compiled C++, faster than native Javascript'],
         },
         'quick_copy': {
@@ -2397,7 +2393,7 @@ function prepare_settings() {
                 '_value': [LANGUAGES, ''],
             },
             'theme': [THEMES, THEMES[0]],
-            'volume': option_number(10, 0, 20, 0.5, {}, HELP_VOLUME),
+            'volume': optionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
         },
     });
 
@@ -2475,44 +2471,45 @@ function startup() {
     };
 
     // assign virtual functions
-    virtual_change_setting_special = change_setting_special;
-    virtual_check_hash_special = check_hash_special;
-    virtual_hide_areas = hide_areas;
-    virtual_import_settings = import_settings_special;
-    virtual_opened_table_special = opened_table_special;
-    virtual_populate_areas_special = populate_areas_special;
-    virtual_reset_settings_special = reset_settings_special;
-    virtual_resize = resize;
-    virtual_set_modal_events_special = set_modal_events_special;
-    virtual_window_click_dataset = window_click_dataset;
-    virtual_window_click_parent = window_click_parent;
-    virtual_window_click_parent_dataset = window_click_parent_dataset;
+    vi_changeSettingSpecial = changeSettingSpecial;
+    vi_checkHashSpecial = checkHashSpecial;
+    vi_hideAreas = hideAreas;
+    vi_importSettings = importSettingsSpecial;
+    vi_openedTableSpecial = openedTableSpecial;
+    vi_populateAreasSpecial = populateAreasSpecial;
+    vi_resetSettingsSpecial = resetSettingsSpecial;
+    vi_resize = resize;
+    vi_setModalEventsSpecial = setModalEventsSpecial;
+    vi_windowClickDataset = windowClickDataset;
+    vi_windowClickParent = windowClickParent;
+    vi_windowClickParentDataset = windowClickParentDataset;
 
     // pre-process
-    detect_device();
-    startup_3d();
-    startup_global();
-    startup_config();
-    startup_game();
+    detectDevice();
+    startupEngine();
+    startup3d();
+    startupGlobal();
+    startupConfig();
+    startupGame();
 
-    prepare_settings();
-    load_settings();
-    change_theme();
-    start_game();
-    init_graph();
-    check_hash();
+    prepareSettings();
+    loadSettings();
+    changeTheme();
+    startGame();
+    initGraph();
+    checkHash();
 
-    set_global_events();
-    set_engine_events();
-    set_game_events();
-    startup_graph();
-    startup_network();
-    add_history();
+    setGlobalEvents();
+    setEngineEvents();
+    setGameEvents();
+    startupGraph();
+    startupNetwork();
+    addHistory();
     ready ++;
 
-    init_globals();
-    init_customs(true);
-    quick_setup();
+    initGlobals();
+    initCustoms(true);
+    quickSetup();
     resize();
     ready ++;
 }
@@ -2522,6 +2519,6 @@ function startup() {
 // <<
 if (typeof exports != 'undefined')
     Assign(exports, {
-        prepare_settings: prepare_settings,
+        prepareSettings: prepareSettings,
     });
 // >>

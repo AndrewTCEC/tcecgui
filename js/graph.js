@@ -1,15 +1,14 @@
 // graph.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-05
+// @version 2021-08-02
 //
 // jshint -W069
 /*
 globals
-_, A, Abs, add_timeout, Assign, C, CacheId, calculate_feature_q, Clamp, CreateNode,
-DefaultObject, DEFAULTS, DEV, Exp, exports, fix_move_format, Floor, format_unit, FromSeconds, get_move_ply, global,
-Keys,
-Log, Log10, LS, Max, Merge, Min, mix_hex_colors, Pad, Pow, require, Round,
-S, save_option, Sign, Style, translate_expression, Visible, window, xboards, Y, y_x
+_, A, Abs, AddTimeout, Assign, C, CacheId, calculateFeatureQ, Clamp, CreateNode,
+DefaultObject, DEFAULTS, DEV, Exp, exports, fixMoveFormat, Floor, formatUnit, FromSeconds, getMovePly, global, Keys,
+Log, Log10, LS, Max, Merge, Min, mixHexColors, Pad, Pow, require, Round,
+S, saveOption, Sign, Style, translateExpression, Visible, window, xboards, Y, y_x, Z
 */
 'use strict';
 
@@ -64,7 +63,7 @@ let BEGIN_ZEROES = {
     DEFAULT_SCALES = {},
     EVAL_CLAMP = 128,
     first_num = -1,
-    FormatAxis = value => format_unit(value),
+    FormatAxis = value => formatUnit(value),
     FormatEval = value => value? value.toFixed(2): 0,
     // &1: no_kibitzer
     LIVE_GRAPHS = {
@@ -84,11 +83,11 @@ let BEGIN_ZEROES = {
  * @param {number} ply
  * @returns {number}
  */
-function calculate_win(id, eval_, ply) {
+function calculateWin(id, eval_, ply) {
     if (eval_ == undefined)
         return eval_;
 
-    let main = xboards[Y.s],
+    let main = xboards[Z.s],
         feature = main.players[id].feature,
         cache_features = DefaultObject(cached_percents, feature, {}),
         key = `${eval_}:${ply}`,
@@ -99,7 +98,7 @@ function calculate_win(id, eval_, ply) {
 
     let score;
     if (!isNaN(eval_)) {
-        score = calculate_feature_q(feature, /** @type {number} */(eval_), ply) * 2;
+        score = calculateFeatureQ(feature, /** @type {number} */(eval_), ply) * 2;
         score = Sign(score) * Round(Abs(score) * 10) / 10;
     }
     else if (eval_ && (eval_ + '').includes('-'))
@@ -118,7 +117,7 @@ function calculate_win(id, eval_, ply) {
  * - unshift the dataset & labels if needed
  * @param {number} num
  */
-function check_first_num(num) {
+function checkFirstNum(num) {
     if (first_num >= 0 && first_num <= num)
         return;
     if (DEV['chart'])
@@ -148,7 +147,7 @@ function check_first_num(num) {
  * @param {number} eval_
  * @returns {number|undefined}
  */
-function clamp_eval(eval_) {
+function clampEval(eval_) {
     if (NON_EVALS.has(eval_))
         return undefined;
 
@@ -172,48 +171,48 @@ function clamp_eval(eval_) {
 /**
  * Create all chart data
  */
-function create_chart_data() {
+function createChartData() {
     let color0 = Y['graph_color_0'],
         color1 = Y['graph_color_1'],
         color2 = Y['graph_color_2'],
         color3 = Y['graph_color_3'],
-        extra0 = mix_hex_colors(color0, '#007fff', 0.2),
-        extra1 = mix_hex_colors(color1, '#007fff', 0.75);
+        extra0 = mixHexColors(color0, '#007fff', 0.2),
+        extra1 = mixHexColors(color1, '#007fff', 0.75);
 
     let datasets = {
         'agree': [
-            new_dataset('{white} + {black}', color0),
-            new_dataset('{blue} + {red}', mix_hex_colors(color2, color3, 0.5)),
+            newDataset('{white} + {black}', color0),
+            newDataset('{blue} + {red}', mixHexColors(color2, color3, 0.5)),
         ],
         'depth': [
-            new_dataset('depth', color0),
-            new_dataset('depth', color1),
-            new_dataset('selective', extra0),
-            new_dataset('selective', extra1),
+            newDataset('depth', color0),
+            newDataset('depth', color1),
+            newDataset('selective', extra0),
+            newDataset('selective', extra1),
         ],
-        'eval': ENGINE_NAMES.map((name, id) => new_dataset(name, Y[`graph_color_${id}`])),
+        'eval': ENGINE_NAMES.map((name, id) => newDataset(name, Y[`graph_color_${id}`])),
         'mobil': [
-            new_dataset('mobility', color0),
-            new_dataset('mobility', color1),
-            new_dataset('r-Mobility', '#236ad6', '', {borderDash: [10, 5]}),
+            newDataset('mobility', color0),
+            newDataset('mobility', color1),
+            newDataset('r-Mobility', '#236ad6', '', {borderDash: [10, 5]}),
         ],
         'node': [
-            new_dataset('w', color0),
-            new_dataset('b', color1),
+            newDataset('w', color0),
+            newDataset('b', color1),
         ],
         'speed': [
-            new_dataset('w', color0),
-            new_dataset('b', color1),
+            newDataset('w', color0),
+            newDataset('b', color1),
         ],
         'tb': [
-            new_dataset('w', color0),
-            new_dataset('b', color1),
+            newDataset('w', color0),
+            newDataset('b', color1),
         ],
         'time': [
-            new_dataset('time', color0),
-            new_dataset('time', color1),
-            new_dataset('left~2', extra0, 'y_axis_1'),
-            new_dataset('left~2', extra1, 'y_axis_1'),
+            newDataset('time', color0),
+            newDataset('time', color1),
+            newDataset('left~2', extra0, 'y_axis_1'),
+            newDataset('left~2', extra1, 'y_axis_1'),
         ],
     };
 
@@ -232,32 +231,32 @@ function create_chart_data() {
  * - only linear but allow scale type registration.
  * - This allows extensions to exist solely for log scale for instance
  */
-function create_charts() {
+function createCharts() {
     // 1) create all charts
-    new_chart('agree', true, FormatAxis, 0);
-    new_chart('depth', true, FormatAxis, 10);
-    new_chart('eval', true, FormatEval, 4, (item, data) => {
-        let dico = get_tooltip_data(item, data),
+    newChart('agree', true, FormatAxis, 0);
+    newChart('depth', true, FormatAxis, 10);
+    newChart('eval', true, FormatEval, 4, (item, data) => {
+        let dico = getTooltipData(item, data),
             eval_ = dico.eval;
-        return (Y['graph_eval_mode'] == 'percent')? calculate_win(item.datasetIndex, eval_, dico['ply']): eval_;
+        return (Y['graph_eval_mode'] == 'percent')? calculateWin(item.datasetIndex, eval_, dico['ply']): eval_;
     });
-    new_chart('mobil', true, FormatAxis, 0);
-    new_chart('node', false, FormatAxis, 10, (item, data) => {
-        let nodes = format_unit(get_tooltip_data(item, data).nodes);
+    newChart('mobil', true, FormatAxis, 0);
+    newChart('node', false, FormatAxis, 10, (item, data) => {
+        let nodes = formatUnit(getTooltipData(item, data).nodes);
         return nodes;
     });
-    new_chart('speed', false, FormatAxis, 10, (item, data) => {
-        let point = get_tooltip_data(item, data),
-            nodes = format_unit(point.nodes),
-            speed = format_unit(point.y);
+    newChart('speed', false, FormatAxis, 10, (item, data) => {
+        let point = getTooltipData(item, data),
+            nodes = formatUnit(point.nodes),
+            speed = formatUnit(point.y);
         return `${speed}nps (${nodes} nodes)`;
     });
-    new_chart('tb', false, FormatAxis, 1, (item, data) => {
-        let hits = format_unit(get_tooltip_data(item, data).y);
+    newChart('tb', false, FormatAxis, 1, (item, data) => {
+        let hits = formatUnit(getTooltipData(item, data).y);
         return hits;
     });
-    new_chart('time', true, format_time, 0, (item, data) => {
-        return format_time(get_tooltip_data(item, data).y);
+    newChart('time', true, formatTime, 0, (item, data) => {
+        return formatTime(getTooltipData(item, data).y);
     }, {backgroundColor: 'rgb(10, 10, 10)'}, 2);
 
     // 2) click events
@@ -273,7 +272,7 @@ function create_charts() {
                 dico = chart.data.datasets[ds_index].data[index];
 
             if (dico)
-                xboards[Y.s].setPly(dico['ply'], {manual: true});
+                xboards[Z.s].setPly(dico['ply'], {manual: true});
         });
 
         // add markers
@@ -284,10 +283,10 @@ function create_charts() {
                 node.appendChild(CreateNode('div', null, {'class': 'cmarker'}));
     });
 
-    update_chart_options(null, 3);
+    updateChartOptions(null, 3);
 
     // settings
-    save_option('scales');
+    saveOption('scales');
     DEFAULTS['scales'] = DEFAULT_SCALES;
 }
 
@@ -296,7 +295,7 @@ function create_charts() {
  * - the last label needs to be set, otherwise there won't be any change
  * @param {Array<string|number>} labels
  */
-function fix_labels(labels) {
+function fixLabels(labels) {
     let num_label = labels.length;
     if (!num_label)
         return;
@@ -315,7 +314,7 @@ function fix_labels(labels) {
  * @param {number} seconds
  * @returns {string}
  */
-function format_time(seconds) {
+function formatTime(seconds) {
     let [hour, min, sec] = FromSeconds(seconds);
     return (hour > 0)? `${hour}h${Pad(min)}`: (min > 0)? `${min}:${Pad(sec)}`: sec + '';
 }
@@ -326,7 +325,7 @@ function format_time(seconds) {
  * @param {!Object} data
  * @returns {Object}
  */
-function get_tooltip_data(item, data) {
+function getTooltipData(item, data) {
     return data.datasets[item.datasetIndex].data[item.index];
 }
 
@@ -337,7 +336,7 @@ function get_tooltip_data(item, data) {
  * @param {string|number} eval_
  * @returns {string|number}
  */
-function invert_eval(eval_) {
+function invertEval(eval_) {
     if (!isNaN(eval_))
         return -eval_;
 
@@ -354,7 +353,7 @@ function invert_eval(eval_) {
  * @param {number} ply
  * @param {number} max_ply
  */
-function mark_ply_chart(name, ply, max_ply) {
+function markPlyChart(name, ply, max_ply) {
     if (!Visible(CacheId(`table-${name}`)))
         return;
 
@@ -399,9 +398,9 @@ function mark_ply_chart(name, ply, max_ply) {
  * @param {number} ply
  * @param {number} max_ply
  */
-function mark_ply_charts(ply, max_ply) {
+function markPlyCharts(ply, max_ply) {
     Keys(charts).forEach(key => {
-        mark_ply_chart(key, ply, max_ply);
+        markPlyChart(key, ply, max_ply);
     });
 }
 
@@ -410,13 +409,13 @@ function mark_ply_charts(ply, max_ply) {
  * - an element with id="chart-{name}" must exist
  * @param {string} name
  * @param {boolean} has_legend
- * @param {Function|Object=} y_ticks format_unit, {...}
+ * @param {Function|Object=} y_ticks formatUnit, {...}
  * @param {number=} scale 1:log, 2:custom, 4:eval
  * @param {Function=} tooltip_callback
  * @param {Object=} dico
  * @param {number=} number number of axes
  */
-function new_chart(name, has_legend, y_ticks, scale, tooltip_callback, dico, number=1) {
+function newChart(name, has_legend, y_ticks, scale, tooltip_callback, dico, number=1) {
     let scales = Y['scales'],
         ticks_dico = {};
     if (y_ticks)
@@ -431,7 +430,7 @@ function new_chart(name, has_legend, y_ticks, scale, tooltip_callback, dico, num
     DEFAULT_SCALES[name] = scale;
 
     let axis_dico = {
-        funcs: set_scale_func(name),
+        funcs: setScaleFunc(name),
     };
 
     let defaults = window.ChartDefaults,
@@ -439,7 +438,7 @@ function new_chart(name, has_legend, y_ticks, scale, tooltip_callback, dico, num
         options = Assign({}, CHART_OPTIONS, {
         scales: {
             xAxes: [Merge(CHART_X_AXES, default_scale, 0)],
-            yAxes: Array(number).fill(0).map((_, id) => Merge(new_y_axis(id, ticks_dico, axis_dico), default_scale, 0)),
+            yAxes: Array(number).fill(0).map((_, id) => Merge(newAxisY(id, ticks_dico, axis_dico), default_scale, 0)),
         },
     });
 
@@ -475,13 +474,13 @@ function new_chart(name, has_legend, y_ticks, scale, tooltip_callback, dico, num
  * @param {Object=} dico
  * @returns {!Object}
  */
-function new_dataset(label, color, yaxis, dico) {
+function newDataset(label, color, yaxis, dico) {
     let dataset = {
         backgroundColor: color,
         borderColor: color,
         data: [],
         fill: false,
-        label: translate_expression(label),
+        label: translateExpression(label),
         lineTension: Y['graph_tension'],
         pointHitRadius: 4,
         yAxisID: yaxis,
@@ -499,7 +498,7 @@ function new_dataset(label, color, yaxis, dico) {
  * @param {Object=} dico
  * @returns {!Object}
  */
-function new_y_axis(id, y_ticks, dico) {
+function newAxisY(id, y_ticks, dico) {
     let y_axis = {
         display: true,
         id: `y_axis_${id}`,
@@ -521,7 +520,7 @@ function new_y_axis(id, y_ticks, dico) {
  * Redraw eval charts when eval mode has changed
  * @param {string} section
  */
-function redraw_eval_charts(section) {
+function redrawEvalCharts(section) {
     if (DEV['chart'])
         LS(`REC: ${section}`);
     let board = xboards[section];
@@ -533,15 +532,15 @@ function redraw_eval_charts(section) {
         num_move = moves.length;
 
     // update existing moves + kibitzer evals (including next move)
-    update_player_chart(name, moves);
-    update_live_chart(name, xboards['live0'].evals[section], 2);
-    update_live_chart(name, xboards['live1'].evals[section], 3);
+    updatePlayerChart(name, moves);
+    updateLiveChart(name, xboards['live0'].evals[section], 2);
+    updateLiveChart(name, xboards['live1'].evals[section], 3);
 
     // update last received player eval, for the next move
     for (let id of [0, 1]) {
         let move = xboards[`pv${id}`].evals[section][num_move];
         if (move)
-            update_live_chart(name, [move], id);
+            updateLiveChart(name, [move], id);
     }
 }
 
@@ -550,7 +549,7 @@ function redraw_eval_charts(section) {
  * @param {!Object} chart
  * @param {string} name
  */
-function reset_chart(chart, name) {
+function resetChart(chart, name) {
     if (!chart)
         return;
 
@@ -559,7 +558,7 @@ function reset_chart(chart, name) {
     for (let dataset of data_c.datasets)
         dataset.data.length = 0;
 
-    update_chart(name);
+    updateChart(name);
 }
 
 /**
@@ -567,10 +566,10 @@ function reset_chart(chart, name) {
  * @param {string} section
  * @param {boolean=} reset_evals reset (live + pv) evals as well
  */
-function reset_charts(section, reset_evals) {
+function resetCharts(section, reset_evals) {
     first_num = -1;
     Keys(charts).forEach(key => {
-        reset_chart(charts[key], key);
+        resetChart(charts[key], key);
     });
 
     if (reset_evals)
@@ -583,7 +582,7 @@ function reset_charts(section, reset_evals) {
  * @param {number|undefined} x
  * @returns {number|undefined}
  */
-function scale_boom(x) {
+function scaleBoom(x) {
     if (x == undefined)
         return undefined;
     return (x >= 0)? 10 * (1 - Exp(-x * 0.25)): -10 * (1 - Exp(x * 0.25));
@@ -594,7 +593,7 @@ function scale_boom(x) {
  * @param {string} name
  * @returns {!Array<Function>}
  */
-function set_scale_func(name) {
+function setScaleFunc(name) {
     let funcs = (Y['scales'][name] & 1)? [
         x => x > 0? Log10(x + 1): 0,
         y => y > 0? Pow(10, y) - 1: 0,
@@ -613,7 +612,7 @@ function set_scale_func(name) {
  * Slice charts from a specific index (ply - first_num)
  * @param {number} last_ply
  */
-function slice_charts(last_ply) {
+function sliceCharts(last_ply) {
     if (isNaN(last_ply))
         return;
 
@@ -633,7 +632,7 @@ function slice_charts(last_ply) {
         for (let dataset of data_c.datasets)
             dataset.data = dataset.data.slice(from, to);
 
-        update_chart(key);
+        updateChart(key);
     });
 }
 
@@ -641,20 +640,20 @@ function slice_charts(last_ply) {
  * Update the chart when it has received new data
  * @param {string} name
  */
-function update_chart(name) {
+function updateChart(name) {
     let chart = charts[name];
     if (!chart)
         return;
 
     let scale = Y['scales'][name];
     if (scale == 0 && name == 'eval')
-        update_scale_linear(chart);
+        updateScaleLinear(chart);
     if (scale & 2)
-        update_scale_custom(chart);
+        updateScaleCustom(chart);
     else if (scale & 4)
-        update_scale_eval(chart);
+        updateScaleEval(chart);
     else if (scale & 16)
-        update_scale_boom(chart);
+        updateScaleBoom(chart);
 
     if (DEV['chart'])
         LS(`UC: ${name}`);
@@ -666,7 +665,7 @@ function update_chart(name) {
  * @param {string?} name null for all charts
  * @param {number} mode &1:colors, &2:line + font size
  */
-function update_chart_options(name, mode) {
+function updateChartOptions(name, mode) {
     // eval colors
     if (mode & 1) {
         if (!name || name == 'eval') {
@@ -686,7 +685,7 @@ function update_chart_options(name, mode) {
             // + update agree
             let agree = (chart_data['agree'] || {}).datasets;
             if (agree && agree[1]) {
-                let mix = mix_hex_colors(Y['graph_color_2'], Y['graph_color_3'], 0.5);
+                let mix = mixHexColors(Y['graph_color_2'], Y['graph_color_3'], 0.5);
                 Assign(agree[1], {
                     backgroundColor: mix,
                     borderColor: mix,
@@ -743,7 +742,7 @@ function update_chart_options(name, mode) {
  * @param {Array<Move>} moves
  * @param {number} id can be: 0=white, 1=black, 2=live0, 3=live1, ...
  */
-function update_live_chart(name, moves, id) {
+function updateLiveChart(name, moves, id) {
     if (DEV['chart'])
         LS(`ULC: ${name} : ${id}`);
     if (!moves)
@@ -769,16 +768,16 @@ function update_live_chart(name, moves, id) {
             continue;
 
         let eval_ = move['eval'],
-            ply = get_move_ply(move),
+            ply = getMovePly(move),
             num = ply;
         if (ply < -1)
             continue;
 
-        check_first_num(num);
+        checkFirstNum(num);
         let num2 = num - first_num;
         labels[num2] = num / 2 + 1;
 
-        // check update_player_chart to understand
+        // check updatePlayerChart to understand
         let dico = {
             'ply': ply,
             x: num / 2 + 1,
@@ -789,7 +788,7 @@ function update_live_chart(name, moves, id) {
             break;
         case 'eval':
             dico.eval = eval_;
-            dico.y = is_percent? calculate_win(id, eval_, ply): clamp_eval(eval_);
+            dico.y = is_percent? calculateWin(id, eval_, ply): clampEval(eval_);
             break;
         case 'speed':
             dico.nodes = move['nodes'];
@@ -800,8 +799,8 @@ function update_live_chart(name, moves, id) {
         data[num2] = dico;
     }
 
-    fix_labels(labels);
-    update_chart(name);
+    fixLabels(labels);
+    updateChart(name);
 }
 
 /**
@@ -809,21 +808,21 @@ function update_live_chart(name, moves, id) {
  * @param {Array<Move>} moves
  * @param {number} id can be: 0=white, 1=black, 2=live0, 3=live1, ...
  */
-function update_live_charts(moves, id) {
+function updateLiveCharts(moves, id) {
     if (DEV['chart'])
         LS(`ULC+: ${id}`);
     Keys(LIVE_GRAPHS).forEach(name => {
         let flag = LIVE_GRAPHS[name];
         if (flag && id >= 2)
             return;
-        update_live_chart(name, moves, id);
+        updateLiveChart(name, moves, id);
     });
 }
 
 /**
  * Update the marker color+opacity
  */
-function update_markers() {
+function updateMarkers() {
     Style('.cmarker', [['background', Y['marker_color']], ['opacity', Y['marker_opacity']]]);
 }
 
@@ -833,7 +832,7 @@ function update_markers() {
  * @param {string} name
  * @param {Array<Move>} moves
  */
-function update_player_chart(name, moves) {
+function updatePlayerChart(name, moves) {
     if (DEV['chart'])
         LS(`UPC: ${name}`);
     if (!Visible(CacheId(`table-${name}`)))
@@ -857,14 +856,14 @@ function update_player_chart(name, moves) {
     // 2) add data
     for (let i = offset; i < num_move; i ++) {
         let move = moves[i],
-            ply = get_move_ply(move),
+            ply = getMovePly(move),
             num = ply;
         if (ply < -1)
             continue;
 
-        fix_move_format(move);
+        fixMoveFormat(move);
 
-        check_first_num(num);
+        checkFirstNum(num);
         let num2 = num - first_num;
         labels[num2] = num / 2 + 1;
 
@@ -890,7 +889,7 @@ function update_player_chart(name, moves) {
             if (move['wv'] == '-')
                 continue;
             dico.eval = move['wv'];
-            dico.y = is_percent? calculate_win(id, move['wv'], ply): clamp_eval(move['wv']);
+            dico.y = is_percent? calculateWin(id, move['wv'], ply): clampEval(move['wv']);
             break;
         case 'mobil':
             if (isNaN(move.mobil))
@@ -921,8 +920,8 @@ function update_player_chart(name, moves) {
         datasets[id].data[num2] = dico;
     }
 
-    fix_labels(labels);
-    update_chart(name);
+    fixLabels(labels);
+    updateChart(name);
 }
 
 /**
@@ -930,11 +929,11 @@ function update_player_chart(name, moves) {
  * - designed for white & black, not live
  * @param {Array<Move>} moves
  */
-function update_player_charts(moves) {
+function updatePlayerCharts(moves) {
     if (DEV['chart'])
         LS('UPC+');
     Keys(charts).forEach(key => {
-        update_player_chart(key, moves);
+        updatePlayerChart(key, moves);
     });
 }
 
@@ -945,7 +944,7 @@ function update_player_charts(moves) {
  * https://www.symbolab.com/solver/function-inverse-calculator
  * @param {!Object} chart
  */
-function update_scale_boom(chart) {
+function updateScaleBoom(chart) {
     let scale = chart.scales.y_axis_0;
     if (!scale)
         return;
@@ -954,7 +953,7 @@ function update_scale_boom(chart) {
         x => x,
         y => y,
     ]:[
-        scale_boom,
+        scaleBoom,
         y => (y >= 0)? -Log(1 - y / 10) / 0.25: Log(1 + y / 10) / 0.25,
     ];
 }
@@ -963,7 +962,7 @@ function update_scale_boom(chart) {
  * Update the custom scale
  * @param {!Object} chart
  */
-function update_scale_custom(chart) {
+function updateScaleCustom(chart) {
     let scale = chart.scales.y_axis_0;
     if (!scale)
         return;
@@ -1003,7 +1002,7 @@ function update_scale_custom(chart) {
             else
                 scales[name] &= ~1;
         }
-        set_scale_func(name);
+        setScaleFunc(name);
         return;
     }
 
@@ -1043,7 +1042,7 @@ function update_scale_custom(chart) {
  * https://www.symbolab.com/solver/function-inverse-calculator
  * @param {!Object} chart
  */
-function update_scale_eval(chart) {
+function updateScaleEval(chart) {
     let scale = chart.scales.y_axis_0;
     if (!scale)
         return;
@@ -1061,7 +1060,7 @@ function update_scale_eval(chart) {
  * Update the linear scale for the EVAL graph
  * @param {!Object} chart
  */
-function update_scale_linear(chart) {
+function updateScaleLinear(chart) {
     let eval_clamp = Y['graph_eval_clamp'],
         scale = chart.scales.y_axis_0;
     if (!scale)
@@ -1083,19 +1082,19 @@ function update_scale_linear(chart) {
  * Load the chart.js library
  * - it might be bundled already => skip loading in that case
  */
-function init_graph() {
+function initGraph() {
     if (DEV['chart'])
         LS('IG');
-    create_chart_data();
+    createChartData();
 
-    add_timeout('graph', () => {
-        create_charts();
-        update_player_charts(xboards[y_x].moves);
+    AddTimeout('graph', () => {
+        createCharts();
+        updatePlayerCharts(xboards[y_x].moves);
         for (let [name, moves, id] of queued_charts)
-            update_live_chart(name, moves, id);
+            updateLiveChart(name, moves, id);
 
         queued_charts.length = 0;
-        update_markers();
+        updateMarkers();
         Style('canvas', [['visibility', 'visible']]);
     }, TIMEOUT_graph);
 }
@@ -1104,7 +1103,7 @@ function init_graph() {
  * Startup graphs
  * - initialise global variables
  */
-function startup_graph() {
+function startupGraph() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1112,22 +1111,22 @@ function startup_graph() {
 // <<
 if (typeof exports != 'undefined') {
     Assign(exports, {
-        calculate_win: calculate_win,
+        calculateWin: calculateWin,
         chart_data: chart_data,
-        check_first_num: check_first_num,
-        clamp_eval: clamp_eval,
-        create_chart_data: create_chart_data,
-        fix_labels: fix_labels,
-        invert_eval: invert_eval,
-        mark_ply_charts: mark_ply_charts,
-        reset_charts: reset_charts,
-        scale_boom: scale_boom,
-        slice_charts: slice_charts,
+        checkFirstNum: checkFirstNum,
+        clampEval: clampEval,
+        createChartData: createChartData,
+        fixLabels: fixLabels,
+        invertEval: invertEval,
+        markPlyCharts: markPlyCharts,
+        resetCharts: resetCharts,
+        scaleBoom: scaleBoom,
+        sliceCharts: sliceCharts,
         SUB_BOARDS: SUB_BOARDS,
-        update_live_chart: update_live_chart,
-        update_live_charts: update_live_charts,
-        update_player_chart: update_player_chart,
-        update_player_charts: update_player_charts,
+        updateLiveChart: updateLiveChart,
+        updateLiveCharts: updateLiveCharts,
+        updatePlayerChart: updatePlayerChart,
+        updatePlayerCharts: updatePlayerCharts,
     });
 }
 // >>

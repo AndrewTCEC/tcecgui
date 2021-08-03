@@ -1,6 +1,6 @@
 // create-module.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-07-03
+// @version 2020-08-02
 //
 // This module is useful for testing js files without them having any exports.
 // Look at common.test.js for an example.
@@ -21,7 +21,7 @@ let fs = require('fs'),
  * @param {string} output path without .js for the combined output
  * @param {string=} extra_exports ex: global variables that we want exported
  */
-function create_module(path, sources, output, extra_exports) {
+function createModule(path, sources, output, extra_exports) {
     let all = '',
         filenames = sources.map(source => `${path}/${source}.js`),
         output_js = `${output}.js`;
@@ -86,5 +86,5 @@ function create_module(path, sources, output, extra_exports) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
-    create_module: create_module,
+    createModule: createModule,
 };

@@ -1,10 +1,10 @@
 // common.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 /*
 globals
-expect, require, test
+expect, global, jest, require, test
 */
 'use strict';
 
@@ -12,9 +12,30 @@ let {
     _, A, ArrayJS, Attrs, CACHE_IDS, CacheId, Clamp, Class, Clear, Contain, CreateNode, DefaultArray, DefaultFloat,
     DefaultInt, DefaultObject, E, Format, FormatFloat, FormatPercent, FormatUnit, From, FromSeconds, FromTimestamp,
     HasClass, HasClasses, Hide, HTML, Id, Index, InsertNodes, IsDigit, IsFloat, IsObject, IsString, Keys, Lower, Merge,
-    Pad, Parent, ParseJSON, PI, QueryString, S, Show, Split, Style, TEXT, TextHTML, Title, Toggle, Undefined, Upper,
-    Visible, VisibleHeight, VisibleWidth,
+    Now, Pad, Parent, ParseJSON, PI, QueryString, S, Show, Split, Style, TEXT, TextHTML, Title, Toggle, Uint8From,
+    Undefined, Upper, Visible, VisibleHeight, VisibleWidth,
 } = require('./common.js');
+
+let real_now = Date.now.bind(global.Date);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Override Date.now
+ * @param {number} now
+ */
+function beginDateNow(now) {
+    if (now == null)
+        return;
+    global.Date.now = jest.fn(() => now);
+}
+
+/**
+ * Reset the Date.now
+ */
+function endDateNow() {
+    global.Date.now = real_now;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -347,6 +368,7 @@ let {
     ['32.36', [0, 0, 32, '36']],
     ['4892.737', [1, 21, 32, '73']],
     [208.963, [0, 3, 28, '96']],
+    [19.24, [0, 0, 19, '24']],
 ].forEach(([time, answer], id) => {
     test(`FromSeconds:${id}`, () => {
         expect(FromSeconds(time)).toEqual(answer);
@@ -355,10 +377,14 @@ let {
 
 // FromTimestamp
 [
-    [1576574884, [['2019-12-17'], ['09:28:04', '10:28:04']]],
-].forEach(([stamp, answer], id) => {
+    [null, 1576574884, [['2019-12-17'], ['09:28:04', '10:28:04']]],
+    [1576574884333, undefined, [['2019-12-17'], ['09:28:04', '10:28:04']]],
+    [1625336832301, undefined, [['2021-07-03'], ['18:27:12', '20:27:12']]],
+].forEach(([now, stamp, answer], id) => {
     test(`FromTimestamp:${id}`, () => {
+        beginDateNow(now);
         let [date, time] = FromTimestamp(stamp);
+        endDateNow();
         expect(answer[0]).toContain(date);
         expect(answer[1]).toContain(time);
     });
@@ -647,6 +673,21 @@ let {
     test(`Merge:${id}`, () => {
         expect(Merge(dico, extras, replace)).toEqual(answer);
         expect(dico).toEqual(answer);
+    });
+});
+
+// Now
+[
+    [1625336832301, undefined, 1625336832],
+    [1625336832301, 0, 1625336832],
+    [1625336832301, 1, 1625336832.301],
+    [1625336832301, 2, 1625336832301],
+].forEach(([now, mode, answer], id) => {
+    test(`Now:${id}`, () => {
+        beginDateNow(now);
+        let result = Now(mode);
+        endDateNow();
+        expect(result).toEqual(answer);
     });
 });
 
@@ -1088,6 +1129,20 @@ let {
         Toggle(sel, soup);
         let nodes = A(sel, soup);
         expect(From(nodes).map(node => node.outerHTML)).toEqual(answer);
+    });
+});
+
+// Uint8From
+[
+    ['', []],
+    [' ', [32]],
+    [1, []],
+    ['hello', [104, 101, 108, 108, 111]],
+    ['привет', [63, 64, 56, 50, 53, 66]],
+].forEach(([text, answer], id) => {
+    test(`Uint8From:${id}`, () => {
+        let result = Uint8From(text);
+        expect(result).toEqual(new Uint8Array(answer));
     });
 });
 

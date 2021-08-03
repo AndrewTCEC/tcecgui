@@ -1,6 +1,6 @@
 // worker.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-21
+// @version 2021-08-02
 //
 // jshint -W069
 /*
@@ -44,7 +44,7 @@ let SQUARES_INV = [
  * @param {string} engine
  * @returns {Object}
  */
-function create_chess(engine) {
+function createChess(engine) {
     // 1) use the desired engine
     let engine_class = engine_classes[engine];
     if (!engine_class) {
@@ -73,12 +73,12 @@ function create_chess(engine) {
  */
 function think(engine, fen, moves, pv_string, scan_all) {
     // 1) generate all moves + analyse them
-    let chess = create_chess(engine);
+    let chess = createChess(engine);
     chess.load(fen, true);
 
-    let start = Now(true),
+    let start = Now(1),
         objs = ArrayJS(chess.search(moves.join(' '), pv_string, scan_all)),
-        elapsed = Now(true) - start;
+        elapsed = Now(1) - start;
 
     // 2) results
     let pawn_score = PIECE_SCORES[PAWN];
@@ -109,7 +109,7 @@ self.onmessage = e => {
         func = data['func'];
 
     // 1) create the chess engine
-    let chess = create_chess(data['engine']);
+    let chess = createChess(data['engine']);
     if (data['options'])
         chess.configure(data['frc'], data['options'], data['depth']);
 

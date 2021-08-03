@@ -1,6 +1,6 @@
 // seeds.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-24
+// @version 2021-08-02
 /*
 globals
 require
@@ -8,7 +8,7 @@ require
 'use strict';
 
 let {LS} = require('../js/common.js'),
-    {calculate_seeds} = require('../js/game.js');
+    {calculateSeeds} = require('../js/game.js');
 
 let engines_full = [
     'Stockfish',
@@ -61,7 +61,7 @@ let engines_full = [
 // engines_full = Array(46).fill(0).map((key, id) => `${id + 1}`);
 
 let length = engines_full.length,
-    seeds = calculate_seeds(length, 1),
+    seeds = calculateSeeds(length, 1),
     teams = seeds.map(seed => [seed, engines_full[seed - 1]]),
     pairs = new Array(length / 2).fill(0).map((_, id) => [teams[id * 2], teams[id * 2 + 1]]),
     patch = pairs.map(pair => [{name: pair[0][1], seed: pair[0][0]}, {name: pair[1][1], seed: pair[1][0]}]);

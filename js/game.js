@@ -1,6 +1,6 @@
 // game.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-24
+// @version 2021-08-02
 //
 // Game specific code:
 // - control the board, moves
@@ -12,25 +12,25 @@
 // jshint -W069
 /*
 globals
-_, A, Abs, add_player_eval, add_timeout, AnimationFrame, ArrayJS, Assign, assign_move, Attrs, audiobox, C, CacheId,
-calculate_feature_q, cannot_click, Ceil, change_setting, chart_data, charts, check_hash, check_socket_io, Clamp,
-clamp_eval, Class, clear_timeout, close_popups, context_areas, context_target:true, controls, convert_checkmate,
-CopyClipboard, create_field_value, create_page_array, create_svg_icon, CreateNode, CreateSVG, cube:true,
+_, A, Abs, addPlayerEval, AddTimeout, AnimationFrame, ArrayJS, Assign, assignMove, Attrs, audiobox, C, CacheId,
+calculateFeatureQ, cannotClick, Ceil, changeSetting, chart_data, charts, checkHash, checkSocketIo, Clamp,
+clampEval, Class, ClearTimeout, closePopups, context_areas, context_target:true, controls, convertCheckmate,
+CopyClipboard, createFieldValue, CreateNode, createPageArray, CreateSVG, createSvgIcon, cube:true,
 DefaultArray, DefaultFloat, DefaultInt, DefaultObject, DEV, device, document, DownloadObject, E, Events, Exp, exports,
-fill_combo, fix_move_format, Floor, format_eval, format_unit, FormatPercent, From, FromSeconds, FromTimestamp, get_area,
-get_fen_ply, get_move_ply, get_object, global, HAS_GLOBAL, HasClass, HasClasses, Hide, HOST_ARCHIVE, HTML, Id, Input,
-InsertNodes, invert_eval, is_overlay_visible, IsArray, IsObject, IsString, Keys, KEYS,
-last_key:true, last_scroll, listen_log, load_library, load_model, LOCALHOST, location, Lower, LS, mark_ply_charts, Max,
-Min, Module, navigator, Now, Pad, Parent, parse_time, ParseJSON, play_sound, push_state, QueryString, RandomInt,
-redraw_eval_charts, require, reset_charts, resize_3d, resize_text, Resource, restore_history, Round,
-S, SafeId, save_option, save_storage, scale_boom, scene, scroll_adjust, set_3d_events, set_scale_func, set_section,
-Show, show_popup, Sign, slice_charts, SP, Split, split_move_string, SPRITE_OFFSETS, Sqrt, START_FEN, STATE_KEYS,
-stockfish_wdl, Stringify, Style, SUB_BOARDS, TEXT, TextHTML, timers, Title, TITLES, Toggle, touch_handle,
-translate_default, translate_nodes,
-Undefined, update_chart, update_chart_options, update_live_chart, update_live_charts, update_markers,
-update_player_chart, update_player_charts, update_svg, Upper, virtual_click_tab:true, virtual_close_popups:true,
-virtual_init_3d_special:true, virtual_random_position:true, Visible, VisibleHeight, VisibleWidth, WB_LOWER, WB_TITLE,
-window, X_SETTINGS, XBoard, xboards, Y, y_x
+fillCombo, fixMoveFormat, Floor, formatEval, FormatPercent, formatUnit, From, FromSeconds, FromTimestamp, getArea,
+getFenPly, getMovePly, getObject, global, HAS_GLOBAL, HasClass, HasClasses, Hide, HOST_ARCHIVE, HTML, Id, Input,
+InsertNodes, invertEval, IsArray, IsObject, isOverlayVisible, IsString, Keys, KEYS,
+last_key:true, last_scroll, listenLog, loadLibrary, loadModel, LOCALHOST, location, Lower, LS, markPlyCharts, Max,
+Min, Module, navigator, node_modal, Now, Pad, Parent, ParseJSON, parseTime, playSound, pushState, QueryString,
+RandomInt, redrawEvalCharts, require, resetCharts, resize3d, resizeText, Resource, restoreHistory, Round,
+S, SafeId, saveOption, saveStorage, scaleBoom, scene, scrollAdjust, set3dEvents, setScaleFunc, setSection,
+Show, showPopup, Sign, sliceCharts, SP, Split, splitMoveString, SPRITE_OFFSETS, Sqrt, START_FEN, STATE_KEYS,
+stockfishWdl, Stringify, Style, SUB_BOARDS, TEXT, TextHTML, timers, Title, TITLES, Toggle, touchHandle,
+translateDefault, translateNodes,
+Undefined, updateChart, updateChartOptions, updateLiveChart, updateLiveCharts, updateMarkers, updatePlayerChart,
+updatePlayerCharts, updateSvg, Upper, vi_clickTab:true, vi_closePopups:true, vi_init3dSpecial:true,
+vi_randomPosition:true, Visible, VisibleHeight, VisibleWidth, WB_LOWER, WB_TITLE, window, X_SETTINGS, XBoard, xboards,
+Y, y_x, Z
 */
 'use strict';
 
@@ -121,8 +121,8 @@ let ANALYSIS_URLS = {
             vis: 'table-pv',
         },
         'pva': {
-            clock: start_clock,
-            eval: update_player_eval,
+            clock: startClock,
+            eval: updatePlayerEval,
             manual: true,
             size: 36,
             sub: 1,
@@ -261,6 +261,9 @@ let ANALYSIS_URLS = {
         'time': [1, 1],
         'wdl': [3, 1],
     },
+    node_benchmark,
+    node_mobil,
+    node_overview,
     // sort those columns as a number, not string
     // [default when empty, reverse]
     NUMBER_COLUMNS = {
@@ -435,7 +438,7 @@ let ANALYSIS_URLS = {
         'archive': {},
         'live': {},
     },
-    virtual_opened_table_special;
+    vi_openedTableSpecial;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -451,7 +454,7 @@ let ANALYSIS_URLS = {
  * @param {string=} wdl '437 550 13'
  * @returns {string}
  */
-function calculate_probability(short_engine, eval_, ply, wdl) {
+function calculateProbability(short_engine, eval_, ply, wdl) {
     if (isNaN(eval_))
         return /** @type {string} */(eval_);
 
@@ -469,14 +472,14 @@ function calculate_probability(short_engine, eval_, ply, wdl) {
 
         // stockfish + AB engines
         if (!feature && ply >= 0) {
-            [win, draw, loss] = stockfish_wdl(eval_ * 100, ply);
+            [win, draw, loss] = stockfishWdl(eval_ * 100, ply);
             win /= 10;
             draw /= 10;
             loss /= 10;
         }
         // NN engines
         else {
-            let white_win = calculate_feature_q(feature, eval_, ply);
+            let white_win = calculateFeatureQ(feature, eval_, ply);
             if (eval_ < 0) {
                 loss = Max(0, -white_win * 2);
                 win = 0;
@@ -501,7 +504,7 @@ function calculate_probability(short_engine, eval_, ply, wdl) {
  * @param {string=} prefix prefixed text
  * @returns {!Array<string>|string}
  */
-function create_game_link(section, game, text, mode, prefix) {
+function createGameLink(section, game, text, mode, prefix) {
     let link = '#' + QueryString({query: `${tour_info[section].link}&game=${game}`, string: true});
     if (mode & 1)
         return link;
@@ -518,7 +521,7 @@ function create_game_link(section, game, text, mode, prefix) {
  * @param {string} data
  * @returns {!Array<string>} ex: dec=x, <i class="seek">1</i>, 10%
  */
-function create_seek(value, total, data) {
+function createSeek(value, total, data) {
     return (value && total)? [data, `<i class="seek">${value}</i>`, FormatPercent(value / total)]: ['', value, ''];
 }
 
@@ -530,7 +533,7 @@ function create_seek(value, total, data) {
  * @param {boolean=} split KomodoDragon => Komodo + Dragon
  * @returns {string}
  */
-function format_engine(engine, multi_line, scale, split) {
+function formatEngine(engine, multi_line, scale, split) {
     if (!engine)
         return '';
 
@@ -571,7 +574,7 @@ function format_engine(engine, multi_line, scale, split) {
  * @param {string} fen
  * @returns {string}
  */
-function format_fen(fen) {
+function formatFen(fen) {
     if (!fen)
         return '';
     let pos = fen.indexOf(' ');
@@ -586,7 +589,7 @@ function format_fen(fen) {
  * @param {number} seconds
  * @returns {string}
  */
-function format_hhmmss(seconds) {
+function formatHhmmss(seconds) {
     if (!Number.isFinite(seconds))
         return '-';
     let days = Floor(seconds / 86400);
@@ -602,7 +605,7 @@ function format_hhmmss(seconds) {
  * @param {string} opening
  * @returns {string}
  */
-function format_opening(opening) {
+function formatOpening(opening) {
     if (!opening)
         return '';
     let pos = opening.indexOf(', ');
@@ -643,7 +646,7 @@ function format_opening(opening) {
  * @param {string} parent
  * @returns {!{name:string, node:Node, source:string}}
  */
-function get_active_tab(parent) {
+function getActiveTab(parent) {
     let active = _(`#${parent}-tabs .active`),
         name = '',
         source = '';
@@ -665,7 +668,7 @@ function get_active_tab(parent) {
  * @param {string} engine Stockfish 20200407DC
  * @returns {string} Stockfish
  */
-function get_short_name(engine) {
+function getShortName(engine) {
     if (!engine)
         return '';
     return engine.includes('Baron')? 'Baron': Split(engine)[0];
@@ -676,7 +679,7 @@ function get_short_name(engine) {
  * @param {!Object} xhr
  * @returns {number}
  */
-function get_xhr_elapsed(xhr) {
+function getXhrElapsed(xhr) {
     let curr_time = new Date(xhr.getResponseHeader('date')),
         last_mod = new Date(xhr.getResponseHeader('last-modified'));
     return curr_time.getTime() - last_mod.getTime();
@@ -688,7 +691,7 @@ function get_xhr_elapsed(xhr) {
  * @param {string} text
  * @returns {number|string}
  */
-function parse_date_time(text) {
+function parseDateTime(text) {
     if (!text)
         return 0;
 
@@ -707,7 +710,7 @@ function parse_date_time(text) {
 /**
  * Set the target board and make all sub boards point to that board
  */
-function assign_boards() {
+function assignBoards() {
     board_target = xboards[y_x];
 
     Keys(xboards).forEach(key => {
@@ -724,7 +727,7 @@ function assign_boards() {
  * Check if the live ID can draw an arrow
  * @param {XBoard} board
  */
-function check_draw_arrow(board) {
+function checkDrawArrow(board) {
     let id = board.live_id,
         main = xboards[y_x];
 
@@ -799,14 +802,14 @@ function check_draw_arrow(board) {
  * - should be done at startup since we want to see the boards ASAP
  * @param {string=} mode
  */
-function create_boards(mode='html') {
+function createBoards(mode='html') {
     // 1) create all boards
     let keys = Keys(BOARDS);
 
     keys.forEach(key => {
         let options = Assign({
                 border: 2,
-                hook: handle_board_events,
+                hook: handleBoardEvents,
                 id: `#${key}`,
                 list: true,
                 name: key,
@@ -822,20 +825,20 @@ function create_boards(mode='html') {
     });
 
     // 2) set pointers: real board + duals
-    assign_boards();
+    assignBoards();
 
     // 3) update themes: this will render the boards too
-    update_board_theme(7);
+    updateBoardTheme(7);
 
     xboards['pva'].reset(y_x);
-    show_agree();
+    showAgree();
 }
 
 /**
  * Lock/unlock sub boards
  * @param {number} locked
  */
-function lock_sub_boards(locked) {
+function lockSubBoards(locked) {
     for (let sub of SUB_BOARDS)
         xboards[sub].setLocked(locked);
 }
@@ -843,7 +846,7 @@ function lock_sub_boards(locked) {
 /**
  * PV board order
  */
-function order_boards() {
+function orderBoards() {
     if (HasClass(CacheId('table-pv'), 'frow'))
         Style('#box-pv0, #box-pv1', 'order:unset');
     else {
@@ -859,9 +862,9 @@ function order_boards() {
 /**
  * Redraw the arrows
  */
-function redraw_arrows() {
+function redrawArrows() {
     Keys(xboards).forEach(key => {
-        check_draw_arrow(xboards[key]);
+        checkDrawArrow(xboards[key]);
     });
 }
 
@@ -875,7 +878,7 @@ function redraw_arrows() {
  * @param {boolean=} render
  * @param {string=} start_fen
  */
-function reset_sub_boards(section, mode, render, start_fen) {
+function resetSubBoards(section, mode, render, start_fen) {
     Keys(xboards).forEach(key => {
         let board = xboards[key];
         if (board.main_manual)
@@ -891,7 +894,7 @@ function reset_sub_boards(section, mode, render, start_fen) {
 /**
  * Resize the move lists
  */
-function resize_move_lists() {
+function resizeMoveLists() {
     let window_width = window.innerWidth,
         offset = (window_width <= 420)? 0: Y.offset,
         styles = [
@@ -948,19 +951,19 @@ function resize_move_lists() {
  * @param {string=} section
  * @returns {string}
  */
-function section_board(section) {
+function sectionBoard(section) {
     if (board_target.name == 'pva') {
-        Y.s = 'pva';
+        Z.s = 'pva';
         return 'pva';
     }
-    Y.s = section || y_x;
+    Z.s = section || y_x;
     return section || y_x;
 }
 
 /**
  * Show/hide agree length
  */
-function show_agree() {
+function showAgree() {
     let agree = Y['agree_length'];
 
     Keys(xboards).forEach(key => {
@@ -974,11 +977,11 @@ function show_agree() {
 /**
  * Show/hide the timers around the board
  * @param {string} name
- * @param {number} resize_flag &1:force resize_game, &2:no resize, &4:skip visible
+ * @param {number} resize_flag &1:force resizeGame, &2:no resize, &4:skip visible
  * @param {boolean=} show undefined => show when center/engine is disabled
  * @returns {boolean} true if visibility has changed
  */
-function show_board_info(name, resize_flag, show) {
+function showBoardInfo(name, resize_flag, show) {
     let board = xboards[name],
         is_pva = (name == 'pva'),
         main = is_pva? board: xboards['live'],
@@ -1008,7 +1011,7 @@ function show_board_info(name, resize_flag, show) {
 
     if (!(resize_flag & 4) && Visible('.xbottom', node) == show) {
         if (resize_flag & 1)
-            resize_game();
+            resizeGame();
         return false;
     }
 
@@ -1038,7 +1041,7 @@ function show_board_info(name, resize_flag, show) {
         board.showPicks(true);
 
     if (!(resize_flag & 2))
-        resize_game();
+        resizeGame();
     return true;
 }
 
@@ -1050,7 +1053,7 @@ function show_board_info(name, resize_flag, show) {
  * - &4: pva
  * - &8: just re-render all but don't update settings
  */
-function update_board_theme(mode) {
+function updateBoardTheme(mode) {
     Keys(xboards).forEach(key => {
         // 1) skip?
         let board = xboards[key],
@@ -1096,13 +1099,13 @@ function update_board_theme(mode) {
         board.render(7);
     });
 
-    update_engine_pieces();
+    updateEnginePieces();
 }
 
 /**
  * Update engine pieces using the main board theme
  */
-function update_engine_pieces() {
+function updateEnginePieces() {
     let main = xboards['live'],
         piece_info = main.getPieceBackground(20);
 
@@ -1122,13 +1125,13 @@ function update_engine_pieces() {
  * @param {string} section
  * @param {string} parent
  */
-function add_queue(section, parent) {
+function addQueue(section, parent) {
     for (let queue of QUEUES)
         queued_tables.add(`${section}/${parent}/${queue}`);
 
     let main = xboards[section];
     if (main.players[0].name)
-        add_timeout('queue', check_queued_tables, TIMEOUT_queue);
+        AddTimeout('queue', checkQueuedTables, TIMEOUT_queue);
 }
 
 /**
@@ -1137,7 +1140,7 @@ function add_queue(section, parent) {
  * @param {string} section archive, live
  * @param {!Object} data
  */
-function analyse_crosstable(section, data) {
+function analyseCrosstable(section, data) {
     if (!data)
         return;
     DefaultObject(table_data, section, {}).crossx = data;
@@ -1157,8 +1160,8 @@ function analyse_crosstable(section, data) {
         orders = data['Order'],
         abbrevs = orders.map(name => dicos[name]['Abbreviation']),
         stand_rows = [],
-        titles = Assign({}, ...orders.map(name => ({[dicos[name]['Abbreviation']]: get_short_name(name)}))),
-        wrap_cross = get_wrap('cross');
+        titles = Assign({}, ...orders.map(name => ({[dicos[name]['Abbreviation']]: getShortName(name)}))),
+        wrap_cross = getWrap('cross');
 
     // 1) check the schedule
     // - needed when crosstable has no color information
@@ -1216,7 +1219,7 @@ function analyse_crosstable(section, data) {
                         let text,
                             color = Undefined(game['Color'], ''),
                             game_id = game['Game'],
-                            link = create_game_link(section, game_id, '', 1),
+                            link = createGameLink(section, game_id, '', 1),
                             score = game['Result'],
                             sep = i? ((max_column && (i % max_column == 0))? '<br>': ''): '',
                             winner = game['Winner'];
@@ -1309,7 +1312,7 @@ function analyse_crosstable(section, data) {
             }
         });
 
-    update_table(section, 'stand', stand_rows);
+    updateTable(section, 'stand', stand_rows);
 
     // 4) table-cross: might need to update the columns too
     let node = CacheId('table-cross'),
@@ -1322,12 +1325,12 @@ function analyse_crosstable(section, data) {
         let extras = new_columns.slice(3),
             width = `${Floor(71 / (extras.length + 0.001))}%`,
             widths = [...['4%', '18%', '7%'], ...extras.map(() => width)],
-            head = create_table_columns(new_columns, widths, abbrevs, titles);
+            head = createTableColumns(new_columns, widths, abbrevs, titles);
         HTML('thead', head, node);
-        translate_nodes(node);
+        translateNodes(node);
     }
 
-    update_table(section, 'cross', cross_rows);
+    updateTable(section, 'cross', cross_rows);
 }
 
 /**
@@ -1338,7 +1341,7 @@ function analyse_crosstable(section, data) {
  * @param {Array<Object>} rows
  * @returns {!Array<Object>} filtered rows
  */
-function calculate_h2h(section, rows) {
+function calculateH2h(section, rows) {
     let main = xboards[section],
         players = main.players,
         names = {[players[0].name]: 1, [players[1].name]: 1},
@@ -1366,7 +1369,7 @@ function calculate_h2h(section, rows) {
         let player = players[id];
         player.score = (names[player.name] - 1).toFixed(1);
     }
-    update_scores(section);
+    updateScores(section);
 
     return new_rows;
 }
@@ -1376,11 +1379,11 @@ function calculate_h2h(section, rows) {
  * @param {string} parent quick, table
  * @param {string} value +1, -1, 0, 1, 2, ...
  */
-function change_page(parent, value) {
-    let tab = get_active_tab(parent),
+function changePage(parent, value) {
+    let tab = getActiveTab(parent),
         active = tab.name;
     if (DEV['ui2'])
-        LS(`change_page: ${parent} : ${value} ~ ${active}`);
+        LS(`changePage: ${parent} : ${value} ~ ${active}`);
 
     let page,
         page_key = `page_${parent}`,
@@ -1401,7 +1404,7 @@ function change_page(parent, value) {
 
     // refresh the table
     data_x[page_key] = page;
-    update_table(section, active, null, {output: tab.source, parent: parent});
+    updateTable(section, active, null, {output: tab.source, parent: parent});
 }
 
 /**
@@ -1409,14 +1412,14 @@ function change_page(parent, value) {
  * @param {string} parent
  * @returns {number} number of pages (negative if virtual)
  */
-function check_pagination(parent) {
+function checkPagination(parent) {
     // check if the active tab can be paginated
-    let name = get_active_tab(parent).name;
+    let name = getActiveTab(parent).name;
     if (!PAGINATIONS[name])
         return 0;
 
     if (DEV['queue'])
-        LS(`check_pagination: ${parent}/${name}`);
+        LS(`checkPagination: ${parent}/${name}`);
 
     // check if there's enough data
     let section = y_x,
@@ -1441,7 +1444,7 @@ function check_pagination(parent) {
     if (pages.length != num_page + 2) {
         let lines = ['<a class="page page-prev" data-p="-1">&lt;</a>'];
         if (parent == 'table') {
-            let array = create_page_array(num_page, page, 2);
+            let array = createPageArray(num_page, page, 2);
             for (let id = 0; id < num_page; id ++) {
                 if (array[id] == 2)
                     lines.push(`<a class="page${page == id? ' active': ''}" data-p="${id}">${id + 1}</a>`);
@@ -1462,9 +1465,9 @@ function check_pagination(parent) {
 /**
  * Check pagination for the currently active tables
  */
-function check_paginations() {
+function checkPaginations() {
     for (let parent of PAGINATION_PARENTS) {
-        let num_page = check_pagination(parent);
+        let num_page = checkPagination(parent);
         S(CacheId(`${parent}-pagin`), num_page > 1);
         S(CacheId(`${parent}-search`), Abs(num_page) >= 1);
     }
@@ -1473,8 +1476,8 @@ function check_paginations() {
 /**
  * Check if some queued tables can be created
  */
-function check_queued_tables() {
-    clear_timeout('queue');
+function checkQueuedTables() {
+    ClearTimeout('queue');
     let removes = [];
 
     for (let queued of queued_tables) {
@@ -1491,12 +1494,12 @@ function check_queued_tables() {
 
         let data = data_x.data;
         if (table == 'h2h') {
-            let new_rows = calculate_h2h(section, data);
-            update_table(section, table, new_rows, {parent: parent});
-            check_paginations();
+            let new_rows = calculateH2h(section, data);
+            updateTable(section, table, new_rows, {parent: parent});
+            checkPaginations();
         }
         else
-            calculate_event_stats(section, data);
+            calculateEventStats(section, data);
         removes.push(queued);
     }
 
@@ -1511,7 +1514,7 @@ function check_queued_tables() {
  * @param {number} id 0, 1
  * @returns {string}
  */
-function create_live_table(is_live, id) {
+function createLiveTable(is_live, id) {
     let html =
         '<vert class="live fastart">'
             + '<grid class="live-basic">'
@@ -1539,12 +1542,12 @@ function create_live_table(is_live, id) {
  * @param {boolean=} add_empty add an empty row (good for overview)
  * @returns {string}
  */
-function create_table(columns, add_empty) {
+function createTable(columns, add_empty) {
     let lines = [
         '<table><thead>',
-            create_table_columns(columns),
+            createTableColumns(columns),
         '</thead><tbody>',
-            (add_empty? columns.map(column => `<td data-x="${create_field_value(column)[0]}">&nbsp;</td>`).join(''): ''),
+            (add_empty? columns.map(column => `<td data-x="${createFieldValue(column)[0]}">&nbsp;</td>`).join(''): ''),
         '</tbody></table>',
     ];
     return lines.join('');
@@ -1552,7 +1555,7 @@ function create_table(columns, add_empty) {
 
 /**
  * Create <th> columns to be used in a table
- * - used by create_table
+ * - used by createTable
  * - used when generating the dynamic Crosstable
  * @param {Array<string>} columns
  * @param {Array<number>=} widths optional width for each column
@@ -1560,9 +1563,9 @@ function create_table(columns, add_empty) {
  * @param {Object=} titles
  * @returns {string}
  */
-function create_table_columns(columns, widths, no_translates=[], titles={}) {
+function createTableColumns(columns, widths, no_translates=[], titles={}) {
     return columns.map((column, id) => {
-        let [field, value] = create_field_value(column),
+        let [field, value] = createFieldValue(column),
             style = widths? ` style="width:${widths[id]}"`: '',
             title = titles[value] || TITLES[value] || titles[field] || TITLES[field],
             translate = no_translates.includes(value)? '': ` data-t="${value}"`;
@@ -1583,19 +1586,19 @@ function create_table_columns(columns, widths, no_translates=[], titles={}) {
 /**
  * Create all the tables
  */
-function create_tables() {
+function createTables() {
     // 1) normal tables
     Keys(TABLES).forEach(name => {
         let is_overview = (name == 'overview'),
             table = TABLES[name],
-            html = create_table(Split(table), is_overview);
+            html = createTable(Split(table), is_overview);
         HTML(CacheId(`${is_overview? '': 'table-'}${name}`), html);
     });
-    translate_nodes('body');
+    translateNodes('body');
 
     // 2) live tables
     for (let [node, box_node] of LIVE_TABLES) {
-        let html = create_live_table(node.includes('live'), node.slice(-1));
+        let html = createLiveTable(node.includes('live'), node.slice(-1));
         HTML(node, html.replace('{TEMP}', '<horis class="live-pv fabase"></horis>'));
         HTML(box_node, html.replace('{TEMP}', ''));
     }
@@ -1604,14 +1607,14 @@ function create_tables() {
     Events('.scroller', '!touchstart touchmove touchend', () => {});
     Events('.scroller', 'mousedown mouseenter mouseleave mousemove mouseup touchstart touchmove touchend', e => {
         if (!device.iphone)
-            touch_handle(e);
+            touchHandle(e);
     }, {passive: false});
 }
 
 /**
  * Download live data when the graph is ready
  */
-function download_live() {
+function downloadLive() {
     let left = 4,
         section = 'live';
     if (section != y_x)
@@ -1620,7 +1623,7 @@ function download_live() {
     function _done() {
         left --;
         if (!left)
-            redraw_eval_charts(section);
+            redrawEvalCharts(section);
     }
 
     // live engines
@@ -1633,14 +1636,14 @@ function download_live() {
         }
 
         // eval
-        download_table(section, `data${id || ''}.json`, null, data => {
-            update_live_eval(section, data, id);
+        downloadTable(section, `data${id || ''}.json`, null, data => {
+            updateLiveEval(section, data, id);
             _done();
         }, dico);
 
         // chart
-        download_table(section, `liveeval${id || ''}.json`, null, data => {
-            update_live_eval(section, data, id);
+        downloadTable(section, `liveeval${id || ''}.json`, null, data => {
+            updateLiveEval(section, data, id);
             _done();
         }, dico);
     }
@@ -1659,7 +1662,7 @@ function download_live() {
  * @param {boolean=} obj.only_cache only load data if it's cached
  * @param {boolean=} obj.show open the table after wards
  */
-function download_table(section, url, name, callback, {add_delta, no_cache, only_cache, show}={}) {
+function downloadTable(section, url, name, callback, {add_delta, no_cache, only_cache, show}={}) {
     function _done(data, cached) {
         if (DEV['json']) {
             LS(`${url}:`);
@@ -1678,12 +1681,12 @@ function download_table(section, url, name, callback, {add_delta, no_cache, only
             if (callback)
                 callback(data);
             else if (name) {
-                update_table(section, name, data);
+                updateTable(section, name, data);
                 if (show && section == y_x) {
-                    open_table(name);
+                    openTable(name);
                     let is_game = hashes[section]['game'];
-                    add_timeout('scroll', () => {
-                        scroll_adjust(Y.scroll || (is_game? '#overview': '#tables'));
+                    AddTimeout('scroll', () => {
+                        scrollAdjust(Y.scroll || (is_game? '#overview': '#tables'));
                     }, TIMEOUT_scroll);
                 }
             }
@@ -1691,7 +1694,7 @@ function download_table(section, url, name, callback, {add_delta, no_cache, only
     }
 
     let key = `table_${name}_${section}`,
-        cache = get_object(key),
+        cache = getObject(key),
         timeout = CACHE_TIMEOUTS[name];
 
     if (!no_cache && timeout) {
@@ -1715,9 +1718,9 @@ function download_table(section, url, name, callback, {add_delta, no_cache, only
             return;
 
         let cache_data = cache? cache['data']: null,
-            now = Now(true);
+            now = Now(1);
         if (data && add_delta) {
-            let elapsed = get_xhr_elapsed(xhr);
+            let elapsed = getXhrElapsed(xhr);
             cache_data.delta = elapsed;
             data.delta = elapsed;
         }
@@ -1729,7 +1732,7 @@ function download_table(section, url, name, callback, {add_delta, no_cache, only
         }
 
         if (!no_cache) {
-            save_storage(key, {'data': data, 'time': Floor(now)});
+            saveStorage(key, {'data': data, 'time': Floor(now)});
             if (DEV['json'])
                 LS(`cache saved: ${key}`);
         }
@@ -1742,24 +1745,24 @@ function download_table(section, url, name, callback, {add_delta, no_cache, only
  * @param {boolean=} only_cache
  * @param {number=} live_flag &1:no_live, &2:only_live
  */
-function download_tables(only_cache, live_flag) {
+function downloadTables(only_cache, live_flag) {
     let section = 'live';
     if (!only_cache && !(live_flag & 1))
-        download_pgn(section, 'live.pgn', false, download_live);
+        downloadPgn(section, 'live.pgn', false, downloadLive);
 
     if (live_flag & 2)
         return;
 
     if (!only_cache)
-        download_gamelist();
+        downloadGamelist();
 
     let dico = {only_cache: only_cache};
-    download_table(section, 'crosstable.json', 'cross', data => {
-        analyse_crosstable(section, data);
+    downloadTable(section, 'crosstable.json', 'cross', data => {
+        analyseCrosstable(section, data);
     }, dico);
-    download_table(section, 'schedule.json', 'sched', null, dico);
-    download_table(section, 'tournament.json', 'tour', data => {
-        analyse_tournament(section, data);
+    downloadTable(section, 'schedule.json', 'sched', null, dico);
+    downloadTable(section, 'tournament.json', 'tour', data => {
+        analyseTournament(section, data);
     }, dico);
 }
 
@@ -1770,15 +1773,15 @@ function download_tables(only_cache, live_flag) {
  * @param {string} text
  * @param {{name:string, node:(Node|undefined), source:string}=} force
  */
-function filter_table_rows(parent, text, force) {
-    let tab = force || get_active_tab(parent),
+function filterTableRows(parent, text, force) {
+    let tab = force || getActiveTab(parent),
         active = tab.name,
         section = y_x,
         data_x = table_data[section][active];
 
     if (data_x) {
         data_x[`filter_${parent}`] = text;
-        update_table(section, active, null, {output: tab.source, parent: parent});
+        updateTable(section, active, null, {output: tab.source, parent: parent});
     }
 }
 
@@ -1788,7 +1791,7 @@ function filter_table_rows(parent, text, force) {
  * @param {Node=} body table body
  * @returns {boolean}
  */
-function get_wrap(name, body) {
+function getWrap(name, body) {
     let y_wrap = Y['wrap'],
         wrap = Undefined(Y[`wrap_${name}`], y_wrap);
     if (wrap == 'auto')
@@ -1802,20 +1805,20 @@ function get_wrap(name, body) {
  * Set the games filter
  * @param {string} text
  */
-function set_games_filter(text) {
+function setGamesFilter(text) {
     CacheId('search').value = text;
-    filter_table_rows('table', text, {name: 'sched', source: 'sched'});
+    filterTableRows('table', text, {name: 'sched', source: 'sched'});
 }
 
 /**
  * Show filtered games
  * @param {string} text
  */
-function show_filtered_games(text) {
-    set_games_filter(text);
-    add_timeout('table', () => {
-        open_table('sched');
-        scroll_adjust('#tables');
+function showFilteredGames(text) {
+    setGamesFilter(text);
+    AddTimeout('table', () => {
+        openTable('sched');
+        scrollAdjust('#tables');
     }, TIMEOUT_search);
 }
 
@@ -1824,12 +1827,12 @@ function show_filtered_games(text) {
  * @param {string} section
  * @param {boolean=} is_cup
  */
-function show_tables(section, is_cup) {
+function showTables(section, is_cup) {
     if (section != y_x || is_cup == old_cup)
         return;
     old_cup = is_cup;
 
-    let active = get_active_tab('table').name,
+    let active = getActiveTab('table').name,
         parent = CacheId('tables'),
         target = (active == 'sched')? active: (is_cup? 'brak': 'stand');
     S('[data-x="brak"], [data-x="event"]', is_cup, parent);
@@ -1852,7 +1855,7 @@ function show_tables(section, is_cup) {
  * @param {string=} obj.parent chart, engine, quick, table
  * @param {boolean=} obj.reset clear the table before adding data to it (so far always the case)
  */
-function update_table(section, name, rows, {output, parent='table', reset=true}={}) {
+function updateTable(section, name, rows, {output, parent='table', reset=true}={}) {
     if (!name)
         return;
 
@@ -1871,7 +1874,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
         if (is_shortcut) {
             let node = CacheId(`table-${name}`);
             HTML(CacheId(source), HTML(node));
-            resize_table(name);
+            resizeTable(name);
         }
         return;
     }
@@ -1918,7 +1921,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                 let value = row[key];
                 if (value)
                     lines.push(value + '');
-                return {[create_field_value(key)[0]]: value};
+                return {[createFieldValue(key)[0]]: value};
             }));
             row['_text'] = Lower(lines.join(' '));
             data.push(row);
@@ -1926,7 +1929,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
 
         // special case
         if (is_sched)
-            calculate_estimates(section, data);
+            calculateEstimates(section, data);
     }
 
     // 3) sorting
@@ -1984,7 +1987,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
         active_row = -1;
 
     if (PAGINATIONS[name]) {
-        let active = get_active_tab(parent).name,
+        let active = getActiveTab(parent).name,
             page = data_x[page_key],
             row_page = Y['rows_per_page'],
             total = data.length;
@@ -2042,7 +2045,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
         required = COLUMNS_REQUIRED[name] || [],
         tour_url = tour_info[section].url,
         vectors = [],
-        wrap = get_wrap(name, body);
+        wrap = getWrap(name, body);
 
     // hide columns?
     for (let column of required) {
@@ -2103,7 +2106,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                     vclass = (key[0] == 'w')? ' loss': ' win';
                 else if (row['result'] == '1-0')
                     vclass = (key[0] == 'w')? ' win': ' loss';
-                value = `<div class="split${vclass}">${format_engine(value, wrap, 0, true)}</div>`;
+                value = `<div class="split${vclass}">${formatEngine(value, wrap, 0, true)}</div>`;
                 break;
             case 'date':
                 // TODO: fix winners.json
@@ -2117,13 +2120,13 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
             case 'runner':
             case 'winner':
                 if (is_winner)
-                    value = format_engine(value, true, -2, true);
+                    value = formatEngine(value, true, -2, true);
                 else {
                     td_class = 'tal';
                     value = [
                         '<hori>',
-                            `<img class="left-image" src="image/engine/${get_short_name(value)}.png">`,
-                            `<div class="split">${format_engine(value, wrap, 0, true)}</div>`,
+                            `<img class="left-image" src="image/engine/${getShortName(value)}.png">`,
+                            `<div class="split">${formatEngine(value, wrap, 0, true)}</div>`,
                         '</hori>',
                     ].join('');
                 }
@@ -2131,13 +2134,13 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
             case 'final_fen':
                 if (value.length > 1)
                     td_class = 'fen';
-                value = format_fen(value);
+                value = formatFen(value);
                 break;
             case 'game':
             case 'gameno':
                 let game = (is_h2h_archive || is_sched_archive)? row_id + 1: value;
                 if (row['moves'] || row['reason']) {
-                    value = create_game_link(section, game);
+                    value = createGameLink(section, game);
                     if ((is_h2h || is_sched) && tour_url)
                         value = [
                             '<hori>',
@@ -2157,7 +2160,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                 break;
             case 'opening':
                 td_class = 'opening';
-                value = format_opening(value);
+                value = formatOpening(value);
                 break;
             case 'result':
                 td_class = 'nowrap';
@@ -2259,12 +2262,12 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                 Style('th', [['width', `${th_width}px`]], true, node);
         }
 
-        update_svg(table);
-        translate_nodes(table);
+        updateSvg(table);
+        translateNodes(table);
 
         // 7) add events
         if (name == 'season')
-            set_season_events();
+            setSeasonEvents();
 
         // download game
         C('a[href]', function(e) {
@@ -2275,7 +2278,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
         C('[data-g]', function(e) {
             if (Parent(e.target, {class_: 'fen', self: true}))
                 return;
-            if (cannot_click())
+            if (cannotClick())
                 return;
 
             if (this.tagName == 'TR') {
@@ -2285,12 +2288,12 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
             let game = this.dataset['g'] * 1;
             Y.scroll = '#overview';
             if (section == 'archive') {
-                save_option('game', game);
-                open_game();
+                saveOption('game', game);
+                openGame();
             }
             // make sure the game is over
             else if (_('a.game[href]', this))
-                location.hash = create_game_link(section, game, '', 1);
+                location.hash = createGameLink(section, game, '', 1);
         }, table);
 
         // fen preview
@@ -2300,13 +2303,13 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                 let overlay = xboards['xfen'].xoverlay;
                 HTML(overlay,
                     '<vert class="fcenter facenter h100">'
-                        + `<div class="xcopy">${translate_default('COPIED')}</div>`
+                        + `<div class="xcopy">${translateDefault('COPIED')}</div>`
                     + '</vert>'
                 );
                 Style(overlay, [['opacity', 1], ['transition', 'opacity 0s']]);
             }
             else
-                popup_custom('popup-fen', 'fen', e, '', TEXT(this));
+                popupCustom('popup-fen', 'fen', e, '', TEXT(this));
         });
 
         // sorting
@@ -2327,7 +2330,7 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
                 sort = first;
             Y.sort = (sort == column)? `-${column}`: column;
 
-            update_table(section, name);
+            updateTable(section, name);
             SP(e);
         }, table);
     }
@@ -2342,13 +2345,13 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
 
             if (!paginated || data_x.page_quick < 0)
                 data_x.page_quick = data_x[page_key];
-            update_table(section, key);
+            updateTable(section, key);
         }
     }
 
     // 9) create another table?
     if (!is_shortcut && is_sched && !Y.sort)
-        add_queue(section, parent);
+        addQueue(section, parent);
 }
 
 // ARCHIVE
@@ -2358,16 +2361,16 @@ function update_table(section, name, rows, {output, parent='table', reset=true}=
  * Handle the seasons file
  * @param {!Object} data
  */
-function analyse_seasons(data) {
+function analyseSeasons(data) {
     let seasons = (data || {}).Seasons,
         section = 'archive',
         is_archive = (y_x == section);
     if (!seasons)
         return;
 
-    let link = current_archive_link(section),
+    let link = currentArchiveLink(section),
         rows = Keys(seasons).reverse().map(key => Assign({season: isNaN(key)? key: `Season ${key}`}, seasons[key]));
-    update_table(section, 'season', rows);
+    updateTable(section, 'season', rows);
 
     // don't load an archive game unless we're in the archive
     if (is_archive) {
@@ -2380,11 +2383,11 @@ function analyse_seasons(data) {
             return;
         Class(node, 'active');
         Class(node.nextElementSibling, 'active');
-        expand_season(parent.previousElementSibling, true);
+        expandSeason(parent.previousElementSibling, true);
         tour_info[section].link = link;
     }
 
-    open_event(y_x);
+    openEvent(y_x);
 }
 
 /**
@@ -2393,7 +2396,7 @@ function analyse_seasons(data) {
  * @param {boolean=} is_game include the game= ...
  * @returns {string}
  */
-function current_archive_link(section, is_game) {
+function currentArchiveLink(section, is_game) {
     if (section == 'live')
         return tour_info[section].link;
 
@@ -2406,8 +2409,8 @@ function current_archive_link(section, is_game) {
 /**
  * Download the game list, necessary for the archive and for the game links in Live
  */
-function download_gamelist() {
-    download_table('archive', 'gamelist.json', 'season', analyse_seasons);
+function downloadGamelist() {
+    downloadTable('archive', 'gamelist.json', 'season', analyseSeasons);
 }
 
 /**
@@ -2415,7 +2418,7 @@ function download_gamelist() {
  * @param {Node} node
  * @param {boolean=} show if not defined, then toggle
  */
-function expand_season(node, show) {
+function expandSeason(node, show) {
     let next = node.nextElementSibling;
     if (show == undefined)
         Toggle(next);
@@ -2431,12 +2434,12 @@ function expand_season(node, show) {
  * @param {string} section
  * @param {Function=} callback
  */
-function open_event(section, callback) {
-    clear_timeout('active');
+function openEvent(section, callback) {
+    ClearTimeout('active');
 
     let data_x = table_data['archive']['season'];
     if (!data_x) {
-        download_gamelist();
+        downloadGamelist();
         return;
     }
 
@@ -2447,7 +2450,7 @@ function open_event(section, callback) {
             'eventtag': '',
             'frc': 0,
         }),
-        link = current_archive_link(section),
+        link = currentArchiveLink(section),
         season = Y['season'] || '';
 
     Keys(data).forEach(key => {
@@ -2482,24 +2485,24 @@ function open_event(section, callback) {
         prefix = `${HOST_ARCHIVE}/${found}`;
 
     // cup?
-    show_tables(section, !!event_tag);
+    showTables(section, !!event_tag);
     if (event_tag) {
         if (bracket_link != event_tag)
-            download_table(section, `${HOST_ARCHIVE}/${event_tag}_Eventcrosstable.json`, 'brak', data => {
-                create_cup(section, data, true);
+            downloadTable(section, `${HOST_ARCHIVE}/${event_tag}_Eventcrosstable.json`, 'brak', data => {
+                createCup(section, data, true);
                 bracket_link = event_tag;
             }, dico);
     }
     else
-        download_table(section, `${prefix}_Crosstable.json`, 'cross', data => {
-            analyse_crosstable(section, data);
+        downloadTable(section, `${prefix}_Crosstable.json`, 'cross', data => {
+            analyseCrosstable(section, data);
         }, dico);
 
-    download_table(section, `${prefix}_crash.json`, 'crash', null, dico);
-    download_table(section, `${prefix}_Enginerating.json`, null, null, dico);
-    download_table(section, `${prefix}_Schedule.json`, 'sched', null, Assign({show: !event_tag}, dico));
+    downloadTable(section, `${prefix}_crash.json`, 'crash', null, dico);
+    downloadTable(section, `${prefix}_Enginerating.json`, null, null, dico);
+    downloadTable(section, `${prefix}_Schedule.json`, 'sched', null, Assign({show: !event_tag}, dico));
 
-    open_game();
+    openGame();
     if (callback)
         callback();
 }
@@ -2507,49 +2510,49 @@ function open_event(section, callback) {
 /**
  * Open an archived game
  */
-function open_game() {
+function openGame() {
     let info = tour_info['archive'],
         event = info['url'];
     if (!event)
         return;
 
     if (Y['season'] && (Y['div'] || Y['round'] || Y['stage']) && Y['game']) {
-        push_state();
-        check_hash();
+        pushState();
+        checkHash();
     }
     if (Y['game'])
-        download_pgn('archive', `${HOST_ARCHIVE}/${event}_${Y['game']}.pgn`);
+        downloadPgn('archive', `${HOST_ARCHIVE}/${event}_${Y['game']}.pgn`);
 }
 
 /**
  * Set table-season events
  */
-function set_season_events() {
+function setSeasonEvents() {
     let table = CacheId('table-season');
 
     // expand/collapse
     C('.season', function() {
-        if (cannot_click())
+        if (cannotClick())
             return;
-        expand_season(this);
+        expandSeason(this);
     }, table);
 
     // open games
     C('a[data-u]', function() {
-        if (cannot_click())
+        if (cannotClick())
             return;
 
         // 'season=18&div=l3' or 'season=cup5&round=round16'
         let query = QueryString({query: this.dataset['u']}),
             dico = Assign({div: '', round: '', stage: ''}, /** @type Object */(query));
         Keys(dico).forEach(key => {
-            save_option(key, dico[key]);
+            saveOption(key, dico[key]);
         });
-        save_option('game', 1);
+        saveOption('game', 1);
 
-        set_games_filter('');
+        setGamesFilter('');
         Y.scroll = '#tables';
-        open_event('archive');
+        openEvent('archive');
 
         Class('a.active', '-active', true, table);
         Class(this, 'active');
@@ -2574,19 +2577,19 @@ function set_season_events() {
  * @param {string} section archive, live
  * @param {!Object} data
  */
-function analyse_tournament(section, data) {
+function analyseTournament(section, data) {
     let tour = tour_info[section];
     Assign(tour, data);
     if (DEV['cup'])
         tour.cup = 6;
 
     if (tour.cup)
-        download_table(section, 'Eventcrosstable.json', 'brak', data => {
-            create_cup(section, data);
+        downloadTable(section, 'Eventcrosstable.json', 'brak', data => {
+            createCup(section, data);
         }, {no_cache: true});
 
-    open_event(section);
-    update_table(section, 'sched', null);
+    openEvent(section);
+    updateTable(section, 'sched', null);
     if (DEV['global'])
         window['tour_info'] = tour_info;
 }
@@ -2599,7 +2602,7 @@ function analyse_tournament(section, data) {
  * @param {number=} new_mode
  * @returns {!Array<number>}
  */
-function calculate_seeds(num_team, new_mode) {
+function calculateSeeds(num_team, new_mode) {
     let number = 2,
         nexts = [1, 2];
 
@@ -2619,11 +2622,11 @@ function calculate_seeds(num_team, new_mode) {
 /**
  * Calculate tournament stats
  * - called after sched data is available, so, from queued tables
- * - called after calculate_estimates
+ * - called after calculateEstimates
  * @param {string} section archive, live
  * @param {!Array<Object>=} rows
  */
-function calculate_event_stats(section, rows) {
+function calculateEventStats(section, rows) {
     // 1) default = schedule data
     if (!rows) {
         let data_x = table_data[section]['sched'];
@@ -2659,7 +2662,7 @@ function calculate_event_stats(section, rows) {
 
         let pair = [row['black'], row['white']].sort().join('|'),
             result = row['result'],
-            time = parse_time(row['duration']),
+            time = parseTime(row['duration']),
             // ideally, this should be the starting FEN after the book
             unique = (num_engine <= 2 || 1)? 'x': row['eco'];
 
@@ -2728,30 +2731,30 @@ function calculate_event_stats(section, rows) {
         //
         'start_time': `${start_time} <i class="year">${start_date}</i>`,
         'end_time': length? `${end_time} <i class="year">${end_date}</i>`: '-',
-        'duration': format_hhmmss(stats._duration),
+        'duration': formatHhmmss(stats._duration),
         //
         'games': `${games}/${length}`,
         'progress': length? FormatPercent(games/length): '-',
         'round': `${Min(num_round, Ceil((games + 1) / num_half / 2))}/${num_round}${reverse}`,
         //
         'reverses': num_pair,
-        'decisive_openings': create_seek(decisives, num_pair, 'dec=01'),
-        [kill_text]: create_seek(double_wins, num_pair, 'dec=05'),
-        'double_draws': create_seek(double_draws, num_pair, 'dec=08'),
-        '{Win} & {draw}': create_seek(win_draws, num_pair, 'dec=03'),
-        'busted_openings': create_seek(busted, num_pair, 'dec=16'),
+        'decisive_openings': createSeek(decisives, num_pair, 'dec=01'),
+        [kill_text]: createSeek(double_wins, num_pair, 'dec=05'),
+        'double_draws': createSeek(double_draws, num_pair, 'dec=08'),
+        '{Win} & {draw}': createSeek(win_draws, num_pair, 'dec=03'),
+        'busted_openings': createSeek(busted, num_pair, 'dec=16'),
         //
         'average_moves': games? Round(moves / games): '-',
-        'min_moves': create_game_link(section, min_moves[1], '', 2, (min_moves[0] < Infinity)? min_moves[0]: '-'),
-        'max_moves': create_game_link(section, max_moves[1], '', 2, (max_moves[0] >= 0)? max_moves[0]: '-'),
-        'average_time': format_hhmmss(seconds / games),
-        'min_time': create_game_link(
-            section, min_time[1], '', 2, (min_time[0] < Infinity)? format_hhmmss(min_time[0]): '-'),
-        'max_time': create_game_link(section, max_time[1], '', 2, (max_time[0] >= 0)? format_hhmmss(max_time[0]): '-'),
+        'min_moves': createGameLink(section, min_moves[1], '', 2, (min_moves[0] < Infinity)? min_moves[0]: '-'),
+        'max_moves': createGameLink(section, max_moves[1], '', 2, (max_moves[0] >= 0)? max_moves[0]: '-'),
+        'average_time': formatHhmmss(seconds / games),
+        'min_time': createGameLink(
+            section, min_time[1], '', 2, (min_time[0] < Infinity)? formatHhmmss(min_time[0]): '-'),
+        'max_time': createGameLink(section, max_time[1], '', 2, (max_time[0] >= 0)? formatHhmmss(max_time[0]): '-'),
         //
-        'white_wins': create_seek(results['1-0'], games, '1-0'),
-        'black_wins': create_seek(results['0-1'], games, '0-1'),
-        'draws': create_seek(results['1/2-1/2'], games, '1/2-1/2'),
+        'white_wins': createSeek(results['1-0'], games, '1-0'),
+        'black_wins': createSeek(results['0-1'], games, '0-1'),
+        'draws': createSeek(results['1/2-1/2'], games, '1/2-1/2'),
 
     };
     Assign(stats, dico);
@@ -2786,7 +2789,7 @@ function calculate_event_stats(section, rows) {
     let parent = CacheId('table-stats'),
         node = _('.estats', parent);
     HTML(node, lines.join(''));
-    translate_nodes(node);
+    translateNodes(node);
 
     // 6) shortcuts?
     for (let id = 1; id <= 3; id ++) {
@@ -2795,7 +2798,7 @@ function calculate_event_stats(section, rows) {
             HTML(CacheId(key), HTML(parent));
     }
 
-    resize_table('stats');
+    resizeTable('stats');
 }
 
 /**
@@ -2804,7 +2807,7 @@ function calculate_event_stats(section, rows) {
  * @param {string} section
  * @param {!Array<Object>} rows
  */
-function calculate_estimates(section, rows) {
+function calculateEstimates(section, rows) {
     let games = 0,
         last = 0,
         seconds = 0;
@@ -2822,7 +2825,7 @@ function calculate_estimates(section, rows) {
             games ++;
             seconds += time;
         }
-        row['start'] = parse_date_time(start);
+        row['start'] = parseDateTime(start);
         row['started'] = true;
         last = row['start'];
     }
@@ -2858,7 +2861,7 @@ function calculate_estimates(section, rows) {
  * @param {string} section archive, live
  * @param {Object=} data
  */
-function create_bracket(section, data) {
+function createBracket(section, data) {
     if (section != y_x)
         return;
 
@@ -2877,7 +2880,7 @@ function create_bracket(section, data) {
         prev_finished = true,
         round = 0,
         round_results = data['results'][0] || [],
-        seeds = calculate_seeds(num_team * 2, (tour_info[section].cup >= 6)? 1: 0);
+        seeds = calculateSeeds(num_team * 2, (tour_info[section].cup >= 6)? 1: 0);
 
     // assign seeds
     teams.forEach((team, id) => {
@@ -2922,7 +2925,7 @@ function create_bracket(section, data) {
                 team.forEach((item, id) => {
                     let class_ = '',
                         seed = item.seed,
-                        short = get_short_name(item.name);
+                        short = getShortName(item.name);
 
                     if (result[0] != result[1])
                         class_ = (item.winner && result[id] > result[1 - id])? ' win': ' loss';
@@ -2932,7 +2935,7 @@ function create_bracket(section, data) {
                         seed?
                         `<hori title="${item.name}">`
                             + `<img class="match-logo" src="image/engine/${short}.png">`
-                            + `<div class="seed">#${seed}</div><div>${resize_text(short, 17)}</div>`
+                            + `<div class="seed">#${seed}</div><div>${resizeText(short, 17)}</div>`
                         + '</hori>' : '',
                         short,
                     ];
@@ -3016,7 +3019,7 @@ function create_bracket(section, data) {
     lines.push('<div id="svgs"></div></hori>');
     let node = CacheId('table-brak');
     HTML(node, lines.join(''));
-    translate_nodes(node);
+    translateNodes(node);
 
     // 4) swap active in final round
     let nodes = A('.final .match-title');
@@ -3025,7 +3028,7 @@ function create_bracket(section, data) {
         Class(nodes[1], 'active');
     }
 
-    resize_bracket(true);
+    resizeBracket(true);
 }
 
 /**
@@ -3037,7 +3040,7 @@ function create_bracket(section, data) {
  * @param {Array<number>} coeffs
  * @returns {Node}
  */
-function create_connector(curr, id, nexts, target, coeffs) {
+function createConnector(curr, id, nexts, target, coeffs) {
     // if there's a winner => connect the winner, otherwise the center
     curr = _(`.score.${target}`, curr) || curr;
     let next = nexts[Floor(id / 2)],
@@ -3076,7 +3079,7 @@ function create_connector(curr, id, nexts, target, coeffs) {
  * Create bracket connectors
  * + medals
  */
-function create_connectors() {
+function createConnectors() {
     let parent = Id('bracket'),
         svg_node = Id('svgs'),
         svgs = [];
@@ -3090,14 +3093,14 @@ function create_connectors() {
             final = _(`[data-r="${round + 2}"]`, parent)? 0: 1;
         currs.forEach((curr, id) => {
             for (let [offset, target, coeffs] of CONNECTORS[final]) {
-                let svg = create_connector(curr, id + offset, nexts, target, coeffs);
+                let svg = createConnector(curr, id + offset, nexts, target, coeffs);
                 if (svg)
                     svgs.push(svg);
             }
         });
     }
 
-    let medals = create_medals(parent);
+    let medals = createMedals(parent);
     svgs = [...svgs, ...medals];
 
     HTML(svg_node, '');
@@ -3117,7 +3120,7 @@ function create_connectors() {
  * @param {Object=} data
  * @param {boolean=} show
  */
-function create_cup(section, data, show) {
+function createCup(section, data, show) {
     // 1) check data
     let tour = tour_info[section];
     if (data)
@@ -3127,7 +3130,7 @@ function create_cup(section, data, show) {
     if (!data)
         return;
 
-    show_tables(section, true);
+    showTables(section, true);
 
     // 2) create the bracket
     let event = data['EventTable'];
@@ -3135,17 +3138,17 @@ function create_cup(section, data, show) {
         let rows = Keys(event).map(key => {
             return Assign({round: key.split(' ').slice(-1)}, event[key]);
         });
-        update_table(section, 'event', rows);
+        updateTable(section, 'event', rows);
     }
 
-    create_bracket(section, data);
+    createBracket(section, data);
     if (show)
-        open_table('brak');
+        openTable('brak');
 
     // 3) cup events
     // click on a match => load its games
     C('.match', function() {
-        if (cannot_click())
+        if (cannotClick())
             return;
         let dataset = this.dataset,
             names = Split(dataset['n']),
@@ -3158,10 +3161,10 @@ function create_cup(section, data, show) {
         if (Y['round'] != round) {
             Y['round'] = round;
             Y.scroll = '#tables';
-            open_event(section, () => show_filtered_games(text));
+            openEvent(section, () => showFilteredGames(text));
         }
         else
-            show_filtered_games(text);
+            showFilteredGames(text);
     });
 }
 
@@ -3170,14 +3173,14 @@ function create_cup(section, data, show) {
  * @param {Node} parent
  * @returns {!Array<Node>}
  */
-function create_medals(parent) {
+function createMedals(parent) {
     return From(A('[data-p]', parent)).map(node => {
         let ax = node.offsetLeft + node.clientWidth,
             ay = node.offsetTop + node.offsetHeight / 2,
             dataset = node.dataset,
             place = dataset['p'],
             html = [
-                `<div class="place-svg">${create_svg_icon(place < 4? 'trophy': 'medal')}</div>`,
+                `<div class="place-svg">${createSvgIcon(place < 4? 'trophy': 'medal')}</div>`,
                 `<div class="place-text">#${place}</div>`,
             ].join(''),
             style = `left:${ax + 4}px;top:${ay}px`;
@@ -3190,7 +3193,7 @@ function create_medals(parent) {
  * Resize the bracket + redo the connectors
  * @param {boolean=} force
  */
-function resize_bracket(force) {
+function resizeBracket(force) {
     let window_width = window.innerWidth;
     if (!force && old_width)
         if ((window_width > 640 && old_width > 640) || (window_width <= 640 && old_width <= 640))
@@ -3202,7 +3205,7 @@ function resize_bracket(force) {
 
     old_width = window_width;
     Style(node.firstChild, [['height', `${node.clientHeight}px`], ['width', `${width}px`]]);
-    create_connectors();
+    createConnectors();
 }
 
 // PGN
@@ -3214,7 +3217,7 @@ function resize_bracket(force) {
  * @param {number=} total_moves
  * @returns {!Object} 50, draw, win
  */
-function check_adjudication(dico, total_moves) {
+function checkAdjudication(dico, total_moves) {
     if (dico)
         dico = dico['adjudication'] || dico;
     if (!dico)
@@ -3237,7 +3240,7 @@ function check_adjudication(dico, total_moves) {
  * @param {number?=} pos used by player_eval, last finished pos, if different then it's a new game
  * @param {boolean=} force force reload
  */
-function check_missing_moves(ply, round, pos, force) {
+function checkMissingMoves(ply, round, pos, force) {
     if (!Y['reload_missing'] || LOCALHOST)
         return;
     let section = y_x;
@@ -3246,7 +3249,7 @@ function check_missing_moves(ply, round, pos, force) {
 
     let new_game,
         main = xboards[section],
-        now = Now(true),
+        now = Now(1),
         delta = now - main.time;
 
     // tricks to detect a new game during live eval
@@ -3284,9 +3287,9 @@ function check_missing_moves(ply, round, pos, force) {
             LS(`empty=${empty} : delta=${delta}`);
     }
 
-    add_timeout(section, () => {
+    AddTimeout(section, () => {
         Y.scroll = '';
-        download_pgn(section, 'live.pgn', true, download_live);
+        downloadPgn(section, 'live.pgn', true, downloadLive);
     }, TIMEOUT_live_delay * 1000);
 }
 
@@ -3294,7 +3297,7 @@ function check_missing_moves(ply, round, pos, force) {
  * Download live evals for the current event + a given round
  * @param {number} round
  */
-function download_live_evals(round) {
+function downloadLiveEvals(round) {
     if (!round)
         return;
 
@@ -3304,11 +3307,11 @@ function download_live_evals(round) {
         return;
 
     let prefix = `${HOST_ARCHIVE}/${Lower(event)}_liveeval`;
-    download_table(section, `${prefix}_${round}.json`, null, data => {
-        update_live_eval(section, data, 0);
+    downloadTable(section, `${prefix}_${round}.json`, null, data => {
+        updateLiveEval(section, data, 0);
     });
-    download_table(section, `${prefix}1_${round}.json`, null, data => {
-        update_live_eval(section, data, 1);
+    downloadTable(section, `${prefix}1_${round}.json`, null, data => {
+        updateLiveEval(section, data, 1);
     });
 }
 
@@ -3319,13 +3322,13 @@ function download_live_evals(round) {
  * @param {boolean=} reset_moves triggered by check_missing_moves
  * @param {Function=} callback
  */
-function download_pgn(section, url, reset_moves, callback) {
+function downloadPgn(section, url, reset_moves, callback) {
     if (DEV['new'])
-        LS(`download_pgn: ${section} : ${url} : ${reset_moves}`);
+        LS(`downloadPgn: ${section} : ${url} : ${reset_moves}`);
 
     let main = xboards[section];
-    main.time = Now(true);
-    clear_timeout(section);
+    main.time = Now(1);
+    ClearTimeout(section);
 
     let no_cache = (section == 'live')? `?ts=${Now()}`: '';
 
@@ -3336,16 +3339,16 @@ function download_pgn(section, url, reset_moves, callback) {
         let extra = {};
         if (data) {
             Assign(extra, {
-                elapsed: get_xhr_elapsed(xhr) / 1000,
+                elapsed: getXhrElapsed(xhr) / 1000,
                 gameChanged: 1,
             });
         }
 
         main.pgn = {};
-        update_pgn(section, data, extra, reset_moves);
+        updatePgn(section, data, extra, reset_moves);
 
         if (section == 'archive' && Y.scroll)
-            scroll_adjust(Y.scroll);
+            scrollAdjust(Y.scroll);
         if (callback)
             callback();
     }, {type: 'text'});
@@ -3356,7 +3359,7 @@ function download_pgn(section, url, reset_moves, callback) {
  * @param {!Object} options
  * @returns {number|string}
  */
-function extract_threads(options) {
+function extractThreads(options) {
     // 1) quick way
     let threads = options.Threads || options.CPUs;
     if (threads) {
@@ -3386,13 +3389,13 @@ function extract_threads(options) {
  * @param {XBoard} board
  * @param {!Object} headers
  */
-function fix_header_opening(board, headers) {
+function fixHeaderOpening(board, headers) {
     let fen = headers['FEN'],
         opening = headers['Opening'];
     if (!fen || !board || (opening && !DUMMY_OPENINGS[opening]))
         return;
     // continuation
-    if (fen && get_fen_ply(fen) > -1)
+    if (fen && getFenPly(fen) > -1)
         return;
 
     fen = headers['FEN'] = board.chessLoad(fen) || fen;
@@ -3412,19 +3415,19 @@ function fix_header_opening(board, headers) {
  * @param {Array<Move>} moves
  * @param {Array<Move>} main_moves
  */
-function fix_zero_moves(moves, main_moves) {
+function fixZeroMoves(moves, main_moves) {
     let prev,
         prev_eval = 0;
 
     moves.forEach(move => {
-        let eval_ = clamp_eval(move['wv']),
-            ply = get_move_ply(move);
+        let eval_ = clampEval(move['wv']),
+            ply = getMovePly(move);
 
         if (!prev) {
             let main_move = main_moves[ply - 1];
             if (main_move) {
                 prev = main_move;
-                prev_eval = clamp_eval(main_move['wv']);
+                prev_eval = clampEval(main_move['wv']);
             }
         }
         if (prev && eval_ == 0 && prev_eval > 0.5 && (move['d'] <= 1 || move['n'] < 10 || move['mt'] <= 1))
@@ -3444,7 +3447,7 @@ function fix_zero_moves(moves, main_moves) {
  * @param {string=} obj.origin debug information
  * @returns {Object}
  */
-function parse_pgn(section, data, {mode=15, origin=''}={}) {
+function parsePgn(section, data, {mode=15, origin=''}={}) {
     if (!data)
         return null;
 
@@ -3502,7 +3505,7 @@ function parse_pgn(section, data, {mode=15, origin=''}={}) {
     let fen = headers['FEN'];
     if (fen) {
         let board = xboards[section] || xboards['pva'];
-        fix_header_opening(board, headers);
+        fixHeaderOpening(board, headers);
     }
 
     pgn['Headers'] = headers;
@@ -3536,7 +3539,7 @@ function parse_pgn(section, data, {mode=15, origin=''}={}) {
         return pgn;
 
     // 3) moves
-    let moves = parse_pgn_moves(section, data, {mode: mode, fen: fen, origin: origin});
+    let moves = parsePgnMoves(section, data, {mode: mode, fen: fen, origin: origin});
 
     // 4) result
     let variant = headers['Variant'];
@@ -3559,7 +3562,7 @@ function parse_pgn(section, data, {mode=15, origin=''}={}) {
  * @param {string=} obj.origin debug information
  * @returns {!Array<Move>}
  */
-function parse_pgn_moves(section, data, {fen, mode=15, origin=''}={}) {
+function parsePgnMoves(section, data, {fen, mode=15, origin=''}={}) {
     if (!data)
         return [];
 
@@ -3570,7 +3573,7 @@ function parse_pgn_moves(section, data, {fen, mode=15, origin=''}={}) {
         length = data.length,
         prev_fen = last_fen,
         moves = [],
-        ply = get_fen_ply(last_fen),
+        ply = getFenPly(last_fen),
         start = 0;
 
     if (mode & 8)
@@ -3712,7 +3715,7 @@ function parse_pgn_moves(section, data, {fen, mode=15, origin=''}={}) {
  * @param {string} value
  * @returns {{dico:!Object<string, number>, text:string}}
  */
-function parse_time_control(value) {
+function parseTimeControl(value) {
     let mins,
         moves = 0,
         items = value.split('+'),
@@ -3743,7 +3746,7 @@ function parse_time_control(value) {
 /**
  * Resize game elements
  */
-function resize_game() {
+function resizeGame() {
     let section = y_x;
 
     // 1) boards
@@ -3752,15 +3755,15 @@ function resize_game() {
         if (!board.main && !board.sub)
             return;
 
-        let area = get_area(board.node),
+        let area = getArea(board.node),
             width = area.clientWidth,
             size = Max(width / Max(board.sub, 1) - 4, 196);
         board.resize(size, {instant: true, render: true});
     });
 
     // 2) moves
-    resize_move_lists();
-    resize_3d();
+    resizeMoveLists();
+    resize3d();
 
     // 3) percents
     let ratio = Y['hardware']? 0.65: 1;
@@ -3780,10 +3783,10 @@ function resize_game() {
     });
 
     // 4) graph + update table after a timeout
-    add_timeout('graph_resize', () => {
-        update_chart_options(null, 2);
+    AddTimeout('graph_resize', () => {
+        updateChartOptions(null, 2);
         for (let parent of ['quick', 'table'])
-            update_table(section, get_active_tab(parent).name, null, {parent: parent});
+            updateTable(section, getActiveTab(parent).name, null, {parent: parent});
     }, TIMEOUT_graph_resize);
 }
 
@@ -3791,7 +3794,7 @@ function resize_game() {
  * Resize event stats: main + quick
  * @param {string} name stats
  */
-function resize_table(name) {
+function resizeTable(name) {
     if (name == 'stats') {
         E('.estats', node => {
             let ewidth = node.parentNode.clientWidth,
@@ -3809,8 +3812,8 @@ function resize_table(name) {
  * @param {number} id -1, 0, 1, 2, 3
  * @returns {number} # changes
  */
-function update_agree(section, id) {
-    if (section != section_board())
+function updateAgree(section, id) {
+    if (section != sectionBoard())
         return 0;
     let moves0, moves1, offset,
         changes = 0,
@@ -3847,7 +3850,7 @@ function update_agree(section, id) {
             splits0 = pv0.San.split(' ');
         }
         else {
-            let split = split_move_string(pv0, true, move0['ply']);
+            let split = splitMoveString(pv0, true, move0['ply']);
             ply0 = split.ply;
             splits0 = split.items;
         }
@@ -3856,7 +3859,7 @@ function update_agree(section, id) {
             splits1 = pv1.San.split(' ');
         }
         else {
-            let split = split_move_string(pv1, true, move1['ply']);
+            let split = splitMoveString(pv1, true, move1['ply']);
             ply1 = split.ply;
             splits1 = split.items;
         }
@@ -3877,9 +3880,9 @@ function update_agree(section, id) {
     }
 
     if (id == -1)
-        update_player_chart('agree', moves0);
+        updatePlayerChart('agree', moves0);
     else
-        update_live_chart('agree', moves0, 1);
+        updateLiveChart('agree', moves0, 1);
     return changes;
 }
 
@@ -3887,9 +3890,9 @@ function update_agree(section, id) {
  * Update agree for players + kibitzers
  * @param {string} section
  */
-function update_agrees(section) {
-    update_agree(section, -1);
-    update_agree(section, 2);
+function updateAgrees(section) {
+    updateAgree(section, -1);
+    updateAgree(section, 2);
 }
 
 /**
@@ -3897,7 +3900,7 @@ function update_agrees(section) {
  * mb=+2+0+0+0+0, => +p+n+b+r+q
  * @param {Move} move
  */
-function update_materials(move) {
+function updateMaterials(move) {
     if (!move)
         return;
 
@@ -3962,18 +3965,17 @@ function update_materials(move) {
 /**
  * Update mobility
  */
-function update_mobility() {
+function updateMobility() {
     let main = xboards[y_x],
         ply = main.ply,
         move = main.moves[ply] || {};
 
     let mobility = main.chessMobility(move),
-        node = CacheId('mobil'),
         [goal, gply] = move.goal || [];
 
-    if (node) {
-        TEXT(node, isNaN(goal)? '?': `${goal < 0? '-': ''}G${Abs(goal)}`);
-        node.dataset['i'] = gply;
+    if (node_mobil) {
+        TEXT(node_mobil, isNaN(goal)? '?': `${goal < 0? '-': ''}G${Abs(goal)}`);
+        node_mobil.dataset['i'] = gply;
     }
     TEXT(CacheId(`mobil${1 - (ply & 1)}`), Abs(mobility));
 }
@@ -3985,11 +3987,11 @@ function update_mobility() {
  * @param {Move} move
  * @param {boolean=} fresh is it the latest move?
  */
-function update_move_info(section, ply, move, fresh) {
+function updateMoveInfo(section, ply, move, fresh) {
     if (!move)
         return;
 
-    fix_move_format(move);
+    fixMoveFormat(move);
 
     let is_book = move['book'],
         depth = is_book? '-': Undefined(move['d'], '-'),
@@ -4001,10 +4003,10 @@ function update_move_info(section, ply, move, fresh) {
         players = main.players,
         stats = {
             'depth': is_book? '-': `${depth}/${Undefined(move['sd'], depth)}`,
-            'eval': format_eval(eval_, ply, true),
-            'node': is_book? '-': format_unit(move['n'], '-'),
-            'speed': is_book? '-': `${format_unit(move['s'], '0')}nps`,
-            'tb': is_book? '-': format_unit(move['tb'], '-'),
+            'eval': formatEval(eval_, ply, true),
+            'node': is_book? '-': formatUnit(move['n'], '-'),
+            'speed': is_book? '-': `${formatUnit(move['s'], '0')}nps`,
+            'tb': is_book? '-': formatUnit(move['tb'], '-'),
         };
 
     // pva?
@@ -4030,10 +4032,10 @@ function update_move_info(section, ply, move, fresh) {
 
     // past move?
     if (ply < num_ply - 1)
-        update_clock(section, id, move);
+        updateClock(section, id, move);
     else {
-        update_clock(section, 0);
-        update_clock(section, 1);
+        updateClock(section, 0);
+        updateClock(section, 1);
     }
 }
 
@@ -4044,7 +4046,7 @@ function update_move_info(section, ply, move, fresh) {
  * @param {number} ply
  * @param {Move} move
  */
-function update_move_pv(section, ply, move) {
+function updateMovePv(section, ply, move) {
     if (!move)
         return;
 
@@ -4057,16 +4059,16 @@ function update_move_pv(section, ply, move) {
         cur_ply = main.ply,
         player = main.players[id],
         node = CacheId(`moves-pv${id}`),
-        status_eval = is_book? '': format_eval(move['wv'], ply),
+        status_eval = is_book? '': formatEval(move['wv'], ply),
         status_score =
-            is_book? 'book': calculate_probability(player.short, eval_, ply, move['wdl'] || (player.info || {}).wdl);
+            is_book? 'book': calculateProbability(player.short, eval_, ply, move['wdl'] || (player.info || {}).wdl);
 
     if (Y['eval']) {
         for (let child of [box_node, node]) {
             TextHTML(_('[data-x="eval"]', child), status_eval);
             TEXT(_('[data-x="score"]', child), status_score);
         }
-        TextHTML(main.node_minis[id].eval_, format_eval(eval_, ply, true));
+        TextHTML(main.node_minis[id].eval_, formatEval(eval_, ply, true));
     }
 
     // PV should jump directly to a new position, no transition
@@ -4089,7 +4091,7 @@ function update_move_pv(section, ply, move) {
         }
     }
 
-    add_player_eval(player, ply, eval_);
+    addPlayerEval(player, ply, eval_);
 }
 
 /**
@@ -4099,7 +4101,7 @@ function update_move_pv(section, ply, move) {
  * - when switching between archive & live
  * @param {string} section
  */
-function update_options(section) {
+function updateOptions(section) {
     let main = xboards[section],
         pgn = main.pgn,
         players = main.players;
@@ -4117,7 +4119,7 @@ function update_options(section) {
         }
 
         // find threads + tb
-        let threads = extract_threads(pgn_options),
+        let threads = extractThreads(pgn_options),
             info = [threads? `${threads}TH`: '', ''];
         Keys(pgn_options).forEach(key => {
             let value = pgn_options[key];
@@ -4131,7 +4133,7 @@ function update_options(section) {
         });
 
         players[id].options = Assign({}, pgn_options);
-        update_hardware(section, id, [CacheId(`moves-pv${id}`)], {hardware: info.join(' ').trim()});
+        updateHardware(section, id, [CacheId(`moves-pv${id}`)], {hardware: info.join(' ').trim()});
     }
 }
 
@@ -4140,14 +4142,13 @@ function update_options(section) {
  * @param {string} section
  * @param {!Object} headers
  */
-function update_overview_basic(section, headers) {
+function updateOverviewBasic(section, headers) {
     if (!headers)
         return;
     if (section != y_x)
         return;
 
     let main = xboards[section],
-        overview = CacheId('overview'),
         players = main.players;
 
     // 1) overview
@@ -4166,7 +4167,7 @@ function update_overview_basic(section, headers) {
         case 'timecontrol':
             if (value) {
                 key = 'tc';
-                let tc = parse_time_control(value),
+                let tc = parseTimeControl(value),
                     dico = tc.dico;
                 value = tc.text;
                 Assign(players[0], dico);
@@ -4175,7 +4176,7 @@ function update_overview_basic(section, headers) {
             break;
         }
 
-        TEXT(`td[data-x="${key}"]`, value, overview);
+        TEXT(`td[data-x="${key}"]`, value, node_overview);
     });
 
     // 2) engines
@@ -4184,7 +4185,7 @@ function update_overview_basic(section, headers) {
             name = headers[title],
             node = CacheId(`moves-pv${id}`),
             player = players[id],
-            short = get_short_name(name),
+            short = getShortName(name),
             src = `image/engine/${short}.png`;
 
         Assign(player, {
@@ -4193,10 +4194,10 @@ function update_overview_basic(section, headers) {
             name: name,
             short: short,
         });
-        update_hardware(section, id, [box_node, node], {engine: name, short: short});
+        updateHardware(section, id, [box_node, node], {engine: name, short: short});
 
-        TextHTML(CacheId(`engine${id}`), format_engine(name, true, 21));
-        TextHTML(main.node_minis[id].short, resize_text(short, 15, 'small'));
+        TextHTML(CacheId(`engine${id}`), formatEngine(name, true, 21));
+        TextHTML(main.node_minis[id].short, resizeText(short, 15, 'small'));
 
         // load engine image
         let image = CacheId(`logo${id}`);
@@ -4207,7 +4208,7 @@ function update_overview_basic(section, headers) {
             image.src = src;
         }
     });
-    update_scores(section);
+    updateScores(section);
 
     // 3) update title if needed
     let subtitle = (section == 'live')? 'Live Computer Chess Broadcast': 'Archived Game',
@@ -4221,10 +4222,10 @@ function update_overview_basic(section, headers) {
  * @param {string} section
  * @param {!Object} headers
  * @param {Array<Move>} moves
- * @param {boolean=} is_new have we received new moves (from update_pgn)?
+ * @param {boolean=} is_new have we received new moves (from updatePgn)?
  * @returns {boolean?} finished
  */
-function update_overview_moves(section, headers, moves, is_new) {
+function updateOverviewMoves(section, headers, moves, is_new) {
     if (!headers)
         return null;
 
@@ -4236,7 +4237,7 @@ function update_overview_moves(section, headers, moves, is_new) {
         num_move = moves.length,
         num_ply = main.moves.length,
         move = moves[num_move - 1],
-        ply = get_move_ply(move),
+        ply = getMovePly(move),
         who = num_ply & 1;                      // num_ply & 1 tells us who plays next
 
     // 1) clock
@@ -4244,20 +4245,20 @@ function update_overview_moves(section, headers, moves, is_new) {
     for (let id of [0, 1]) {
         let tc = headers[`${WB_TITLE[id]}TimeControl`];
         if (tc) {
-            let dico = parse_time_control(tc).dico;
+            let dico = parseTimeControl(tc).dico;
             Assign(players[id], dico);
         }
     }
-    update_time_control(section, who);
+    updateTimeControl(section, who);
 
     if (section != y_x)
         return null;
 
     // 2) update the visible charts
-    if (section == section_board()) {
+    if (section == sectionBoard()) {
         if (DEV['chart'])
             LS(`UOM: ${section}`);
-        update_player_charts(moves);
+        updatePlayerCharts(moves);
     }
 
     // 3) check adjudication
@@ -4266,12 +4267,12 @@ function update_overview_moves(section, headers, moves, is_new) {
     // support for old seasons
     if (!finished && status && status != 'unterminated')
         finished = status;
-    update_overview_result(move, num_ply, finished);
+    updateOverviewResult(move, num_ply, finished);
 
     if (finished) {
         let result = headers['Result'];
         if (is_live && is_new)
-            play_sound(audiobox, (result == '1/2-1/2')? Y['sound_draw']: Y['sound_win']);
+            playSound(audiobox, (result == '1/2-1/2')? Y['sound_draw']: Y['sound_win']);
         if (DEV['new'])
             LS(`finished: result=${result} : is_live=${is_live} : is_new=${is_new}`);
         main.setLast(result);
@@ -4284,16 +4285,16 @@ function update_overview_moves(section, headers, moves, is_new) {
     if (ply == cur_ply) {
         for (let i = num_move - 1; i >= 0 && i >= num_move - 2; i --) {
             let move = moves[i],
-                ply2 = get_move_ply(move);
-            update_move_info(section, ply2, move, true);
-            update_move_pv(section, ply2, move);
+                ply2 = getMovePly(move);
+            updateMoveInfo(section, ply2, move, true);
+            updateMovePv(section, ply2, move);
         }
-        update_materials(move);
-        check_explosion_boom(section, -2, 1);
-        check_explosion_boom(section, -1, 3);
+        updateMaterials(move);
+        checkExplosionBoom(section, -2, 1);
+        checkExplosionBoom(section, -1, 3);
     }
 
-    update_agree(section, -1);
+    updateAgree(section, -1);
     return finished;
 }
 
@@ -4303,30 +4304,28 @@ function update_overview_moves(section, headers, moves, is_new) {
  * @param {number=} num_ply
  * @param {string=} finished
  */
-function update_overview_result(move, num_ply, finished) {
-    let fen,
-        overview = CacheId('overview');
-
+function updateOverviewResult(move, num_ply, finished) {
+    let fen;
     if (move && move['fen']) {
         fen = move['fen'];
         let tb = Lower(fen.split(' ')[0]).split('').filter(item => 'bnprqk'.includes(item)).length - 6;
         if (tb <= 1)
             tb = `<a href="${TB_URL.replace('{FEN}', fen.replace(/ /g, '_'))}" target="_blank">${tb}</a>`;
-        HTML('td[data-x="tb"]', tb, overview);
-        num_ply = get_move_ply(move) + 1;
+        HTML('td[data-x="tb"]', tb, node_overview);
+        num_ply = getMovePly(move) + 1;
     }
 
-    let result = check_adjudication(move, num_ply);
+    let result = checkAdjudication(move, num_ply);
     result['adj_rule'] = finished;
     if (fen && result['50'] == '-')
         result['50'] = Floor(50 - fen.split(' ')[4] / 2);
 
     Keys(result).forEach(key => {
-        TEXT(`td[data-x="${key}"]`, result[key], overview);
+        TEXT(`td[data-x="${key}"]`, result[key], node_overview);
     });
 
-    S('[data-x="adj_rule"]', finished, overview);
-    S('[data-x="50"], [data-x="draw"], [data-x="win"]', !finished, overview);
+    S('[data-x="adj_rule"]', finished, node_overview);
+    S('[data-x="50"], [data-x="draw"], [data-x="win"]', !finished, node_overview);
 }
 
 /**
@@ -4338,9 +4337,9 @@ function update_overview_result(move, num_ply, finished) {
  * @param {boolean=} reset_moves triggered by check_missing_moves
  * @returns {boolean}
  */
-function update_pgn(section, data, extras, reset_moves) {
+function updatePgn(section, data, extras, reset_moves) {
     let main = xboards[section],
-        pgn = parse_pgn(section, data);
+        pgn = parsePgn(section, data);
 
     if (!pgn) {
         // maybe got a sliced PGN => combine with the existing one
@@ -4351,7 +4350,7 @@ function update_pgn(section, data, extras, reset_moves) {
                 last_move = moves[moves.length - 1],
                 last_fen = last_move? last_move['fen']: null;
 
-            let new_moves = parse_pgn_moves(section, data, {fen: last_fen, mode: 31});
+            let new_moves = parsePgnMoves(section, data, {fen: last_fen, mode: 31});
             if (new_moves.length)
                 ok = true;
             if (!pgn.Moves)
@@ -4381,23 +4380,22 @@ function update_pgn(section, data, extras, reset_moves) {
         moves = pgn['Moves'],
         new_game = pgn.gameChanged,
         num_move = moves.length,
-        overview = CacheId('overview'),
         players = main.players;
 
     if (headers) {
         players[0].name = headers['White'];
         players[1].name = headers['Black'];
 
-        fix_header_opening(main, headers);
+        fixHeaderOpening(main, headers);
         if (headers['FEN'] && headers['SetUp'])
             pgn.frc = headers['FEN'];
     }
 
     // 2) update overview
     if (pgn['Users'])
-        TEXT('td[data-x="viewers"]', pgn['Users'], overview);
+        TEXT('td[data-x="viewers"]', pgn['Users'], node_overview);
     if (is_same)
-        update_overview_basic(section, headers);
+        updateOverviewBasic(section, headers);
 
     // TODO: what's the utility of this?
     if (new_game) {
@@ -4417,11 +4415,11 @@ function update_pgn(section, data, extras, reset_moves) {
         main.reset(section, {evals: is_same, render: is_same, start_fen: pgn.frc});
         main.clearMoves(main.moves.length);
         if (is_same) {
-            reset_sub_boards(section, 7, true, pgn.frc);
-            if (section == section_board()) {
+            resetSubBoards(section, 7, true, pgn.frc);
+            if (section == sectionBoard()) {
                 if (DEV['chart'])
                     LS(`UP: ${section}`);
-                reset_charts(section, true);
+                resetCharts(section, true);
             }
         }
         new_game = (main.event && main.round)? 2: 1;
@@ -4429,7 +4427,7 @@ function update_pgn(section, data, extras, reset_moves) {
         main.round = headers['Round'];
 
         for (let id of [0, 1]) {
-            update_move_info(section, id, {});
+            updateMoveInfo(section, id, {});
             Assign(players[id], {
                 boom_ply: -1,
                 boomed: 0,
@@ -4440,36 +4438,36 @@ function update_pgn(section, data, extras, reset_moves) {
         TEXT(CacheId('movesleft'), '');
 
         if (reset_moves && !LOCALHOST)
-            add_timeout('tables', () => download_tables(false, 1), TIMEOUT_tables);
-        listen_log();
+            AddTimeout('tables', () => downloadTables(false, 1), TIMEOUT_tables);
+        listenLog();
     }
     // can happen after resume
     else if (reset_moves)
         main.clearMoves();
 
     // 4) add the moves
-    fix_zero_moves(moves, main.moves);
+    fixZeroMoves(moves, main.moves);
     main.addMoves(moves, {keep_prev: true});
-    check_missing_moves();
-    main.time = Now(true);
+    checkMissingMoves();
+    main.time = Now(1);
 
     if (is_same)
-        finished = update_overview_moves(section, headers, moves, true);
+        finished = updateOverviewMoves(section, headers, moves, true);
 
     // remove moves that are after the last move
     // - could have been sent by error just after a new game started
     let last_move = main.moves[main.moves.length - 1];
-    if (is_same && last_move && section == section_board()) {
+    if (is_same && last_move && section == sectionBoard()) {
         if (DEV['chart'])
             LS(`UP: ${section}`);
-        slice_charts(last_move['ply']);
+        sliceCharts(last_move['ply']);
     }
 
-    update_mobility();
-    add_timeout('arrow', redraw_arrows, Y['arrow_history_lag']);
+    updateMobility();
+    AddTimeout('arrow', redrawArrows, Y['arrow_history_lag']);
 
     // got player info => can do h2h
-    check_queued_tables();
+    checkQueuedTables();
 
     if (new_game) {
         // 2: a new game was started and we already had a game before
@@ -4482,7 +4480,7 @@ function update_pgn(section, data, extras, reset_moves) {
                     time: 0,
                 });
             }
-            add_queue(section, 'table');
+            addQueue(section, 'table');
         }
         else {
             for (let id of [0, 1]) {
@@ -4495,7 +4493,7 @@ function update_pgn(section, data, extras, reset_moves) {
                     player.time = 0;
             }
         }
-        update_options(section);
+        updateOptions(section);
     }
 
     // 5) clock
@@ -4503,12 +4501,12 @@ function update_pgn(section, data, extras, reset_moves) {
         let who = last_move? (1 + last_move['ply']) & 1: 0;
         if (!new_game)
             players[who].time = 0;
-        start_clock(section, who, finished, pgn.elapsed || 0);
+        startClock(section, who, finished, pgn.elapsed || 0);
     }
 
     // 6) download more files
     if (headers && section == 'archive')
-        download_live_evals(headers['Round']);
+        downloadLiveEvals(headers['Round']);
     return true;
 }
 
@@ -4516,7 +4514,7 @@ function update_pgn(section, data, extras, reset_moves) {
  * Update players' score in the UI
  * @param {string} section
  */
-function update_scores(section) {
+function updateScores(section) {
     let main = xboards[section],
         players = main.players;
     for (let id of [0, 1]) {
@@ -4530,7 +4528,7 @@ function update_scores(section) {
  * @param {string} section
  * @param {number} id
  */
-function update_time_control(section, id) {
+function updateTimeControl(section, id) {
     let main = xboards[section],
         player = main.players[id],
         mins = Round(player.tc / 60);
@@ -4544,7 +4542,7 @@ function update_time_control(section, id) {
  * Analyse a log line that contains a PV
  * @param {string} line
  */
-function analyse_log(line) {
+function analyseLog(line) {
     if (!Y['live_pv'])
         return;
 
@@ -4617,7 +4615,7 @@ function analyse_log(line) {
         if (key == 'cp')
             info['eval'] = (value / 100) * (id == 1? -1: 1);
         else if (key == 'mate')
-            info['eval'] = convert_checkmate(value, id);
+            info['eval'] = convertCheckmate(value, id);
         else if (key == 'wdl' && id == 1)
             info['wdl'] = value.split(' ').reverse().join(' ');
     }
@@ -4635,8 +4633,8 @@ function analyse_log(line) {
     if (Y['eval'] && info['eval'] != undefined) {
         let box_node = CacheId(`status-pv${id}`),
             node = CacheId(`moves-pv${id}`),
-            status_eval = format_eval(info['eval'], ply),
-            status_score = calculate_probability(player.short, info['eval'], main.moves.length, info['wdl']);
+            status_eval = formatEval(info['eval'], ply),
+            status_score = calculateProbability(player.short, info['eval'], main.moves.length, info['wdl']);
 
         for (let child of [box_node, node]) {
             TextHTML(_('[data-x="eval"]', child), status_eval);
@@ -4678,7 +4676,7 @@ function analyse_log(line) {
         let moves = ArrayJS(main.chess.multiUci(info_pv));
         info['moves'] = moves;
         if (moves.length != splits.length)
-            return check_missing_moves(ply, null, null, true);
+            return checkMissingMoves(ply, null, null, true);
     }
 
     // fail?
@@ -4708,7 +4706,7 @@ function analyse_log(line) {
 
     // update info
     info['ply'] = ply;
-    update_player_eval('live', info, no_pv);
+    updatePlayerEval('live', info, no_pv);
 }
 
 /**
@@ -4721,16 +4719,16 @@ function analyse_log(line) {
  * @param {Object} params
  * @param {Function=} callback
  */
-function boom_effect(section, type, info, volume, intensities, params, callback) {
+function boomEffect(section, type, info, volume, intensities, params, callback) {
     let every = Y['every'],
         main = xboards[section],
-        now = Now(true),
+        now = Now(1),
         volume2 = (every >= 0 && now > boom_last + every)? volume: 0;
 
     if (volume2)
         boom_last = now;
 
-    boom_sound(type, volume2, intensities, sound => {
+    boomSound(type, volume2, intensities, sound => {
         let boom_param = BOOM_PARAMS[sound] || BOOM_PARAMS._,
             [_, shake_start, shake_duration, red_start, red_duration, magnitude, decay] = boom_param;
         if (DEV['effect'])
@@ -4745,15 +4743,15 @@ function boom_effect(section, type, info, volume, intensities, params, callback)
             boom_info.transform = body? body.style.transform: '';
 
         // color
-        color_screen(visual, red, red_start, red_duration);
+        colorScreen(visual, red, red_start, red_duration);
 
         if (BOOM_SHAKES[visual]) {
-            add_timeout(`shake_start_${sound}`, () => {
+            AddTimeout(`shake_start_${sound}`, () => {
                 // color again?
                 let delta = red_start - shake_start,
-                    now = Now(true);
+                    now = Now(1);
                 if (delta >= 0)
-                    color_screen(visual, red, delta, red_duration);
+                    colorScreen(visual, red, delta, red_duration);
 
                 // shake
                 Assign(boom_info, {
@@ -4766,7 +4764,7 @@ function boom_effect(section, type, info, volume, intensities, params, callback)
                 });
                 Assign(boom_info, params);
                 if (shake_animation == null)
-                    shake_animation = AnimationFrame(shake_screen);
+                    shake_animation = AnimationFrame('shake', shakeScreen);
             }, shake_start);
         }
 
@@ -4782,7 +4780,7 @@ function boom_effect(section, type, info, volume, intensities, params, callback)
  * @param {Array<number>} intensities
  * @param {Function} callback called when the sound is playing
  */
-function boom_sound(type, volume, intensities, callback) {
+function boomSound(type, volume, intensities, callback) {
     let key = `${type}_sound`,
         sounds = X_SETTINGS['boom'][key][0],
         sound = Y[key];
@@ -4800,10 +4798,10 @@ function boom_sound(type, volume, intensities, callback) {
     }
 
     last_sound = sound;
-    let gonna_play = volume? play_sound(audiobox, sound, {loaded: () => {
+    let gonna_play = volume? playSound(audiobox, sound, {onloaded: () => {
         if (DEV['effect'])
             LS(`sound ${sound} loaded, playing now ...`);
-        play_sound(audiobox, sound, {interrupt: true, volume: Y[`${type}_volume`] / 10 * volume});
+        playSound(audiobox, sound, {interrupt: true, volume: Y[`${type}_volume`] / 10 * volume});
         callback(sound);
     }}): false;
 
@@ -4821,7 +4819,7 @@ function boom_sound(type, volume, intensities, callback) {
  * @param {boolean=} only_check only check if a boom should occur
  * @returns {!Array<*>} [0] on success
  */
-function check_boom(section, offset, force, only_check) {
+function checkBoom(section, offset, force, only_check) {
     if (Y['disable_everything'])
         return [1];
 
@@ -4843,7 +4841,7 @@ function check_boom(section, offset, force, only_check) {
         let evals = player.evals;
         if (!evals)
             return;
-        let eval_ = scale_boom(clamp_eval(evals[ply]));
+        let eval_ = scaleBoom(clampEval(evals[ply]));
         if (eval_ == undefined)
             return;
 
@@ -4851,7 +4849,7 @@ function check_boom(section, offset, force, only_check) {
         let count = 0,
             worst = null;
         for (let prev = ply - 1; prev >= BOOM_MIN_PLY - 1 && prev >= ply - 12; prev --) {
-            let prev_eval = scale_boom(clamp_eval(evals[prev]));
+            let prev_eval = scaleBoom(clampEval(evals[prev]));
             if (prev_eval == undefined)
                 continue;
 
@@ -4908,7 +4906,7 @@ function check_boom(section, offset, force, only_check) {
         intensities[1] = 9;
 
     // 4) effect if a boom was detected
-    boom_effect(section, type, best, volume, intensities, {
+    boomEffect(section, type, best, volume, intensities, {
         every: 1 / rate,
         red_coeff: red_coeff,
     });
@@ -4926,7 +4924,7 @@ function check_boom(section, offset, force, only_check) {
  * @param {number=} force for debugging
  * @returns {number} 0 on success
  */
-function check_explosion(section, is_boom, force) {
+function checkExplosion(section, is_boom, force) {
     let threshold = Y['explosion_threshold'];
     if (threshold < 0.1 || Y['disable_everything'])
         return 1;
@@ -4934,7 +4932,7 @@ function check_explosion(section, is_boom, force) {
     // 1) gather score of all engines
     let best = 0,
         main = xboards[section],
-        players = main.players.map(player => [player.eval, player.short || get_short_name(player.name)]),
+        players = main.players.map(player => [player.eval, player.short || getShortName(player.name)]),
         ply = main.moves.length,
         two = new Set([players[0][1], players[1][1]]);
 
@@ -4949,7 +4947,7 @@ function check_explosion(section, is_boom, force) {
         threshold *= 0.8;
 
     let exploded = main.exploded,
-        scores = players.map(player => clamp_eval(player[0])),
+        scores = players.map(player => clampEval(player[0])),
         scores1 = scores.filter(score => score >= threshold),
         scores2 = scores.filter(score => score <= -threshold),
         min_vote = scores.length / 2;
@@ -5000,7 +4998,7 @@ function check_explosion(section, is_boom, force) {
             return 5;
     }
 
-    boom_effect(section, 'explosion', `best=${best} : scores=${scores}`, 1, [1, 10], {
+    boomEffect(section, 'explosion', `best=${best} : scores=${scores}`, 1, [1, 10], {
         every: 1/20,
         red_coeff: 0.75,
     }, () => {
@@ -5017,7 +5015,7 @@ function check_explosion(section, is_boom, force) {
  * @param {number} mode &1:boom, &2:explosion
  * @returns {number} &1:boom, &2:explosion
  */
-function check_explosion_boom(section, offset, mode=3) {
+function checkExplosionBoom(section, offset, mode=3) {
     if (section == 'pva') {
         if (!Y['PVA'])
             return 0;
@@ -5046,11 +5044,11 @@ function check_explosion_boom(section, offset, mode=3) {
     let best,
         error = 1;
     if (mode & 1)
-        [error, best] = check_boom(section, offset, undefined, true);
+        [error, best] = checkBoom(section, offset, undefined, true);
 
-    if ((mode & 2) && !check_explosion(section, !error))
+    if ((mode & 2) && !checkExplosion(section, !error))
         return 2;
-    if (!error && !check_boom(section, offset, best)[0])
+    if (!error && !checkBoom(section, offset, best)[0])
         return 1;
     return 0;
 }
@@ -5060,9 +5058,9 @@ function check_explosion_boom(section, offset, mode=3) {
  * @param {string} section live, pva
  * @param {number} id
  */
-function clock_tick(section, id) {
+function clockTick(section, id) {
     let main = xboards[section],
-        now = Now(true),
+        now = Now(1),
         player = main.players[id],
         elapsed = (now - player.start) * 1000,
         left = player.left - elapsed,
@@ -5076,9 +5074,9 @@ function clock_tick(section, id) {
         timeout += 100;
 
     player.elapsed = elapsed;
-    update_clock(section, id);
+    updateClock(section, id);
     if (!HAS_GLOBAL)
-        add_timeout(`clock-${section}${id}`, () => clock_tick(section, id), timeout);
+        AddTimeout(`clock-${section}${id}`, () => clockTick(section, id), timeout);
 }
 
 /**
@@ -5088,12 +5086,12 @@ function clock_tick(section, id) {
  * @param {number} red_start
  * @param {number} red_duration
  */
-function color_screen(visual, red, red_start, red_duration) {
+function colorScreen(visual, red, red_start, red_duration) {
     if (BOOM_COLORS[visual]) {
         Style(BOOM_ELEMENTS2, red, false);
-        add_timeout('red_start', () => Style(BOOM_ELEMENTS2, red), red_start);
+        AddTimeout('red_start', () => Style(BOOM_ELEMENTS2, red), red_start);
     }
-    add_timeout('red_end', () => {
+    AddTimeout('red_end', () => {
         Style(BOOM_ELEMENTS2, red, false);
     }, red_start + red_duration * Undefined(boom_info.red_coeff, 1));
 }
@@ -5102,16 +5100,16 @@ function color_screen(visual, red, red_start, red_duration) {
  * Set the number of viewers
  * @param {number} count
  */
-function set_viewers(count) {
+function setViewers(count) {
     TEXT('#overview td[data-x="viewers"]', count);
 }
 
 /**
  * Shake the screen
  */
-function shake_screen() {
+function shakeScreen() {
     let dead,
-        now = Now(true);
+        now = Now(1);
     if (now > boom_info.end)
         dead = 2;
     else if (now + 1/120 < boom_info.last + boom_info.every)
@@ -5140,7 +5138,7 @@ function shake_screen() {
 
     // continue or end + restore translation
     if (dead != 2)
-        AnimationFrame(shake_screen);
+        AnimationFrame('shake', shakeScreen);
     else {
         shake_animation = null;
         Style(BOOM_ELEMENTS, [['transform', boom_info.transform]]);
@@ -5154,9 +5152,9 @@ function shake_screen() {
  * @param {boolean?=} finished if true, then both clocks are stopped
  * @param {number=} delta elapsed time since pgn creation
  */
-function start_clock(section, id, finished, delta) {
+function startClock(section, id, finished, delta) {
     if (DEV['time'])
-        LS(`start_clock: section=${section} : id=${id} : finished=${finished} : delta=${delta}`);
+        LS(`startClock: section=${section} : id=${id} : finished=${finished} : delta=${delta}`);
 
     let is_live = (section == 'live');
     if (is_live) {
@@ -5174,7 +5172,7 @@ function start_clock(section, id, finished, delta) {
     S(`.xcolor${id} .xcog`, !finished && (section != 'pva' || main.thinking), node);
     Hide(`.xcolor${1 - id} .xcog`, node);
 
-    stop_clock(section, [0, 1]);
+    stopClock(section, [0, 1]);
 
     // handle Chat player
     if (is_live)
@@ -5183,10 +5181,10 @@ function start_clock(section, id, finished, delta) {
     if (!finished) {
         Assign(player, {
             elapsed: 0.000001,
-            start: Now(true) - player.time / 1000 - (delta || 0),
+            start: Now(1) - player.time / 1000 - (delta || 0),
             turn: 1,
         });
-        clock_tick(section, id);
+        clockTick(section, id);
     }
 }
 
@@ -5195,10 +5193,10 @@ function start_clock(section, id, finished, delta) {
  * @param {string} section live, pva
  * @param {!Array<number>} ids
  */
-function stop_clock(section, ids) {
+function stopClock(section, ids) {
     let players = xboards[section].players;
     for (let id of ids) {
-        clear_timeout(`clock-${section}${id}`);
+        ClearTimeout(`clock-${section}${id}`);
         players[id].turn = 0;
     }
 }
@@ -5209,7 +5207,7 @@ function stop_clock(section, ids) {
  * @param {number} id
  * @param {Move=} move move from the past
  */
-function update_clock(section, id, move) {
+function updateClock(section, id, move) {
     let elapsed, left, time,
         main = xboards[section],
         player = main.players[id],
@@ -5259,14 +5257,14 @@ function update_clock(section, id, move) {
  * @param {string=} obj.hardware
  * @param {string=} obj.short
  */
-function update_hardware(section, id, nodes, {engine, hardware, short}={}) {
+function updateHardware(section, id, nodes, {engine, hardware, short}={}) {
     let main = xboards[section],
         player = main.players[id];
     engine = engine || player.name;
     if (!engine)
         return;
 
-    short = short || player.short || get_short_name(engine);
+    short = short || player.short || getShortName(engine);
     if (hardware)
         player.hardware = hardware;
 
@@ -5277,7 +5275,7 @@ function update_hardware(section, id, nodes, {engine, hardware, short}={}) {
     for (let child of nodes) {
         let node = _('[data-x="name"]', child);
         if (node && node.title != full_engine) {
-            TextHTML(node, resize_text(short, 15));
+            TextHTML(node, resizeText(short, 15));
             Attrs(node, {title: full_engine});
             Assign(player, {
                 feature: Undefined(ENGINE_FEATURES[short], 0),
@@ -5298,7 +5296,7 @@ function update_hardware(section, id, nodes, {engine, hardware, short}={}) {
  * @param {boolean=} no_graph
  * @returns {boolean}
  */
-function update_live_eval(section, data, id, force_ply, no_graph) {
+function updateLiveEval(section, data, id, force_ply, no_graph) {
     if (!data)
         return false;
 
@@ -5306,7 +5304,7 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
         board_evals = board.evals[section],
         desc = data['desc'],
         engine = data['engine'],
-        is_same = (section == section_board()),
+        is_same = (section == sectionBoard()),
         main = xboards[section],
         moves = data['moves'],
         player = main.players[id + 2],
@@ -5325,12 +5323,12 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
         for (let move of moves) {
             if (!move['pv'] || move.seen)
                 continue;
-            let real = split_move_string(move['pv']).ply;
+            let real = splitMoveString(move['pv']).ply;
             board_evals[real] = move;
             move.invert = true;
             move['ply'] = real;
             if (real & 1)
-                move['eval'] = invert_eval(move['eval']);
+                move['eval'] = invertEval(move['eval']);
             move.seen = 1;
         }
         data = moves[moves.length - 1];
@@ -5341,24 +5339,24 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
         eval_ = data['eval'],
         last_ply = main.moves.length - 1,
         node = CacheId(`table-live${id}`),
-        ply = split_move_string(data['pv']).ply;
+        ply = splitMoveString(data['pv']).ply;
 
     data['ply'] = ply;
     board_evals[ply] = data;
     player.eval = eval_;
     if (data['nodes'] > 1)
-        add_player_eval(player, ply, eval_);
+        addPlayerEval(player, ply, eval_);
 
     // live engine is not desired?
     if (!Y[`live_engine_${id + 1}`]) {
-        HTML('.live-pv', `<i>${translate_default('off~2')}</i>`, node);
+        HTML('.live-pv', `<i>${translateDefault('off~2')}</i>`, node);
         return false;
     }
 
     // update engine name if it has changed
     engine = engine || data['engine'];
-    let short = get_short_name(engine);
-    update_hardware(section, id + 2, [box_node, node], {engine: engine, hardware: desc, short: short});
+    let short = getShortName(engine);
+    updateHardware(section, id + 2, [box_node, node], {engine: engine, hardware: desc, short: short});
 
     if (!is_same)
         return false;
@@ -5368,11 +5366,11 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
         let is_hide = !Y['eval'],
             dico = {
                 'depth': data['depth'],
-                'eval': is_hide? 'hide*': format_eval(eval_, ply),
-                'node': format_unit(data['nodes']),
-                'score': is_hide? 'hide*': calculate_probability(short, eval_, ply, wdl),
+                'eval': is_hide? 'hide*': formatEval(eval_, ply),
+                'node': formatUnit(data['nodes']),
+                'score': is_hide? 'hide*': calculateProbability(short, eval_, ply, wdl),
                 'speed': data['speed'],
-                'tb': format_unit(data['tbhits']),
+                'tb': formatUnit(data['tbhits']),
             };
 
         Keys(dico).forEach(key => {
@@ -5389,12 +5387,12 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
         board.text = '';
     board.addMovesString(data['pv'], {agree: data.agree, cur_ply: cur_ply, force: force_ply});
 
-    if (!no_graph && section == section_board()) {
+    if (!no_graph && section == sectionBoard()) {
         if (DEV['chart'])
             LS(`ULE: ${section}`);
-        update_live_charts(moves || [data], id + 2);
-        check_missing_moves(ply, round);
-        update_agree(section, id + 2);
+        updateLiveCharts(moves || [data], id + 2);
+        checkMissingMoves(ply, round);
+        updateAgree(section, id + 2);
     }
     return true;
 }
@@ -5407,9 +5405,9 @@ function update_live_eval(section, data, id, force_ply, no_graph) {
  * @param {boolean=} same_pv true if the pv hasn't changed
  * @returns {boolean}
  */
-function update_player_eval(section, data, same_pv) {
+function updatePlayerEval(section, data, same_pv) {
     // allow y_x even if pva is the board, to update info
-    let sboard = section_board();
+    let sboard = sectionBoard();
     if (!Y['live_pv'] || (section != sboard && section != y_x))
         return false;
 
@@ -5423,7 +5421,7 @@ function update_player_eval(section, data, same_pv) {
         mini = main.node_minis[id],
         player = main.players[id],
         sd = data['seldepth'],
-        short = get_short_name(engine);
+        short = getShortName(engine);
 
     if (!IsString(dsd) || !dsd.includes('/'))
         dsd = `${dsd}/${sd || dsd}`;
@@ -5444,7 +5442,7 @@ function update_player_eval(section, data, same_pv) {
             }
         }
         else if (data['pv']) {
-            data['ply'] = split_move_string(data['pv']).ply;
+            data['ply'] = splitMoveString(data['pv']).ply;
             board.addMovesString(data['pv'], {agree: data.agree, cur_ply: cur_ply});
         }
     }
@@ -5460,12 +5458,12 @@ function update_player_eval(section, data, same_pv) {
     if (!is_pva && ply == cur_ply + 1) {
         let stats = {
             'depth': dsd,
-            'engine': format_engine(data['engine'], true, 21),
-            'eval': format_eval(eval_, ply, true),
+            'engine': formatEngine(data['engine'], true, 21),
+            'eval': formatEval(eval_, ply, true),
             'logo': short,
-            'node': format_unit(data['nodes'], '-'),
-            'speed': (data['nps'] != undefined)? `${format_unit(data['nps'])}nps`: data['speed'],
-            'tb': format_unit(data['tbhits'], '-'),
+            'node': formatUnit(data['nodes'], '-'),
+            'speed': (data['nps'] != undefined)? `${formatUnit(data['nps'])}nps`: data['speed'],
+            'tb': formatUnit(data['tbhits'], '-'),
         };
         Keys(stats).forEach(key => {
             TextHTML(CacheId(`${key}${id}`), stats[key]);
@@ -5473,22 +5471,22 @@ function update_player_eval(section, data, same_pv) {
 
         // update the live part on the left
         let dico = {
-                'eval': format_eval(eval_, ply),
-                'score': calculate_probability(short, eval_, ply, data['wdl'] || (player.info || {})['wdl']),
+                'eval': formatEval(eval_, ply),
+                'score': calculateProbability(short, eval_, ply, data['wdl'] || (player.info || {})['wdl']),
             },
             node = CacheId(`moves-pv${id}`);
 
         // update engine name if it has changed
-        update_hardware(section, id, [node], {engine: engine, short: short});
+        updateHardware(section, id, [node], {engine: engine, short: short});
 
         Keys(dico).forEach(key => {
             TextHTML(_(`[data-x="${key}"]`, node), dico[key]);
         });
 
-        TextHTML(mini.short, resize_text(short, 15, 'small'));
-        TextHTML(mini.eval_, format_eval(eval_, ply));
+        TextHTML(mini.short, resizeText(short, 15, 'small'));
+        TextHTML(mini.eval_, formatEval(eval_, ply));
         if (data['nodes'] > 1)
-            add_player_eval(player, ply, eval_);
+            addPlayerEval(player, ply, eval_);
 
         // moves left
         if (Y['moves_left'] && data['movesleft'] != undefined)
@@ -5504,10 +5502,10 @@ function update_player_eval(section, data, same_pv) {
         return true;
 
     if (is_pva)
-        update_player_charts([data]);
+        updatePlayerCharts([data]);
     else {
-        update_live_charts([data], id);
-        check_missing_moves(ply, null, data['pos']);
+        updateLiveCharts([data], id);
+        checkMissingMoves(ply, null, data['pos']);
     }
     return true;
 }
@@ -5520,7 +5518,7 @@ function update_player_eval(section, data, same_pv) {
  * @param {number} code hardware keycode
  * @param {Object=} active active input element, if any
  */
-function action_key_no_input(code, active) {
+function actionKeyNoInput(code, active) {
 }
 
 /**
@@ -5531,7 +5529,7 @@ function action_key_no_input(code, active) {
  * @param {number|string} elapsed
  * @param {string=} speed
  */
-function add_benchmark_result(class_, step, num_move, elapsed, speed) {
+function addBenchmarkResult(class_, step, num_move, elapsed, speed) {
     let dico = {'data-s': step};
     if (class_)
         dico['class'] = `bench${class_}`;
@@ -5551,35 +5549,34 @@ function add_benchmark_result(class_, step, num_move, elapsed, speed) {
  */
 function benchmark(round=10, running=0) {
     let main = xboards[y_x],
-        node = CacheId('benchmark'),
-        now = Now(true),
+        now = Now(1),
         num_move = main.moves.length,
         run_over = (main.ply >= num_move - 1);
 
     // started
     if (!(running & 1)) {
         if (!running) {
-            clear_timeout('bench_load');
-            close_popups();
+            ClearTimeout('bench_load');
+            closePopups();
             bench_countdown = now + 3.2;
             bench_start = -1;
             bench_stats.length = 0;
             bench_stop = 0;
 
-            Show(node);
+            Show(node_benchmark);
             Attrs(CacheId('bench-title'), {'data-t': 'Benchmark'});
             Hide(CacheId('bench-sub'));
             HTML(CacheId('bench-grid'), '');
             Attrs(CacheId('bench-stop'), {'data-t': 'STOP'});
 
-            add_benchmark_result(0, ...['round', 'plies', 'time', 'plies/s'].map(text => `<i data-t="${text}"></i>`));
-            translate_nodes(node);
+            addBenchmarkResult(0, ...['round', 'plies', 'time', 'plies/s'].map(text => `<i data-t="${text}"></i>`));
+            translateNodes(node_benchmark);
 
             // events
             C('#bench-stop', function() {
                 bench_stop = 1;
-                if (Now(true) <= bench_countdown || this.dataset['t'] == 'OK')
-                    Hide(node);
+                if (Now(1) <= bench_countdown || this.dataset['t'] == 'OK')
+                    Hide(node_benchmark);
             });
         }
 
@@ -5592,11 +5589,11 @@ function benchmark(round=10, running=0) {
             let sub = CacheId('bench-sub');
             Attrs(sub, {'data-t': device.mobile? "Don't touch the screen.": "Don't move the mouse."});
             Show(sub);
-            translate_nodes(node);
+            translateNodes(node_benchmark);
         }
 
         main.setPly(-1, {manual: true});
-        now = Now(true);
+        now = Now(1);
         bench_start = started? now: -1;
     }
     // finished
@@ -5605,12 +5602,12 @@ function benchmark(round=10, running=0) {
             if (bench_start > 0) {
                 let elapsed = now - bench_start;
                 bench_stats.push([elapsed, num_move, round]);
-                add_benchmark_result(0, round, num_move, elapsed);
+                addBenchmarkResult(0, round, num_move, elapsed);
             }
         }
         // next round
         if (round > 1 && !bench_stop)
-            AnimationFrame(() => benchmark(round - 1, 2));
+            AnimationFrame('bench', () => benchmark(round - 1, 2));
         // game over
         else {
             let stats = bench_stats.sort((a, b) => a[0] - b[0]),
@@ -5625,15 +5622,15 @@ function benchmark(round=10, running=0) {
                     total_time += time;
                 }
                 else
-                    Class(`[data-s="${iround}"]`, 'bench1', true, node);
+                    Class(`[data-s="${iround}"]`, 'bench1', true, node_benchmark);
             });
 
             if (total_time > 0)
-                add_benchmark_result(0, '<i data-t="total"></i>', total_plies, total_time);
+                addBenchmarkResult(0, '<i data-t="total"></i>', total_plies, total_time);
 
             Attrs(CacheId('bench-title'), {'data-t': 'Benchmark over.'});
             Attrs(CacheId('bench-stop'), {'data-t': 'OK'});
-            translate_nodes(node);
+            translateNodes(node_benchmark);
             Hide(CacheId('bench-sub'));
         }
         return;
@@ -5652,7 +5649,7 @@ function benchmark(round=10, running=0) {
         main.speed = 8;
         main.goNext();
     }
-    AnimationFrame(() => benchmark(round, is_waiting? 2: 1));
+    AnimationFrame('bench', () => benchmark(round, is_waiting? 2: 1));
 }
 
 /**
@@ -5660,13 +5657,12 @@ function benchmark(round=10, running=0) {
  * @param {number} code hardware keycode
  * @returns {boolean?}
  */
-function game_action_key(code) {
+function gameActionKey(code) {
     let okay = null;
 
-    if (is_overlay_visible()) {
+    if (isOverlayVisible()) {
         let changes = 0,
-            modal_node = CacheId('modal'),
-            parent = Visible(modal_node)? modal_node: null,
+            parent = Visible(node_modal)? node_modal: null,
             items = From(A('.item', parent)).filter(item => Visible(item)),
             length = items.length,
             index = (items.findIndex(item => HasClass(item, 'selected')) + length) % length,
@@ -5729,7 +5725,7 @@ function game_action_key(code) {
 
         // changed a setting?
         if (changes && node.name)
-            change_setting(node.name, node.value);
+            changeSetting(node.name, node.value);
 
         // moved?
         Class('.selected', '-selected', true, parent);
@@ -5739,13 +5735,13 @@ function game_action_key(code) {
         switch (code) {
         case 32:
             okay = false;
-            board_target.play(false, true, 'game_action_key');
+            board_target.play(false, true, 'gameActionKey');
             break;
         // left / right
         case 37:
         case 39:
             if (code == 37)
-                board_target.play(true, true, 'game_action_key');
+                board_target.play(true, true, 'gameActionKey');
             board_target.hold = KEY_NAMES[code];
             board_target.holdButton(KEY_NAMES[code], 0, true);
             break;
@@ -5764,7 +5760,7 @@ function game_action_key(code) {
                     // copy to PVA
                     let pva = xboards['pva'];
                     if (board_target != pva && Y['auto_paste']) {
-                        paste_text(copy_pgn(board_target, true, true));
+                        pasteText(copyPgn(board_target, true, true));
                         let num_move = pva.moves.length,
                             ply = board_target.ply;
                         // try to set the same ply
@@ -5782,13 +5778,13 @@ function game_action_key(code) {
                         let clipboard = navigator['clipboard'];
                         if (clipboard)
                             clipboard.readText().then(text => {
-                                paste_text(text);
+                                pasteText(text);
                             });
                     }
                 }
                 // redo/undo
                 else
-                    restore_history(code == 89? 1: -1);
+                    restoreHistory(code == 89? 1: -1);
             break;
         }
 
@@ -5803,7 +5799,7 @@ function game_action_key(code) {
  * @param {number} code
  * @returns {boolean?}
  */
-function game_action_keyup(code) {
+function gameActionKeyup(code) {
     let okay = null;
 
     switch (code) {
@@ -5811,9 +5807,9 @@ function game_action_keyup(code) {
     case 37:
     case 39:
         board_target.release();
-        clear_timeout(`click_${KEY_NAMES[code]}_${board_target.id}`);
+        ClearTimeout(`click_${KEY_NAMES[code]}_${board_target.id}`);
         if (code == 37)
-            board_target.play(true, true, 'game_action_keyup');
+            board_target.play(true, true, 'gameActionKeyup');
         break;
     }
 
@@ -5824,20 +5820,20 @@ function game_action_keyup(code) {
  * Load and then start a benchmark
  * @param {number=} step
  */
-function load_benchmark(step) {
+function loadBenchmark(step) {
     // load a game
     Assign(Y, {
         'div': 'sf',
         'game': 33,
         'season': '20',
     });
-    set_section('archive');
-    open_event('archive');
+    setSection('archive');
+    openEvent('archive');
 
     // wait for the PGN + 2x live info to be loaded
     let bench_try = 0,
         name = 'bench_load';
-    add_timeout(name, () => {
+    AddTimeout(name, () => {
         let board = xboards['archive'],
             headers = (board.pgn || {}).Headers,
             num_live0 = xboards['live0'].evals['archive'].length,
@@ -5851,7 +5847,7 @@ function load_benchmark(step) {
 
         bench_try ++;
         if (bench_try > 100)
-            clear_timeout(name);
+            ClearTimeout(name);
     }, TIMEOUT_bench_load, true);
 }
 
@@ -5860,13 +5856,13 @@ function load_benchmark(step) {
  * - FEN or PGN
  * @param {string} text
  */
-function paste_text(text) {
+function pasteText(text) {
     text = text.replace(/\s+/g, ' ');
 
     // try PGN
     let moves,
         board = board_target.manual? board_target: xboards['pva'],
-        pgn = parse_pgn(board.name, text),
+        pgn = parsePgn(board.name, text),
         section = y_x;
     if (pgn) {
         board.pgn = pgn;
@@ -5881,7 +5877,7 @@ function paste_text(text) {
         if (board.fen != fen) {
             board.reset(section, {evals: true, start_fen: board.fen});
             if (board_target.name == 'pva')
-                reset_charts(section);
+                resetCharts(section);
         }
     }
     // move string
@@ -5900,8 +5896,8 @@ function paste_text(text) {
 /**
  * Initialise the 3D engine
  */
-function init_3d_special() {
-    load_model('pieces', 'export/pieces-draco.glb', object => {
+function init3dSpecial() {
+    loadModel('pieces', 'export/pieces-draco.glb', object => {
         cube = object;
         scene.add(cube);
     });
@@ -5911,7 +5907,7 @@ function init_3d_special() {
  * Random position for looking at the chessboard
  * @returns {!Object}
  */
-function random_position() {
+function randomPosition() {
     return {x: -1.34, y: -1.98, z: 0.97};
 }
 
@@ -5920,15 +5916,15 @@ function random_position() {
 
 /**
  * Changed a game setting
- * - called by change_setting_special
+ * - called by changeSettingSpecial
  * @param {string} name
  * @param {*} value
  */
-function change_setting_game(name, value) {
+function changeSettingGame(name, value) {
     let update_tab,
-        board = get_context_board(),
+        board = getContextBoard(),
         prefix = name.split('_')[0],
-        sboard = section_board(),
+        sboard = sectionBoard(),
         section = y_x,
         main = xboards[sboard];
 
@@ -5939,7 +5935,7 @@ function change_setting_game(name, value) {
     // using exact name
     switch (name) {
     case 'agree_length':
-        show_agree();
+        showAgree();
         break;
     case 'show_ply':
         Keys(xboards).forEach(key => {
@@ -5957,37 +5953,37 @@ function change_setting_game(name, value) {
                 .replace('{STANDARD}', board.frc? 'chess960': 'standard');
             window.open(url, '_blank');
         }
-        close_popups();
+        closePopups();
         break;
     case 'benchmark_game':
-        load_benchmark();
+        loadBenchmark();
         break;
     case 'benchmark_now':
         benchmark();
         break;
     case 'boom_effect':
-        save_option('boom_sound', value? 'random': 0);
-        save_option('boom_visual', value? 'all': 0);
+        saveOption('boom_sound', value? 'random': 0);
+        saveOption('boom_visual', value? 'all': 0);
         break;
     case 'copy_download':
     case 'download_PGN':
-        copy_pgn(board, true);
+        copyPgn(board, true);
         break;
     case 'copy_FEN':
         CopyClipboard(board.fen);
-        close_popups();
+        closePopups();
         break;
     case 'copy_moves':
-        copy_pgn(board, false, false, 4);
-        close_popups();
+        copyPgn(board, false, false, 4);
+        closePopups();
         break;
     case 'copy_PGN':
-        copy_pgn(board);
-        close_popups();
+        copyPgn(board);
+        closePopups();
         break;
     case 'explosion_effect':
-        save_option('explosion_sound', value? 'random': 0);
-        save_option('explosion_visual', value? 'all': 0);
+        saveOption('explosion_sound', value? 'random': 0);
+        saveOption('explosion_visual', value? 'all': 0);
         break;
     case 'game_PV':
         S(CacheId('pva-pv'), value);
@@ -6000,25 +5996,25 @@ function change_setting_game(name, value) {
     case 'graph_radius':
     case 'graph_tension':
     case 'graph_text':
-        update_chart_options(null, 3);
+        updateChartOptions(null, 3);
         break;
     case 'graph_eval_clamp':
     case 'graph_eval_mode':
-        redraw_eval_charts(sboard);
+        redrawEvalCharts(sboard);
         break;
     case 'graph_scale':
         let target = ((context_target || {}).id || '').split('-')[1];
         if (charts[target]) {
             Y['scales'][target] = ivalue;
-            save_option('scales');
-            set_scale_func(target);
-            update_chart(target);
+            saveOption('scales');
+            setScaleFunc(target);
+            updateChart(target);
         }
         break;
     case 'live_engine_1':
     case 'live_engine_2':
         if (value)
-            add_timeout('live', download_live, TIMEOUT_live);
+            AddTimeout('live', downloadLive, TIMEOUT_live);
         else {
             let chart = charts['eval'];
             chart.data.datasets[+name.slice(-1) + 1].data.length = 0;
@@ -6027,49 +6023,49 @@ function change_setting_game(name, value) {
         break;
     case 'marker_color':
     case 'marker_opacity':
-        update_markers();
+        updateMarkers();
         break;
     case 'material_color':
-        update_materials(main.moves[main.ply]);
+        updateMaterials(main.moves[main.ply]);
         break;
     case 'moob_effect':
-        save_option('moob_sound', value? 'random': 0);
-        save_option('moob_visual', value? 'all': 0);
+        saveOption('moob_sound', value? 'random': 0);
+        saveOption('moob_visual', value? 'all': 0);
         break;
     case 'moves_left':
         Class(CacheId('movesleft'), 'hidden', !value);
         break;
     case 'reverse_kills':
-        calculate_event_stats(section);
-        update_table(section, 'stats');
+        calculateEventStats(section);
+        updateTable(section, 'stats');
         break;
     case 'rows_per_page':
         update_tab = true;
         break;
     case 'status':
-        show_board_info(y_x, 2);
+        showBoardInfo(y_x, 2);
         break;
     case 'status_pva':
-        show_board_info('pva', 2);
+        showBoardInfo('pva', 2);
         break;
     case 'test_boom':
         boom_last = 0;
-        check_boom('live', 0, [3, 0, 0, false]);
+        checkBoom('live', 0, [3, 0, 0, false]);
         break;
     case 'test_explosion':
         boom_last = 0;
-        check_explosion('live', false, -10 * (Sign(xboards['live'].exploded) || 1));
+        checkExplosion('live', false, -10 * (Sign(xboards['live'].exploded) || 1));
         break;
     case 'test_moob':
         boom_last = 0;
-        check_boom('live', 0, [3, 0, 0, true]);
+        checkBoom('live', 0, [3, 0, 0, true]);
         break;
     }
 
     // using prefix
     switch (prefix) {
     case 'arrow':
-        redraw_arrows();
+        redrawArrows();
         break;
     case 'wrap':
         update_tab = true;
@@ -6078,13 +6074,13 @@ function change_setting_game(name, value) {
 
     // update the current tab
     if (update_tab)
-        update_table(section, get_active_tab('table').name);
+        updateTable(section, getActiveTab('table').name);
 }
 
 /**
  * Hash was changed => check if we should load a game
  */
-function changed_hash() {
+function changedHash() {
     // 1) global stuff
     if (DEV['ad'])
         Hide('#ad0, #ad1');
@@ -6097,11 +6093,11 @@ function changed_hash() {
             'xboards': xboards,
             'Y': Y,
         });
-    check_socket_io();
+    checkSocketIo();
 
     // section changed?
     let section = y_x;
-    show_tables(section, tour_info[section].cup);
+    showTables(section, tour_info[section].cup);
 
     let missing = 0,
         string = ARCHIVE_KEYS.map(key => {
@@ -6116,29 +6112,29 @@ function changed_hash() {
 
     // new game link detected => try to load it
     if (DEV['load'])
-        LS(`changed_hash: ${game_link} => ${string} : ${missing}`);
+        LS(`changedHash: ${game_link} => ${string} : ${missing}`);
     game_link = string;
 
     if (section == 'live')
-        open_event(section);
+        openEvent(section);
 }
 
 /**
  * The section was changed archive <-> live
  */
-function changed_section() {
+function changedSection() {
     let section = y_x,
         is_cup = tour_info[section].cup,
         main = xboards[section];
-    assign_boards();
+    assignBoards();
 
     old_cup = null;
-    show_tables(section, is_cup);
+    showTables(section, is_cup);
 
     // click on the active tab, ex: schedule, stats, if it has data
     // - if no data, then activate the default tab
     let active,
-        tab = get_active_tab('table'),
+        tab = getActiveTab('table'),
         data_x = table_data[section],
         data = (data_x[tab.name] || {}).data || [];
 
@@ -6146,38 +6142,38 @@ function changed_section() {
         active = tab.name;
     else
         active = is_cup? 'brak': DEFAULT_ACTIVES[section];
-    add_timeout('active', () => open_table(active), TIMEOUT_active);
+    AddTimeout('active', () => openTable(active), TIMEOUT_active);
 
     // reset some stuff
-    lock_sub_boards(2);
-    reset_sub_boards(section, 3, true);
+    lockSubBoards(2);
+    resetSubBoards(section, 3, true);
     if (DEV['chart'])
         LS(`CS: ${section}`);
-    reset_charts(section);
-    redraw_eval_charts(section);
+    resetCharts(section);
+    redrawEvalCharts(section);
 
     if (section == 'live')
-        download_live();
+        downloadLive();
     else {
         let hash = hashes[section];
         if (Y['archive_scroll'] && !hash.game && changed_sections) {
-            if (!['sched', 'season'].includes(get_active_tab('table').name))
-                open_table('season');
-            scroll_adjust('#tables');
+            if (!['sched', 'season'].includes(getActiveTab('table').name))
+                openTable('season');
+            scrollAdjust('#tables');
         }
         if (hash.game) {
-            set_games_filter('');
+            setGamesFilter('');
             Y.scroll = '#overview';
-            open_event(section);
+            openEvent(section);
         }
     }
 
     // update overview
     let headers = main.pgn['Headers'];
-    update_overview_basic(section, headers);
-    update_overview_moves(section, headers, xboards[section].moves);
-    update_options(section);
-    update_agrees(section);
+    updateOverviewBasic(section, headers);
+    updateOverviewMoves(section, headers, xboards[section].moves);
+    updateOptions(section);
+    updateAgrees(section);
 
     changed_sections ++;
 }
@@ -6190,10 +6186,10 @@ function changed_section() {
  * @param {number=} flag &1:header, &2:info, &4:moves
  * @returns {string}
  */
-function copy_pgn(board, download, only_text, flag=7) {
+function copyPgn(board, download, only_text, flag=7) {
     // 1) get the matching board
     if (!board) {
-        board = get_context_board();
+        board = getContextBoard();
         if (!board)
             return '';
     }
@@ -6308,9 +6304,9 @@ function copy_pgn(board, download, only_text, flag=7) {
 
         // play move because maybe missing info (pv0, pv1)
         let result = board.chessMove(move['m']);
-        assign_move(move, result);
+        assignMove(move, result);
         move['fen'] = board.chessFen();
-        move['ply'] = get_move_ply(move);
+        move['ply'] = getMovePly(move);
 
         // add move info
         let move_ply = move['ply'],
@@ -6359,7 +6355,7 @@ function copy_pgn(board, download, only_text, flag=7) {
         CopyClipboard(text);
         // copy => mirror to PVA
         if (Y['auto_paste'] && board.name != 'pva' && (flag & 1))
-            paste_text(copy_pgn(board, true, true));
+            pasteText(copyPgn(board, true, true));
     }
     return text;
 }
@@ -6370,12 +6366,11 @@ function copy_pgn(board, download, only_text, flag=7) {
  * - or ... on which we right clicked
  * @returns {Object}
  */
-function get_context_board() {
+function getContextBoard() {
     // 1) modal is visible => try to get board
-    let target, target2,
-        modal = CacheId('modal');
-    if (HasClass(modal, 'popup-show')) {
-        let title = _('div.item-title', modal);
+    let target, target2;
+    if (HasClass(node_modal, 'popup-show')) {
+        let title = _('div.item-title', node_modal);
         if (title) {
             let name = title.dataset['n'];
             if (name == 'board')
@@ -6407,16 +6402,16 @@ function get_context_board() {
  * @param {Event|Object=} e
  * @param {boolean=} force force graph update
  */
-function handle_board_events(board, type, value, e, force) {
+function handleBoardEvents(board, type, value, e, force) {
     let agree, move,
         name = board.name,
-        old_board = section_board(),
+        old_board = sectionBoard(),
         section = y_x;
 
     switch (type) {
     case 'activate':
         board_target = board;
-        Y.s = (board.name == 'pva')? 'pva': section;
+        Z.s = (board.name == 'pva')? 'pva': section;
         // used for CTRL+C
         if (value) {
             value = /** @type {Node} */(value);
@@ -6433,11 +6428,11 @@ function handle_board_events(board, type, value, e, force) {
         if (value == 'burger') {
             context_target = board.node;
             let setting = (name == 'pva')? 'game': 'board';
-            show_popup('options', 'toggle', {id: name, setting: setting, xy: [e.clientX, e.clientY]});
+            showPopup('options', 'toggle', {id: name, setting: setting, xy: [e.clientX, e.clientY]});
         }
         else if (value == 'copy') {
             context_target = board.node;
-            show_popup('options', 'toggle', {
+            showPopup('options', 'toggle', {
                 class_: 'settings2', id: name, setting: 'quick_copy', xy: [e.clientX, e.clientY]});
         }
         else if (value == 'cube') {
@@ -6445,16 +6440,16 @@ function handle_board_events(board, type, value, e, force) {
             board.render(3);
         }
         else if (value == 'rotate') {
-            show_board_info(board.name, 6);
-            redraw_arrows();
-            order_boards();
+            showBoardInfo(board.name, 6);
+            redrawArrows();
+            orderBoards();
         }
         break;
     // move list => ply selected
     case 'move':
         board_target = board;
         if (value != undefined && !Visible(board.vis))
-            open_table(board.tab);
+            openTable(board.tab);
         break;
     case 'new':
         if (board_target == board)
@@ -6463,7 +6458,7 @@ function handle_board_events(board, type, value, e, force) {
     // PV list was updated => next move is sent
     // - if move is null, then hide the arrow
     case 'next':
-        add_timeout('arrow', redraw_arrows, Y['arrow_history_lag']);
+        AddTimeout('arrow', redrawArrows, Y['arrow_history_lag']);
         break;
     // ply was set
     // !! make sure it's set manually
@@ -6478,23 +6473,23 @@ function handle_board_events(board, type, value, e, force) {
 
         if (name == section || board.manual) {
             // update main board stats
-            update_move_info(name, prev_ply, prev_move);
-            update_move_info(name, cur_ply, move);
-            mark_ply_charts(cur_ply, board.moves.length - 1);
+            updateMoveInfo(name, prev_ply, prev_move);
+            updateMoveInfo(name, cur_ply, move);
+            markPlyCharts(cur_ply, board.moves.length - 1);
             if (board.name == 'pva') {
                 board.showPv(move);
-                update_agree('pva', -1);
+                updateAgree('pva', -1);
             }
         }
         if (name == section) {
             // unlock sub boards
-            lock_sub_boards(0);
+            lockSubBoards(0);
 
             // show PV's
             // - important to invalidate the boards to prevent wrong compareDuals
-            reset_sub_boards(section, 1);
-            update_move_pv(section, prev_ply, prev_move);
-            update_move_pv(section, cur_ply, move);
+            resetSubBoards(section, 1);
+            updateMovePv(section, prev_ply, prev_move);
+            updateMovePv(section, cur_ply, move);
 
             // live PV
             if (want_ply > cur_ply) {
@@ -6502,7 +6497,7 @@ function handle_board_events(board, type, value, e, force) {
                     evals = xboards[`pv${id}`].evals[section],
                     eval_ = evals[want_ply];
                 if (eval_)
-                    update_player_eval(section, eval_);
+                    updatePlayerEval(section, eval_);
                 if (DEV['ply2'])
                     LS('num_move=', num_move, 'id=', id, 'cur_ply=', cur_ply, 'want_ply=', want_ply, 'eval_=', eval_);
             }
@@ -6511,40 +6506,40 @@ function handle_board_events(board, type, value, e, force) {
             for (let id of [0, 1]) {
                 let evals = xboards[`live${id}`].evals[section],
                     ply = (want_ply > cur_ply && evals[want_ply])? want_ply: cur_ply;
-                update_live_eval(section, evals[ply], id, ply, true);
+                updateLiveEval(section, evals[ply], id, ply, true);
             }
 
-            update_materials(move);
-            update_mobility();
-            update_time_control(section, (cur_ply + 1) & 1);
+            updateMaterials(move);
+            updateMobility();
+            updateTimeControl(section, (cur_ply + 1) & 1);
 
             // lock sub boards?
             if (cur_ply < board.moves.length - 1)
-                lock_sub_boards(1);
+                lockSubBoards(1);
         }
         if (name == 'pva')
-            check_explosion_boom(name, -1, 3);
+            checkExplosionBoom(name, -1, 3);
         break;
     }
 
     // update MR50 + draw/win/tb + x/yaxis
     if (move && board == board_target)
-        update_overview_result(move);
+        updateOverviewResult(move);
 
     // changed board => redraw the graph
-    let new_board = section_board();
+    let new_board = sectionBoard();
     if (new_board != old_board || force) {
         if (DEV['chart'])
             LS(`NN: ${old_board} => ${new_board}`);
-        reset_charts(section, false);
-        update_player_charts(board.moves);
+        resetCharts(section, false);
+        updatePlayerCharts(board.moves);
         if (new_board != 'pva')
-            redraw_eval_charts(name);
+            redrawEvalCharts(name);
         agree = true;
     }
 
     if (agree)
-        update_agrees(section);
+        updateAgrees(section);
 }
 
 /**
@@ -6552,8 +6547,8 @@ function handle_board_events(board, type, value, e, force) {
  * @param {string|Node} sel
  * @param {boolean=} clicked user clicked on the tab?
  */
-function open_table(sel, clicked) {
-    clear_timeout('active');
+function openTable(sel, clicked) {
+    ClearTimeout('active');
 
     let tab = sel;
     if (IsString(tab)) {
@@ -6571,10 +6566,10 @@ function open_table(sel, clicked) {
     // table?
     if (parent.id == 'table-tabs') {
         Y['table_tab'][y_x] = target;
-        save_option('table_tab');
+        saveOption('table_tab');
 
         if (clicked && target == 'sched')
-            set_games_filter('');
+            setGamesFilter('');
 
         // TODO: ugly hack, fix this later
         if (target.slice(0, 6) != 'table-')
@@ -6600,7 +6595,7 @@ function open_table(sel, clicked) {
     if (context_area)
         context_area[2] |= 2;
 
-    save_option('areas');
+    saveOption('areas');
 
     let key = target,
         node = CacheId(target);
@@ -6609,7 +6604,7 @@ function open_table(sel, clicked) {
     // further processing
     if (key.slice(0, 6) == 'table-')
         key = key.slice(6);
-    opened_table(node, key, tab);
+    openedTable(node, key, tab);
 }
 
 /**
@@ -6618,63 +6613,63 @@ function open_table(sel, clicked) {
  * @param {string} name
  * @param {Node} tab
  */
-function opened_table(node, name, tab) {
+function openedTable(node, name, tab) {
     Y.sort = '';
 
     // 1) save the tab
     let parent = Parent(tab).id,
         is_chart = _('canvas', node),
-        sboard = section_board(),
+        sboard = sectionBoard(),
         section = y_x,
         main = xboards[sboard];
     if (DEV['open'])
-        LS(`opened_table: ${parent}/${name}`);
+        LS(`openedTable: ${parent}/${name}`);
 
     // 2) special cases
     if (is_chart && charts[name] && main) {
-        update_player_chart(name, main.moves);
-        update_chart_options(name, 3);
+        updatePlayerChart(name, main.moves);
+        updateChartOptions(name, 3);
     }
 
     switch (name) {
     case 'brak':
-        create_cup(section);
+        createCup(section);
         break;
     case 'crash':
-        download_table(section, 'crash.json', name);
+        downloadTable(section, 'crash.json', name);
         break;
     case 'cross':
-        analyse_crosstable(section, table_data[section].crossx);
+        analyseCrosstable(section, table_data[section].crossx);
         break;
     case 'info':
         HTML(node, HTML(CacheId('desc')));
         break;
     case 'kibitz':
     case 'pv':
-        resize_game();
+        resizeGame();
         break;
     case 'log':
-        fill_combo('#nlog', [0, 5, 10, 'all'], Y['live_log']);
-        listen_log();
+        fillCombo('#nlog', [0, 5, 10, 'all'], Y['live_log']);
+        listenLog();
         break;
     case 'season':
-        download_gamelist();
+        downloadGamelist();
         break;
     case 'stats':
-        calculate_event_stats(section);
+        calculateEventStats(section);
         break;
     case 'winner':
-        download_table(section, 'winners.json', name);
+        downloadTable(section, 'winners.json', name);
         break;
     default:
-        update_table(section, name);
+        updateTable(section, name);
     }
 
-    check_paginations();
-    add_timeout('info', () => show_board_info(section, 0), TIMEOUT_info);
+    checkPaginations();
+    AddTimeout('info', () => showBoardInfo(section, 0), TIMEOUT_info);
 
-    if (virtual_opened_table_special)
-        virtual_opened_table_special(node, name, tab);
+    if (vi_openedTableSpecial)
+        vi_openedTableSpecial(node, name, tab);
 
     // switch graphs when PVA is hidden
     let target;
@@ -6686,7 +6681,7 @@ function opened_table(node, name, tab) {
         target = section;
 
     if (target)
-        handle_board_events(xboards[target], 'activate', CacheId(target), {}, true);
+        handleBoardEvents(xboards[target], 'activate', CacheId(target), {}, true);
 }
 
 /**
@@ -6697,7 +6692,7 @@ function opened_table(node, name, tab) {
  * @param {string|number=} scolor 0, 1, popup
  * @param {string=} text
  */
-function popup_custom(id, name, e, scolor, text) {
+function popupCustom(id, name, e, scolor, text) {
     if (e.buttons)
         return;
 
@@ -6730,8 +6725,8 @@ function popup_custom(id, name, e, scolor, text) {
             lines = lines.map(([left, right]) => {
                 return [
                     '<div>',
-                        `<div>${resize_text(left, 20)}</div>`,
-                        `<div class="indent">${resize_text(right, 20) || '&nbsp;'}</div>`,
+                        `<div>${resizeText(left, 20)}</div>`,
+                        `<div class="indent">${resizeText(right, 20) || '&nbsp;'}</div>`,
                     '</div>',
                 ].join('');
             });
@@ -6772,13 +6767,13 @@ function popup_custom(id, name, e, scolor, text) {
 
     // trick to be able to put the mouse on the popup and copy text
     if (show) {
-        clear_timeout(`popup-${name}`);
+        ClearTimeout(`popup-${name}`);
         Class(popup, 'popup-enable');
         Show(popup);
         Style(popup, [['z-index', 1]], false);
     }
     else
-        add_timeout(`popup-${name}`, () => {
+        AddTimeout(`popup-${name}`, () => {
             Class(popup, '-popup-enable');
             Style(popup, [['z-index', -1]]);
         }, 300);
@@ -6788,23 +6783,23 @@ function popup_custom(id, name, e, scolor, text) {
  * Compute woke up
  * @param {number} resume_time
  */
-function resume_sleep(resume_time) {
+function resumeSleep(resume_time) {
     if (DEV['queue'])
-        LS(`resume_sleep: ${resume_time}`);
-    check_missing_moves();
-    show_board_info(y_x, 1);
+        LS(`resumeSleep: ${resume_time}`);
+    checkMissingMoves();
+    showBoardInfo(y_x, 1);
 }
 
 /**
  * Game events
  */
-function set_game_events() {
-    set_3d_events();
+function setGameEvents() {
+    set3dEvents();
 
     // engine popup
     Events('#info0, #info1, #popup', 'click mouseenter mousemove mouseleave', function(e) {
         let id = this.id;
-        popup_custom('popup', 'engine', e, (id == 'popup')? id: id.slice(-1));
+        popupCustom('popup', 'engine', e, (id == 'popup')? id: id.slice(-1));
     });
     C('#mobil', function() {
         let ply = this.dataset['i'];
@@ -6814,23 +6809,23 @@ function set_game_events() {
 
     // tabs
     C('div.tab', function() {
-        open_table(this);
+        openTable(this);
     });
     // search
     Input('input.search', function() {
-        add_timeout('search', () => {
+        AddTimeout('search', () => {
             let parent = this.parentNode.id.split('-')[0];
-            filter_table_rows(parent, this.value);
+            filterTableRows(parent, this.value);
         }, TIMEOUT_search);
     });
 
     // live_log
     C('#nlog', function() {
         let value = this.value;
-        save_option('live_log', value);
+        saveOption('live_log', value);
         if (value == 0)
             Y['log_auto_start'] = 0;
-        listen_log();
+        listenLog();
     });
 }
 
@@ -6840,15 +6835,15 @@ function set_game_events() {
 /**
  * Call this after the structures have been initialised
  */
-function start_game() {
-    create_tables();
-    create_boards();
-    show_board_info('pva', 0, true);
+function startGame() {
+    createTables();
+    createBoards();
+    showBoardInfo('pva', 0, true);
     S(CacheId('pva-pv'), Y['game_PV']);
 
     Y.wasm = 0;
     if (Y.wasm)
-        load_library('js/chess-wasm.js', () => {
+        loadLibrary('js/chess-wasm.js', () => {
             let module = window['Module'];
             if (!module)
                 return;
@@ -6863,16 +6858,20 @@ function start_game() {
         }, {async: ''});
 
     // status change detector
-    add_timeout('status', () => {
-        if (Now(true) < last_scroll + TIMEOUT_status * 0.001)
-            show_board_info(y_x, 0);
+    AddTimeout('status', () => {
+        if (Now(1) < last_scroll + TIMEOUT_status * 0.001)
+            showBoardInfo(y_x, 0);
     }, TIMEOUT_status, true);
 }
 
 /**
  * Initialise structures with game specific data
  */
-function startup_game() {
+function startupGame() {
+    node_benchmark = Id('benchmark');
+    node_mobil = Id('mobil');
+    node_overview = Id('overview');
+
     Assign(STATE_KEYS, {
         archive: ARCHIVE_KEYS,
         live: [],
@@ -6895,10 +6894,10 @@ function startup_game() {
         'TC': 'Time control',
     });
 
-    virtual_click_tab = open_table;
-    virtual_close_popups = popup_custom;
-    virtual_init_3d_special = init_3d_special;
-    virtual_random_position = random_position;
+    vi_clickTab = openTable;
+    vi_closePopups = popupCustom;
+    vi_init3dSpecial = init3dSpecial;
+    vi_randomPosition = randomPosition;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6906,38 +6905,38 @@ function startup_game() {
 // <<
 if (typeof exports != 'undefined')
     Assign(exports, {
-        analyse_log: analyse_log,
+        analyseLog: analyseLog,
         BOARD_THEMES: BOARD_THEMES,
-        calculate_h2h: calculate_h2h,
-        calculate_probability: calculate_probability,
-        calculate_seeds: calculate_seeds,
-        check_adjudication: check_adjudication,
-        check_boom: check_boom,
-        check_explosion: check_explosion,
-        check_explosion_boom: check_explosion_boom,
-        copy_pgn: copy_pgn,
-        create_boards: create_boards,
-        create_game_link: create_game_link,
-        create_seek: create_seek,
-        current_archive_link: current_archive_link,
-        extract_threads: extract_threads,
-        fix_header_opening: fix_header_opening,
-        fix_zero_moves: fix_zero_moves,
-        format_engine: format_engine,
-        format_fen: format_fen,
-        format_hhmmss: format_hhmmss,
-        format_opening: format_opening,
-        get_short_name: get_short_name,
-        parse_date_time: parse_date_time,
-        parse_pgn: parse_pgn,
-        parse_pgn_moves: parse_pgn_moves,
-        parse_time_control: parse_time_control,
+        calculateH2h: calculateH2h,
+        calculateProbability: calculateProbability,
+        calculateSeeds: calculateSeeds,
+        checkAdjudication: checkAdjudication,
+        checkBoom: checkBoom,
+        checkExplosion: checkExplosion,
+        checkExplosionBoom: checkExplosionBoom,
+        copyPgn: copyPgn,
+        createBoards: createBoards,
+        createGameLink: createGameLink,
+        createSeek: createSeek,
+        currentArchiveLink: currentArchiveLink,
+        extractThreads: extractThreads,
+        fixHeaderOpening: fixHeaderOpening,
+        fixZeroMoves: fixZeroMoves,
+        formatEngine: formatEngine,
+        formatFen: formatFen,
+        formatHhmmss: formatHhmmss,
+        formatOpening: formatOpening,
+        getShortName: getShortName,
+        parseDateTime: parseDateTime,
+        parsePgn: parsePgn,
+        parsePgnMoves: parsePgnMoves,
+        parseTimeControl: parseTimeControl,
         PIECE_THEMES: PIECE_THEMES,
         TABLES: TABLES,
         tour_info: tour_info,
-        update_live_eval: update_live_eval,
-        update_materials: update_materials,
-        update_pgn: update_pgn,
-        update_player_eval: update_player_eval,
+        updateLiveEval: updateLiveEval,
+        updateMaterials: updateMaterials,
+        updatePgn: updatePgn,
+        updatePlayerEval: updatePlayerEval,
     });
 // >>

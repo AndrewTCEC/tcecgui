@@ -1,6 +1,6 @@
 // network
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-05
+// @version 2021-08-02
 //
 // all socket functions are here
 //
@@ -8,12 +8,12 @@
 // jshint -W069
 /*
 globals
-_, A, add_timeout, analyse_crosstable, analyse_log, analyse_tournament, Assign, CacheId, Class, clear_timeout,
-create_cup, CreateNode,
-DEV, exports, From, global, HasClass, Hide, HOST, HTML, Id, init_websockets, InsertNodes, IsArray,
-LoadLibrary, LS, Max, Min, MSG_USER_COUNT, MSG_USER_SUBSCRIBE, Now, ParseJSON, RandomInt, require,
-S, save_option, set_viewers, Show, socket_io:true, socket_send, update_live_eval, update_pgn, update_player_eval,
-update_table, update_twitch, VisibleWidth, window, Y, y_x
+_, A, AddTimeout, analyseCrosstable, analyseLog, analyseTournament, Assign, CacheId, Class, ClearTimeout, createCup,
+CreateNode,
+DEV, exports, From, global, HasClass, Hide, HOST, HTML, Id, initWebsockets, InsertNodes, IsArray,
+LoadLibrary, LS, Max, Min, MSG_USER_COUNT, Now, ParseJSON, RandomInt, require,
+S, saveOption, setViewers, Show, socket_io:true, updateLiveEval, updatePgn, updatePlayerEval, updateTable, updateTwitch,
+VisibleWidth, window, Y, y_x
 */
 'use strict';
 
@@ -48,14 +48,14 @@ let log_time = 0,
     TIMEOUT_pause = 3000,
     TIMEOUT_users = 5000,
     twitch_player,
-    virtual_resize;
+    vi_resize;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Connect/disconnect the socket_io
  */
-function check_socket_io() {
+function checkSocketIo() {
     let is_websocket = (Y['network'] == 'websocket');
 
     // 1) disconnect?
@@ -63,7 +63,7 @@ function check_socket_io() {
         if (socket_io && socket_io.connected) {
             socket_io.close();
             if (is_websocket)
-                startup_network();
+                startupNetwork();
         }
         return;
     }
@@ -78,14 +78,14 @@ function check_socket_io() {
         socket_io.connect(HOST);
 
     if (!socket_ready)
-        event_sockets();
+        eventSockets();
 }
 
 /**
  * Initialise socket_io events
  * + handle all messages
  */
-function event_sockets() {
+function eventSockets() {
     if (!socket_io)
         return;
 
@@ -93,91 +93,91 @@ function event_sockets() {
     socket_io.on('htmlread', data => {
         log_time = Now();
 
-        log_socket('htmlread', data);
+        logSocket('htmlread', data);
         let data_ = data.data,
             date = new Date().toLocaleTimeString(),
             lines = data_.split('\n').reverse(),
             text = lines.join('<br>');
-        insert_log(`<h5><b><i><u>${date}</u></i></b></h5><p align=left>${text}</p>`);
+        insertLog(`<h5><b><i><u>${date}</u></i></b></h5><p align=left>${text}</p>`);
         for (let line of lines)
             if (line.includes(' pv ')) {
-                analyse_log(line);
+                analyseLog(line);
                 break;
             }
     });
 
     socket_io.on('banner', data => {
-        log_socket('banner', data);
-        show_banner(data);
+        logSocket('banner', data);
+        showBanner(data);
     });
     socket_io.on('bracket', data => {
-        log_socket('bracket', data);
-        create_cup('live', data);
+        logSocket('bracket', data);
+        createCup('live', data);
     });
     socket_io.on('crash', data => {
-        log_socket('crash', data);
-        update_table('live', 'crash', data);
+        logSocket('crash', data);
+        updateTable('live', 'crash', data);
     });
     socket_io.on('crosstable', data => {
-        log_socket('crosstable', data);
-        analyse_crosstable('live', data);
+        logSocket('crosstable', data);
+        analyseCrosstable('live', data);
     });
     socket_io.on('livechart', data => {
-        log_socket('livechart', data);
-        update_live_eval('live', data, 0);
+        logSocket('livechart', data);
+        updateLiveEval('live', data, 0);
     });
     socket_io.on('livechart1', data => {
-        log_socket('livechart1', data);
-        update_live_eval('live', data, 1);
+        logSocket('livechart1', data);
+        updateLiveEval('live', data, 1);
     });
     socket_io.on('liveeval', data => {
-        log_socket('liveeval', data);
-        update_live_eval('live', data, 0);
+        logSocket('liveeval', data);
+        updateLiveEval('live', data, 0);
     });
     socket_io.on('liveeval1', data => {
-        log_socket('liveeval1', data);
-        update_live_eval('live', data, 1);
+        logSocket('liveeval1', data);
+        updateLiveEval('live', data, 1);
     });
     socket_io.on('pgn', data => {
-        log_socket('pgn', data);
-        update_pgn('live', data);
+        logSocket('pgn', data);
+        updatePgn('live', data);
     });
     socket_io.on('schedule', data => {
-        log_socket('schedule', data);
-        update_table('live', 'sched', data);
+        logSocket('schedule', data);
+        updateTable('live', 'sched', data);
     });
     socket_io.on('tournament', data => {
-        log_socket('tournament', data, true);
-        analyse_tournament('live', data);
+        logSocket('tournament', data, true);
+        analyseTournament('live', data);
         if (y_x == 'live')
-            update_twitch(null, `https://www.twitch.tv/embed/${data.twitchaccount}/chat`);
+            updateTwitch(null, `https://www.twitch.tv/embed/${data.twitchaccount}/chat`);
     });
     socket_io.on('updeng', data => {
-        log_socket('updeng', data);
+        logSocket('updeng', data);
         if (!DEV['wasm'])
-            update_player_eval('live', data);
+            updatePlayerEval('live', data);
     });
     socket_io.on('users', data => {
-        log_socket('users', data);
-        set_viewers(data.count);
+        logSocket('users', data);
+        setViewers(data.count);
     });
 
     // unused => store the data anyway
     socket_io.on('enginerating', data => {
-        log_socket('enginerating', data, true);
+        logSocket('enginerating', data, true);
     });
     socket_io.on('lastpgntime', data => {
-        log_socket('lastpgntime', data, true);
+        logSocket('lastpgntime', data, true);
     });
 
     //
-    add_timeout('get_users', () => socket_io.emit('getusers', 'd'), TIMEOUT_users);
-    add_timeout('check', () => {
+    AddTimeout('get_users', () => socket_io.emit('getusers', 'd'), TIMEOUT_users);
+    AddTimeout('check', () => {
         if (!Y['log_auto_start'])
             return;
         if (Now() > log_time + TIMEOUT_check - 1) {
-            listen_log(0);
-            add_timeout('log', () => listen_log('all'), TIMEOUT_log);
+            listenLog(0);
+            AddTimeout('log', () => listenLog('all'), TIMEOUT_log);
         }
     }, TIMEOUT_check * 1000 + RandomInt(10), true);
 
@@ -188,13 +188,13 @@ function event_sockets() {
  * Handle log from websocket
  * @param {Array} data
  */
-function handle_log(data) {
+function handleLog(data) {
     log_time = Now();
 
     // 1) insert text
     let lines = data.reverse(),
         text = lines.map(([id, line]) => `<div class="log${id}">${line}</div>`).join('');
-    insert_log(`<p align=left>${text}</p>`);
+    insertLog(`<p align=left>${text}</p>`);
 
     // 2) insert date
     let date = new Date().toLocaleTimeString(),
@@ -207,7 +207,7 @@ function handle_log(data) {
     // 3) analyse log
     for (let line of lines)
         if (line.includes(' pv ')) {
-            analyse_log(line);
+            analyseLog(line);
             break;
         }
 }
@@ -216,7 +216,7 @@ function handle_log(data) {
  * Insert a log entry at the top of live_log
  * @param {string} html
  */
-function insert_log(html) {
+function insertLog(html) {
     let live_log = CacheId('live-log'),
         log_history = Y['log_history'],
         node = CreateNode('div', html);
@@ -233,7 +233,7 @@ function insert_log(html) {
  * Listen to the log (or not)
  * @param {string|number=} new_room
  */
-function listen_log(new_room) {
+function listenLog(new_room) {
     if (!socket_io)
         return;
     if (new_room == undefined)
@@ -247,14 +247,14 @@ function listen_log(new_room) {
     // 1) leave the previous room
     if (prev_room && prev_room != new_room) {
         socket_io.emit('noroom', `room${prev_room}`);
-        insert_log(`<div class="loss">left: ${prev_room}</div>`);
+        insertLog(`<div class="loss">left: ${prev_room}</div>`);
         prev_room = 0;
     }
     // 2) enter the next room
     if (new_room && prev_room != new_room) {
         prev_room = new_room;
         socket_io.emit('room', `room${new_room}`);
-        insert_log(`<div class="win">entered: ${new_room}</div>`);
+        insertLog(`<div class="win">entered: ${new_room}</div>`);
     }
     CacheId('nlog').value = prev_room;
 }
@@ -265,7 +265,7 @@ function listen_log(new_room) {
  * @param {Object} data
  * @param {boolean=} cache
  */
-function log_socket(name, data, cache) {
+function logSocket(name, data, cache) {
     if (DEV['socket_io']) {
         LS(`socket_io/${name}:`);
         LS(data);
@@ -278,13 +278,13 @@ function log_socket(name, data, cache) {
  * Show the banner and hide it after a timeout
  * @param {string=} text if there's no text, then just hide it
  */
-function show_banner(text) {
+function showBanner(text) {
     let node = CacheId('banner');
     if (text) {
         HTML(node, text);
         Show(node);
     }
-    add_timeout('banner', () => Hide(node), TIMEOUT_banner);
+    AddTimeout('banner', () => Hide(node), TIMEOUT_banner);
 }
 
 /**
@@ -293,7 +293,7 @@ function show_banner(text) {
  * @param {Event} e
  * @returns {boolean}
  */
-function socket_message(e) {
+function socketMessage(e) {
     let datax = IsArray(e)? e: ParseJSON(e.data);
     if (!datax || !IsArray(datax))
         return false;
@@ -305,45 +305,45 @@ function socket_message(e) {
     switch (method) {
     // messages
     case MSG_CUSTOM_LOG:
-        handle_log(data);
+        handleLog(data);
         break;
     case MSG_CUSTOM_PGN:
-        update_pgn('live', data);
+        updatePgn('live', data);
         break;
     case MSG_USER_COUNT:
-        set_viewers(data);
+        setViewers(data);
         break;
 
     // full files
     case 'banner.txt':
-        show_banner(data);
+        showBanner(data);
         break;
     case 'crash.json':
-        update_table('live', 'crash', data);
+        updateTable('live', 'crash', data);
         break;
     case 'crosstable.json':
-        analyse_crosstable('live', data);
+        analyseCrosstable('live', data);
         break;
     case 'enginerating.json':
         break;
     case 'Eventcrosstable.json':
-        create_cup('live', data);
+        createCup('live', data);
         break;
     case 'gamelist.json':
         break;
     case 'liveeval.json':
-        update_live_eval('live', data, 0);
+        updateLiveEval('live', data, 0);
         break;
     case 'liveeval1.json':
-        update_live_eval('live', data, 1);
+        updateLiveEval('live', data, 1);
         break;
     case 'schedule.json':
-        update_table('live', 'sched', data);
+        updateTable('live', 'sched', data);
         break;
     case 'tournament.json':
-        analyse_tournament('live', data);
+        analyseTournament('live', data);
         if (y_x == 'live')
-            update_twitch(null, `https://www.twitch.tv/embed/${data.twitchaccount}/chat`);
+            updateTwitch(null, `https://www.twitch.tv/embed/${data.twitchaccount}/chat`);
         break;
     }
 
@@ -356,9 +356,9 @@ function socket_message(e) {
  * @param {string?=} chat_url new chat URL
  * @param {boolean=} only_resize
  */
-function update_twitch(dark, chat_url, only_resize) {
+function updateTwitch(dark, chat_url, only_resize) {
     if (dark != undefined)
-        save_option('twitch_dark', dark);
+        saveOption('twitch_dark', dark);
 
     if (chat_url)
         TWITCH_CHAT = chat_url;
@@ -390,8 +390,8 @@ function update_twitch(dark, chat_url, only_resize) {
     if (need_narrow != has_narrow || need_wide != has_wide) {
         Class(right, 'narrow', need_narrow);
         Class(right, 'wide', need_wide);
-        if (virtual_resize)
-            virtual_resize();
+        if (vi_resize)
+            vi_resize();
     }
 
     // 2) update twitch video IF there was a change
@@ -434,7 +434,7 @@ function update_twitch(dark, chat_url, only_resize) {
         else if (!channel) {
             twitch_player.pause();
             if (!twitch_player.isPaused())
-                add_timeout('pause', twitch_player.pause, TIMEOUT_pause);
+                AddTimeout('pause', twitch_player.pause, TIMEOUT_pause);
         }
         else if (twitch_player.getChannel() != channel)
             twitch_player.setChannel(channel);
@@ -446,17 +446,14 @@ function update_twitch(dark, chat_url, only_resize) {
 /**
  * Initialise structures with game specific data
  */
-function startup_network() {
+function startupNetwork() {
     if (Y['network'] == 'socket.io') {
-        clear_timeout('ws');
+        ClearTimeout('ws');
         return;
     }
 
-    init_websockets({
-        message: socket_message,
-        open: () => {
-            socket_send([MSG_USER_SUBSCRIBE, {channels: ['count', 'log', 'pgn']}]);
-        },
+    initWebsockets({
+        message: socketMessage,
     });
 }
 
@@ -465,7 +462,7 @@ function startup_network() {
 // <<
 if (typeof exports != 'undefined')
     Assign(exports, {
-        check_socket_io: check_socket_io,
-        listen_log: listen_log,
+        checkSocketIo: checkSocketIo,
+        listenLog: listenLog,
     });
 // >>

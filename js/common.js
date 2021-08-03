@@ -1,13 +1,13 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 // utility JS functions used in all the sites
 // jshint -W069
 /*
 globals
-console, document, exports, FormData, global,
-location, navigator, Node, requestAnimationFrame, screen, window, XMLHttpRequest
+cancelAnimationFrame, clearInterval, clearTimeout, console, document, exports, FormData, global,
+location, navigator, Node, requestAnimationFrame, screen, setInterval, setTimeout, window, XMLHttpRequest
 */
 'use strict';
 
@@ -79,12 +79,18 @@ let Abs = Math.abs,
     Sqrt = Math.sqrt,
     Stringify = JSON.stringify.bind(JSON),
     Tanh = Math.tanh,
+    Uint8From = text => Uint8Array.from(From(text).map(letter => letter.charCodeAt(0))),
     Upper = text => text? text.toUpperCase(): '';
+
+// global vars
+let animation_frames = {},
+    timeouts = {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ELEMENTARY NODE FUNCTIONS
 ////////////////////////////
+
 /**
  * Find 1 node
  * @param {Node|string|Element|EventTarget} sel CSS selector or node
@@ -146,6 +152,7 @@ function Id(id, parent) {
 
 // DERIVED NODE FUNCTIONS
 /////////////////////////
+
 /**
  * Change attributes
  * @param {Node|string} sel CSS selector or node
@@ -236,7 +243,9 @@ function C(sel, callback, parent) {
  * @returns {Node}
  */
 function CacheId(id, parent) {
-    // CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
+    // <<
+    CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
+    // >>
     if (CACHE_IDS[id])
         return CACHE_IDS[id];
     let node = Id(id, parent);
@@ -996,8 +1005,10 @@ function TEXT(sel, text, parent) {
                 let child = sel.firstChild;
                 if (!child)
                     sel.appendChild(document.createTextNode(text));
-                else if (child.nodeType == 3)
-                    child.nodeValue = text;
+                else if (child.nodeType == 3) {
+                    if (child.nodeValue != text)
+                        child.nodeValue = text;
+                }
                 else if (sel.innerHTML != text)
                     sel.textContent = text;
             }
@@ -1019,8 +1030,10 @@ function TEXT(sel, text, parent) {
             let child = node.firstChild;
             if (!child)
                 node.appendChild(document.createTextNode(/** @type {string} */(text)));
-            else if (child.nodeType == 3)
-                child.nodeValue = text;
+            else if (child.nodeType == 3) {
+                if (child.nodeValue != text)
+                    child.nodeValue = text;
+            }
             else if (node.innerHTML != text)
                 node.textContent = text;
         }
@@ -1049,8 +1062,10 @@ function TextHTML(sel, text, parent) {
                 let child = sel.firstChild;
                 if (!child)
                     sel.appendChild(document.createTextNode(text));
-                else if (child.nodeType == 3)
-                    child.nodeValue = text;
+                else if (child.nodeType == 3) {
+                    if (child.nodeValue != text)
+                        child.nodeValue = text;
+                }
                 else if (sel.innerHTML != text)
                     sel.textContent = text;
                 return text;
@@ -1074,8 +1089,10 @@ function TextHTML(sel, text, parent) {
             let child = node.firstChild;
             if (!child)
                 node.appendChild(document.createTextNode(/** @type {string} */(text)));
-            else if (child.nodeType == 3)
-                child.nodeValue = text;
+            else if (child.nodeType == 3) {
+                if (child.nodeValue != text)
+                    child.nodeValue = text;
+            }
             else if (node.innerHTML != text)
                 node.textContent = text;
         }
@@ -1135,14 +1152,60 @@ function Visible(sel, parent) {
 
 // NON-NODE FUNCTIONS
 /////////////////////
+
+/**
+ * Add a timeout / interval
+ * @param {string} name
+ * @param {Function} func function to be called after the timer
+ * @param {number} timeout milliseconds <0: does nothing, =0: executes directly, >0: timer
+ * @param {boolean=} is_interval
+ */
+function AddTimeout(name, func, timeout, is_interval) {
+    ClearTimeout(name);
+    if (timeout < 0)
+        return;
+
+    if (timeout)
+        timeouts[name] = [
+            is_interval? setInterval(func, timeout): setTimeout(() => {delete timeouts[name]; func();}, timeout),
+            is_interval? 1: 0,
+        ];
+    else
+        func();
+}
+
+/**
+ * Clear a timeout / interval
+ * @param {string} name
+ */
+function ClearTimeout(name) {
+    let timeout = timeouts[name];
+    if (!timeout)
+        return;
+
+    if (timeout[1])
+        clearInterval(timeout[0]);
+    else
+        clearTimeout(timeout[0]);
+
+    delete timeouts[name];
+}
+
 /**
  * Utility for requestAnimationFrame
+ * @param {string} name
  * @param {Function} callback
  * @param {boolean=} direct
  * @returns {number|*}
  */
-function AnimationFrame(callback, direct) {
-    return direct? callback(): requestAnimationFrame(() => callback());
+function AnimationFrame(name, callback, direct) {
+    CancelAnimationFrame(name);
+    if (direct)
+        return callback();
+
+    let handle = requestAnimationFrame(() => callback());
+    animation_frames[name] = handle;
+    return handle;
 }
 
 /**
@@ -1154,6 +1217,18 @@ function ArrayJS(vector) {
     if (vector.size)
         vector = Array(vector.size()).fill(0).map((_, id) => vector.get(id));
     return /** @type {!Array<*>} */(vector);
+}
+
+/**
+ * Cancel an animation frame
+ * @param {string} name
+ */
+function CancelAnimationFrame(name) {
+    let handle = animation_frames[name];
+    if (!handle)
+        return;
+    cancelAnimationFrame(handle);
+    delete animation_frames[name];
 }
 
 /**
@@ -1427,6 +1502,10 @@ function FormatUnit(number, def, keep_decimal, is_si=true) {
  * @returns {!Array<number>} hours, mins, secs, cs
  */
 function FromSeconds(time) {
+    // otherwise 19.24 => '19.23' because of rounding errors
+    if (Number.isFinite(time))
+        time += 0.001;
+
     let secs = Floor(time),
         // !!important not to do (time - secs) * 100
         cs = Pad(Floor(time * 100 - secs * 100)),
@@ -1518,16 +1597,16 @@ function Merge(dico, extras, flag=1) {
 
 /**
  * Get the timestamp in seconds
- * @param {boolean=} as_float get seconds as float instead of int
- * @returns {number} seconds
- * @example
- * Now(true)    // 1573706158.324 = sec
- * Now()        // 1573706158 = sec
- * Date.now()   // 1573706158324 = ms
+ * @param {number=} mode &1: get seconds as float instead of int, &2: get ms instead of seconds
+ * @returns {number} seconds or ms
  */
-function Now(as_float) {
-    let seconds = Date.now() / 1000;
-    return as_float? seconds: Floor(seconds);
+function Now(mode) {
+    let ms = Date.now();
+    if (mode & 2)
+        return ms;
+
+    let seconds = ms / 1000;
+    return (mode & 1)? seconds: Floor(seconds);
 }
 
 /**
@@ -1623,7 +1702,7 @@ function RandomInt(high=1, low=0) {
  * @param {string=} obj.form add the content to a new FormData
  * @param {Object=} obj.headers
  * @param {string=} obj.method GET, POST
- * @param {string=} obj.type arraybuffer, blob, document, json, text
+ * @param {string=} obj.type response type: arraybuffer, blob, document, json, text
  * @example
  * // get the context of the file
  * Resource('./fragment.frag', (status, text) => {LS(text)}, {type: 'text'})
@@ -1721,6 +1800,7 @@ if (typeof exports != 'undefined') {
         _: _,
         A: A,
         Abs: Abs,
+        AddTimeout: AddTimeout,
         AnimationFrame: AnimationFrame,
         ArrayJS: ArrayJS,
         Assign: Assign,
@@ -1730,9 +1810,11 @@ if (typeof exports != 'undefined') {
         C: C,
         CACHE_IDS: CACHE_IDS,
         CacheId: CacheId,
+        CancelAnimationFrame: CancelAnimationFrame,
         Clamp: Clamp,
         Class: Class,
         Clear: Clear,
+        ClearTimeout: ClearTimeout,
         Contain: Contain,
         CopyClipboard: CopyClipboard,
         CreateNode: CreateNode,
@@ -1795,8 +1877,10 @@ if (typeof exports != 'undefined') {
         Style: Style,
         TEXT: TEXT,
         TextHTML: TextHTML,
+        timeouts: timeouts,
         Title: Title,
         Toggle: Toggle,
+        Uint8From: Uint8From,
         Undefined: Undefined,
         Upper: Upper,
         Visible: Visible,

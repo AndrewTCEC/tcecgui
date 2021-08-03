@@ -1,6 +1,6 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-06-21
+// @version 2021-08-02
 //
 // global variables/functions shared across multiple js files
 //
@@ -8,9 +8,8 @@
 // jshint -W069
 /*
 globals
-Abs, Assign, Atan, CacheId, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, HTML, IsDigit, IsString, Keys,
-Max, Min, Pow, require, save_default, Split, virtual_can_close_popups:true,
-virtual_reset_old_settings_special:true, Y
+Abs, Assign, Atan, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, HTML, IsDigit, IsString, Keys,
+Max, Min, node_modal, Pow, require, saveDefault, Split, vi_canClosePopups:true, vi_resetOldSettingsSpecial:true, Y
 */
 'use strict';
 
@@ -27,20 +26,20 @@ let HOST_ARCHIVE,
     SF_COEFF_AS = [-8.24404295, 64.23892342, -95.73056462, 153.86478679],
     SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
     SF_PAWN_VALUE = 2.06,
-    VERSION = '20210621',
-    virtual_close_popups,
+    VERSION = '20210802',
+    vi_closePopups,
     xboards = {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Add an eval to the history
- * - used by check_boom
+ * - used by checkBoom
  * @param {!Object} player
  * @param {number} ply
  * @param {number|string} eval_
  */
-function add_player_eval(player, ply, eval_) {
+function addPlayerEval(player, ply, eval_) {
     if (eval_ == undefined)
         return;
     if (!player.evals)
@@ -54,7 +53,7 @@ function add_player_eval(player, ply, eval_) {
  * @param {number} cp
  * @returns {number}
  */
-function allie_cp_to_score(cp) {
+function allieCpToScore(cp) {
     if (Abs(cp) > 1000)
         return (cp + (cp > 0 ? 127407 : -127407)) / 153007;
     return Atan(cp / 111) / 1.74;
@@ -65,7 +64,7 @@ function allie_cp_to_score(cp) {
  * @param {Move} move
  * @param {!Object} dico
  */
-function assign_move(move, dico) {
+function assignMove(move, dico) {
     Assign(move, ...Keys(dico).filter(key => {
         let value = dico[key];
         if (value == '' || (key == 'ply' && value < -1))
@@ -82,17 +81,17 @@ function assign_move(move, dico) {
  * @param {number} ply
  * @returns {number} q %
  */
-function calculate_feature_q(feature, eval_, ply) {
+function calculateFeatureQ(feature, eval_, ply) {
     let white_win;
 
     if (feature & 1) {
         let cp = eval_ * 100;
         if (feature & 2)
-            white_win = leela_cp_to_score(cp);
+            white_win = leelaCpToScore(cp);
         else if (feature & 4)
-            white_win = allie_cp_to_score(cp);
+            white_win = allieCpToScore(cp);
         else if (feature & 8)
-            white_win = stoof_cp_to_score(cp);
+            white_win = stoofCpToScore(cp);
         else
             white_win = (Atan((eval_ * 100) / 290.680623072) / 3.096181612 + 0.5) * 2 - 1;
 
@@ -100,7 +99,7 @@ function calculate_feature_q(feature, eval_, ply) {
         white_win *= 50;
     }
     else if (ply >= 0) {
-        let wdl = stockfish_wdl(eval_ * 100, ply);
+        let wdl = stockfishWdl(eval_ * 100, ply);
         white_win = (wdl[0] - wdl[2]) / 20;
     }
     else
@@ -113,12 +112,12 @@ function calculate_feature_q(feature, eval_, ply) {
  * Can close popups = first step in "close popups"
  * @returns {boolean}
  */
-function can_close_popups() {
-    if (virtual_close_popups)
-        virtual_close_popups('popup-fen', 'fen', {type: 'mouseleave'});
+function canClosePopups() {
+    if (vi_closePopups)
+        vi_closePopups('popup-fen', 'fen', {type: 'mouseleave'});
 
     // empty the content to prevent controls for still interacting with the popup (ex: SELECT)
-    HTML(CacheId('modal'), '');
+    HTML(node_modal, '');
     return true;
 }
 
@@ -130,7 +129,7 @@ function can_close_popups() {
  * @param {number} ply ply or id
  * @returns {string}
  */
-function convert_checkmate(value, ply) {
+function convertCheckmate(value, ply) {
     let positive = 1,
         want_ply = (Y['checkmate'] == 'plies');
 
@@ -177,7 +176,7 @@ function convert_checkmate(value, ply) {
  * Fix old move format from Season 1
  * @param {Move} move
  */
-function fix_move_format(move) {
+function fixMoveFormat(move) {
     if (move._fixed || move['book'])
         return;
 
@@ -187,11 +186,11 @@ function fix_move_format(move) {
 
     // fix move time
     if (isNaN(move['mt']) && move['mt'])
-        move['mt'] = parse_time(move['mt']) * 1000;
+        move['mt'] = parseTime(move['mt']) * 1000;
 
     // fix time left
     if (isNaN(move['tl']) && move['tl'])
-        move['tl'] = parse_time(move['tl']) * 1000;
+        move['tl'] = parseTime(move['tl']) * 1000;
 
     // fix speed
     if (isNaN(move['s']) && move['s']) {
@@ -233,13 +232,16 @@ function fix_move_format(move) {
  * @param {boolean=} process can make decimals smaller
  * @returns {string}
  */
-function format_eval(value, ply, process) {
+function formatEval(value, ply, process) {
+    if (value == undefined || Number.isNaN(value))
+        return '-';
+
     let float = parseFloat(value);
     if (isNaN(float)) {
         // checkmate conversion?
         value = value + '';
         if (value.includes('M'))
-            value = convert_checkmate(value, ply);
+            value = convertCheckmate(value, ply);
         return value;
     }
 
@@ -268,7 +270,7 @@ function format_eval(value, ply, process) {
  * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
  * @returns {string}
  */
-function format_unit(number, def, keep_decimal) {
+function formatUnit(number, def, keep_decimal) {
     return FormatUnit(number, def, keep_decimal, Y['SI_units']);
 }
 
@@ -277,7 +279,7 @@ function format_unit(number, def, keep_decimal) {
  * @param {string} fen
  * @returns {number}
  */
-function get_fen_ply(fen) {
+function getFenPly(fen) {
     if (!fen)
         return -2;
     let items = fen.split(' '),
@@ -291,7 +293,7 @@ function get_fen_ply(fen) {
  * @param {Move} move
  * @returns {number} ply -2 on error, -1 on the initial position, otherwise >= 0
  */
-function get_move_ply(move) {
+function getMovePly(move) {
     if (!move)
         return -2;
     let move_ply = move['ply'];
@@ -300,7 +302,7 @@ function get_move_ply(move) {
     if (!move['fen'])
         return -2;
 
-    let ply = get_fen_ply(move['fen']);
+    let ply = getFenPly(move['fen']);
     if (ply >= -1) {
         move['ply'] = ply;
         return ply;
@@ -314,7 +316,7 @@ function get_move_ply(move) {
  * @param {number} cp
  * @returns {number}
  */
-function leela_cp_to_score(cp) {
+function leelaCpToScore(cp) {
     return Atan(cp / 90) / 1.5637541897;
 }
 
@@ -323,7 +325,7 @@ function leela_cp_to_score(cp) {
  * @param {string} time
  * @returns {number}
  */
-function parse_time(time) {
+function parseTime(time) {
     if (!time)
         return 0;
     let [hour, min, sec] = time.split(':');
@@ -335,7 +337,7 @@ function parse_time(time) {
  * @param {string} version
  * @param {!Array<string>} keys
  */
-function reset_old_settings_special(version, keys) {
+function resetOldSettingsSpecial(version, keys) {
     if (version < '20200930')
         keys.push('game_wasm');
     if (version < '20201003b')
@@ -349,8 +351,8 @@ function reset_old_settings_special(version, keys) {
     if (version < '20210109e')
         keys.push('boom_threshold');
     if (version < '20210127b') {
-        save_default('arrow_color_01', Y['arrow_combine_01']);
-        save_default('arrow_color_23', Y['arrow_combine_23']);
+        saveDefault('arrow_color_01', Y['arrow_combine_01']);
+        saveDefault('arrow_color_23', Y['arrow_combine_23']);
     }
 }
 
@@ -362,7 +364,7 @@ function reset_old_settings_special(version, keys) {
  * @param {number=} def_ply default ply
  * @returns {!{items:Array<string>, ply:number}}
  */
-function split_move_string(text, no_number, def_ply=-2) {
+function splitMoveString(text, no_number, def_ply=-2) {
     if (!text)
         return {items: [], ply: -2};
 
@@ -384,9 +386,9 @@ function split_move_string(text, no_number, def_ply=-2) {
  * @param {number} ply
  * @returns {!Array<number>} w,d,l
  */
-function stockfish_wdl(cp, ply) {
-    let win = stockfish_win_rate_model(cp, ply),
-        loss = stockfish_win_rate_model(-cp, ply),
+function stockfishWdl(cp, ply) {
+    let win = stockfishWinRateModel(cp, ply),
+        loss = stockfishWinRateModel(-cp, ply),
         draw = Max(0, 1000 - win - loss);
 
     return [win, draw, loss];
@@ -401,7 +403,7 @@ function stockfish_wdl(cp, ply) {
  * @param {number} ply
  * @returns {number}
  */
-function stockfish_win_rate_model(cp, ply) {
+function stockfishWinRateModel(cp, ply) {
     let as = SF_COEFF_AS,
         bs = SF_COEFF_BS,
         m = Min(240, ply) / 64,
@@ -418,7 +420,7 @@ function stockfish_win_rate_model(cp, ply) {
  * @param {number} cp
  * @returns {number}
  */
-function stoof_cp_to_score(cp) {
+function stoofCpToScore(cp) {
     return Atan(cp / 194) / 1.55564;
 }
 
@@ -428,9 +430,9 @@ function stoof_cp_to_score(cp) {
 /**
  * Initialise structures with global data
  */
-function startup_global() {
-    virtual_can_close_popups = can_close_popups;
-    virtual_reset_old_settings_special = reset_old_settings_special;
+function startupGlobal() {
+    vi_canClosePopups = canClosePopups;
+    vi_resetOldSettingsSpecial = resetOldSettingsSpecial;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -438,21 +440,21 @@ function startup_global() {
 // <<
 if (typeof exports != 'undefined') {
     Assign(exports, {
-        add_player_eval: add_player_eval,
-        allie_cp_to_score: allie_cp_to_score,
-        assign_move: assign_move,
-        calculate_feature_q: calculate_feature_q,
-        convert_checkmate: convert_checkmate,
-        fix_move_format: fix_move_format,
-        format_eval: format_eval,
-        format_unit: format_unit,
-        get_fen_ply: get_fen_ply,
-        get_move_ply: get_move_ply,
-        leela_cp_to_score: leela_cp_to_score,
-        split_move_string: split_move_string,
-        stockfish_wdl: stockfish_wdl,
-        stockfish_win_rate_model: stockfish_win_rate_model,
-        stoof_cp_to_score: stoof_cp_to_score,
+        addPlayerEval: addPlayerEval,
+        allieCpToScore: allieCpToScore,
+        assignMove: assignMove,
+        calculateFeatureQ: calculateFeatureQ,
+        convertCheckmate: convertCheckmate,
+        fixMoveFormat: fixMoveFormat,
+        formatEval: formatEval,
+        formatUnit: formatUnit,
+        getFenPly: getFenPly,
+        getMovePly: getMovePly,
+        leelaCpToScore: leelaCpToScore,
+        splitMoveString: splitMoveString,
+        stockfishWdl: stockfishWdl,
+        stockfishWinRateModel: stockfishWinRateModel,
+        stoofCpToScore: stoofCpToScore,
         VERSION: VERSION,
         xboards: xboards,
     });

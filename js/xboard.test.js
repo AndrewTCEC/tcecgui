@@ -1,6 +1,6 @@
 // xboard.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-21
+// @version 2021-08-02
 //
 /*
 globals
@@ -9,18 +9,18 @@ expect, global, require, test
 'use strict';
 
 let {A, Assign, From, Keys, Safe} = require('./common.js'),
-    {load_defaults, Y} = require('./engine.js'),
-    {create_boards} = require('./game.js'),
+    {loadDefaults, Y} = require('./engine.js'),
+    {createBoards} = require('./game.js'),
     {xboards} = require('./global.js'),
-    {prepare_settings} = require('./startup.js'),
+    {prepareSettings} = require('./startup.js'),
     {START_FEN} = require('./xboard.js');
 
 global.T = null;
 
-prepare_settings();
-load_defaults();
+prepareSettings();
+loadDefaults();
 Y.volume = 0;
-create_boards('text');
+createBoards('text');
 
 let archive = xboards.archive,
     live = xboards.live;

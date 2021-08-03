@@ -1,6 +1,6 @@
 // chat_server.js
 // @authors octopoulo <polluxyz@gmail.com>, Aloril <aloril@iki.fi>
-// @version 2021-02-05
+// @version 2021-08-02
 /*
 globals
 console, exports, require
@@ -26,7 +26,7 @@ let chess,
 /**
  * Load chess-wasm
  */
-async function load_wasm() {
+async function loadWasm() {
     let instance = await Module();
     chess = new instance.Chess();
     LS('chess library loaded');
@@ -81,7 +81,7 @@ server.on('connection', async socket => {
     }
 
     if (!chess)
-        await load_wasm();
+        await loadWasm();
 
     socket.on('data', chunk => {
         // CHECK THIS: FIX: handle 2 messages in one packet or incomplete packets:

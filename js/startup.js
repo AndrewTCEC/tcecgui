@@ -1,6 +1,6 @@
 // startup.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // Startup
 // - start everything: 3d, game, ...
@@ -15,23 +15,23 @@ globals
 _, __PREFIX:true, A, actionKey, actionKeyNoInput, actionKeyupNoInput, activateTabs, addHistory, AddTimeout,
 adjustPopups, ANCHORS, api_times:true, apiTranslateGet, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
 C, CacheId, cannotPopup, change_queue, changedHash, changedSection, changePage, changeSetting, changeSettingGame,
-charts, checkHash, checkSocketIo, Clamp, Class, ClearTimeout, closePopups, context_areas, context_target:true,
+charts, checkHash, checkSocketIo, Clamp, Class, Clear, ClearTimeout, closePopups, context_areas, context_target:true,
 DEFAULT_SCALES, DefaultArray, DEFAULTS, detectDevice, DEV, DEV_NAMES, device, document, downloadTables,
 drag_source:true, E, Events, exports, exportSettings, FileReader, findArea, Floor, From, gameActionKey,
 gameActionKeyup, getArea, getDropId, getObject, global, guessTypes, handleBoardEvents, HasClass, HasClasses, hashes,
-Hide, hideElement, HIDES, HTML, ICONS:true, importSettings, Index, initGraph, IsObject, KEY_TIMES, Keys, KEYS,
-LANGUAGES:true, listenLog, loadDefaults, loadLibrary, loadPreset, LOCALHOST, location, Max, mergeSettings, Min,
-movePane, navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, openTable, optionNumber, orderBoards, PANES,
-Parent, ParseJSON, PD, PIECE_THEMES, populateAreas, POPUP_ADJUSTS, require, resetDefaults, resetOldSettings,
-resetSettings, resizeBracket, resizeGame, resizeMoveLists, resizeTable, resumeSleep,
+Hide, hideElement, HIDES, HTML, ICONS, importSettings, Index, initGraph, IsObject, KEY_TIMES, Keys, KEYS,
+LANGUAGES, listenLog, loadDefaults, loadLibrary, loadPreset, LOCALHOST, location, Max, mergeSettings, Min, movePane,
+navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, openTable, optionNumber, orderBoards, PANES, Parent,
+ParseJSON, PD, PIECE_THEMES, populateAreas, POPUP_ADJUSTS, require, resetDefaults, resetOldSettings, resetSettings,
+resizeBracket, resizeGame, resizeMoveLists, resizeTable, resumeSleep,
 S, SafeId, saveOption, scrollAdjust, ScrollDocument, setDragEvents, setDraggable, setEngineEvents, setFullscreenEvents,
 setGameEvents, setSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames, showPopup, SP, start3d,
 startGame, startup3d, startupConfig, startupEngine, startupGame, startupGlobal, startupGraph, startupNetwork, Style,
 TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, toggleFullscreen, TRANSLATE_SPECIALS,
 translateNodes, translates:true, TYPES, Undefined, updateBoardTheme, updateDebug, updatePgn, updateTheme, updateTwitch,
 VERSION, vi_changeSettingSpecial:true, vi_checkHashSpecial:true, vi_hideAreas:true, vi_importSettings:true,
-vi_openedTableSpecial:true, vi_populateAreasSpecial:true, vi_resetSettingsSpecial:true, vi_resize:true,
-vi_setModalEventsSpecial:true, vi_windowClickDataset:true, vi_windowClickParent:true, vi_windowClickParentDataset:true,
+vi_openedTableSpecial:true, vi_populateAreasAfter:true, vi_resetSettingsAfter:true, vi_resize:true,
+vi_setModalEventsAfter:true, vi_windowClickDataset:true, vi_windowClickParent:true, vi_windowClickParentDataset:true,
 Visible, VisibleWidth, WB_LOWER, window, windowClick, X_SETTINGS, xboards, Y, y_three:true, y_x, Z
 */
 'use strict';
@@ -559,7 +559,7 @@ function checkStream() {
     // alternate between shortcut_1/2/3
     if (!timeouts['stream'])
         AddTimeout('stream', () => {
-            stream_click ++;
+            ++stream_click;
 
             let shortcuts = [1, 2, 3].map(id => _(`.tab[data-x="shortcut_${id}"]`)).filter(node => Visible(node)),
                 target = shortcuts[stream_click % 3];
@@ -718,7 +718,7 @@ function fixOldSettings() {
             let id, prev,
                 vector = areas[key];
 
-            for (let i = vector.length - 1; i >= 0; i --) {
+            for (let i = vector.length - 1; i >= 0; --i) {
                 let item = vector[i];
                 if ((item[1] & 1) && (item[2] & 1) && item[0].slice(0, 6) == 'table-') {
                     id = i;
@@ -729,7 +729,7 @@ function fixOldSettings() {
             if (prev) {
                 vector.splice(id + 1, 0, ['table-agree', prev[1], 1]);
                 prev[1] = 1;
-                populate ++;
+                ++populate;
                 break;
             }
         }
@@ -746,7 +746,7 @@ function fixOldSettings() {
             vector.splice(found.id + 1, 0, [name, area[1], 1]);
             area[1] = 1;
             area[2] |= 1;
-            populate ++;
+            ++populate;
         }
     }
 
@@ -963,7 +963,7 @@ function insertGoogleAd(id) {
             '</a>'
         ].join('');
 
-    HTML(`#ad${id} > hori`, html);
+    HTML(`#ad${id} > h`, html);
     (window.adsbygoogle = window.adsbygoogle || []).push({});
 }
 
@@ -1006,7 +1006,7 @@ function openedTableSpecial(node, name, tab) {
 /**
  * Called after populateAreas
  */
-function populateAreasSpecial() {
+function populateAreasAfter() {
     showArchiveLive();
     updateShortcuts();
     AddTimeout('populate', resize, 100);
@@ -1030,7 +1030,7 @@ function quickSetup(force) {
  * Reset to the default/other settings
  * @param {boolean=} is_default
  */
-function resetSettingsSpecial(is_default) {
+function resetSettingsAfter(is_default) {
     if (is_default) {
         loadSettings();
         checkHash();
@@ -1294,7 +1294,7 @@ function updateBackground() {
 function updateShortcuts() {
     let names = new Set();
 
-    for (let id = 1; id <= 3; id ++) {
+    for (let id = 1; id <= 3; ++id) {
         let tab = _(`.tab[data-x="shortcut_${id}"]`),
             shortcut = Y[`shortcut_${id}`];
         if (!tab)
@@ -1418,7 +1418,7 @@ function windowClickParentDataset(dataset) {
 /**
  * Happens after a popup is displayed
  */
-function setModalEventsSpecial() {
+function setModalEventsAfter() {
     let node = _('[data-t="Board theme"]', node_modal);
     if (!node)
         return;
@@ -2426,7 +2426,7 @@ function startup() {
     });
 
     // VB=viewBox=; PFC=path fill="currentColor"
-    ICONS = {
+    Assign(ICONS, {
         'burger': 'VB="0 0 448 512"><PFC d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/>',
         'calendar': 'VB="0 0 448 512"><PFC d="M0 464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V192H0v272zm320-196c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zM192 268c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12h-40c-6.6 0-12-5.4-12-12v-40zM64 268c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H76c-6.6 0-12-5.4-12-12v-40zm0 128c0-6.6 5.4-12 12-12h40c6.6 0 12 5.4 12 12v40c0 6.6-5.4 12-12 12H76c-6.6 0-12-5.4-12-12v-40zM400 64h-48V16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v48H160V16c0-8.8-7.2-16-16-16h-32c-8.8 0-16 7.2-16 16v48H48C21.5 64 0 85.5 0 112v48h448v-48c0-26.5-21.5-48-48-48z"/>',
         'cog': 'VB="0 0 512 512"><PFC d="M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"/>',
@@ -2455,9 +2455,9 @@ function startup() {
         'trophy': 'VB="0 0 576 512"><PFC d="M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"/>',
         'unlock': 'VB="0 0 448 512"><PFC d="M400 224h-24v-72C376 68.2 307.8 0 224 0S72 68.2 72 152v72H48c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V272c0-26.5-21.5-48-48-48zm-104 0H152v-72c0-39.7 32.3-72 72-72s72 32.3 72 72v72z"/>',
         'x': 'VB="0 0 352 512"><PFC d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"/>',
-    };
+    });
 
-    LANGUAGES = {
+    Assign(Clear(LANGUAGES), {
         'bul': 'български',
         'deu': 'Deutsch',
         'eng': 'English',
@@ -2468,7 +2468,7 @@ function startup() {
         'rus': 'русский',
         'ukr': 'українська',
         'zzz': '...',
-    };
+    });
 
     // assign virtual functions
     vi_changeSettingSpecial = changeSettingSpecial;
@@ -2476,10 +2476,10 @@ function startup() {
     vi_hideAreas = hideAreas;
     vi_importSettings = importSettingsSpecial;
     vi_openedTableSpecial = openedTableSpecial;
-    vi_populateAreasSpecial = populateAreasSpecial;
-    vi_resetSettingsSpecial = resetSettingsSpecial;
+    vi_populateAreasAfter = populateAreasAfter;
+    vi_resetSettingsAfter = resetSettingsAfter;
     vi_resize = resize;
-    vi_setModalEventsSpecial = setModalEventsSpecial;
+    vi_setModalEventsAfter = setModalEventsAfter;
     vi_windowClickDataset = windowClickDataset;
     vi_windowClickParent = windowClickParent;
     vi_windowClickParentDataset = windowClickParentDataset;
@@ -2505,13 +2505,13 @@ function startup() {
     startupGraph();
     startupNetwork();
     addHistory();
-    ready ++;
+    ++ready;
 
     initGlobals();
     initCustoms(true);
     quickSetup();
     resize();
-    ready ++;
+    ++ready;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

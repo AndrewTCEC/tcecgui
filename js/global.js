@@ -1,6 +1,6 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // global variables/functions shared across multiple js files
 //
@@ -144,7 +144,7 @@ function convertCheckmate(value, ply) {
 
             value = value.replace('M#', '') << 1;
             if ((ply & 1) == positive)
-                value --;
+                --value;
         }
         else if (value.includes('M')) {
             if (want_ply)
@@ -152,7 +152,7 @@ function convertCheckmate(value, ply) {
 
             value = value.replace('M', '');
             if ((ply & 1) == positive)
-                value ++;
+                ++value;
             value = (value / 2) >> 0;
         }
     }
@@ -165,7 +165,7 @@ function convertCheckmate(value, ply) {
         if (want_ply) {
             value <<= 1;
             if ((ply & 1) == positive)
-                value --;
+                --value;
         }
     }
 

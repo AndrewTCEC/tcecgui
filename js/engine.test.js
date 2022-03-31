@@ -1,6 +1,6 @@
 // engine.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 /*
 globals
@@ -207,8 +207,8 @@ Assign(Y, {
 // createUrlList
 [
     [null, ''],
-    [{}, '<vert class="fastart"></vert>'],
-    [{a: 1}, '<vert class="fastart"><hr></vert>'],
+    [{}, '<v class="fastart"></v>'],
+    [{a: 1}, '<v class="fastart"><hr></v>'],
 ].forEach(([dico, answer], id) => {
     test(`createUrlList:${id}`, () => {
         expect(createUrlList(dico)).toEqual(answer);
@@ -272,10 +272,10 @@ Assign(Y, {
 // getArea
 [
     ['<div id="area"><a id="child"></a></div>', null],
-    ['<vert id="area" class="area"><a id="child"></a></vert>', 'area'],
-    ['<vert id="area" class="area"><div><a id="child"></a></div></vert>', 'area'],
-    ['<vert id="area" class="area2"><div><a id="child"></a></div></vert>', null],
-    ['<vert id="area" class="area"><div><a id="child2"></a></div></vert>', null],
+    ['<v id="area" class="area"><a id="child"></a></v>', 'area'],
+    ['<v id="area" class="area"><div><a id="child"></a></div></v>', 'area'],
+    ['<v id="area" class="area2"><div><a id="child"></a></div></v>', null],
+    ['<v id="area" class="area"><div><a id="child2"></a></div></v>', null],
 ].forEach(([html, answer], id) => {
     test(`getArea:${id}`, () => {
         let soup = CreateNode('div', html),
@@ -859,16 +859,16 @@ Assign(Y, {
         '<grid class="options">'
             + '<div class="item-title span" data-set="" data-n="audio" data-t="Audio options"></div>'
             + '<a class="item"><i data-t="Volume"></i></a>'
-            + '<vert class="fcenter">'
+            + '<v class="fcenter">'
                 + '<input name="volume" type="number" class="setting" min="0" max="10" step="1" value="5"undefined>'
-            + '</vert>'
+            + '</v>'
             + '<a class="item"><i data-t="Music"></i></a>'
-            + '<vert class="fcenter">'
+            + '<v class="fcenter">'
                 + '<select name="music">'
                     + '<option value="1" data-t="on"></option>'
                     + '<option value="0" selected="selected" data-t="off"></option>'
                 + '</select>'
-            + '</vert>'
+            + '</v>'
             + '<a class="item item-title span" data-set="-1" data-t="OK"></a>'
         + '</grid>',
     ],

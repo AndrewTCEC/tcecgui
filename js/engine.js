@@ -1,6 +1,6 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
@@ -45,17 +45,17 @@ let MSG_IP_GET = 1,
     MSG_USER_REGISTER = 15;
 
 let MESSAGES = {
-    'ip_get': MSG_IP_GET,
-    'user_count': MSG_USER_COUNT,
-    'user_edit': MSG_USER_EDIT,
-    'user_forgot': MSG_USER_FORGOT,
-    'user_login': MSG_USER_LOGIN,
-    'user_logout': MSG_USER_LOGOUT,
-    'user_password': MSG_USER_PASSWORD,
-    'user_register': MSG_USER_REGISTER,
-    'user_session': MSG_USER_SESSION,
-    'user_subscribe': MSG_USER_SUBSCRIBE,
-    'user_unsubscribe': MSG_USER_UNSUBSCRIBE,
+    'IpGet': MSG_IP_GET,
+    'UserCount': MSG_USER_COUNT,
+    'UserEdit': MSG_USER_EDIT,
+    'UserForgot': MSG_USER_FORGOT,
+    'UserLogin': MSG_USER_LOGIN,
+    'UserLogout': MSG_USER_LOGOUT,
+    'UserPassword': MSG_USER_PASSWORD,
+    'UserRegister': MSG_USER_REGISTER,
+    'UserSession': MSG_USER_SESSION,
+    'UserSubscribe': MSG_USER_SUBSCRIBE,
+    'UserUnsubscribe': MSG_USER_UNSUBSCRIBE,
 };
 
 let __PREFIX = '_',
@@ -205,13 +205,13 @@ let __PREFIX = '_',
     vi_hideAreas,
     vi_importSettings,
     vi_logout,
-    vi_populateAreasSpecial,
+    vi_populateAreasAfter,
     vi_renameOption,
     vi_resetOldSettingsSpecial,
-    vi_resetSettingsSpecial,
-    vi_sanitiseDataSpecial,
+    vi_resetSettingsAfter,
+    vi_sanitiseDataAfter,
     vi_setComboSpecial,
-    vi_setModalEventsSpecial,
+    vi_setModalEventsAfter,
     vi_socketClose,
     vi_socketMessage,
     vi_socketOpen,
@@ -332,7 +332,7 @@ function addHistory() {
     let text = Stringify(Y);
     if (text == y_states[y_index])
         return;
-    y_index ++;
+    ++y_index;
     y_states[y_index] = text;
     y_states.length = y_index + 1;
     if (y_states.length > MAX_HISTORY)
@@ -726,7 +726,7 @@ function parseDev() {
     let text = Y['dev'] || '';
     Clear(DEV);
 
-    for (let i = 0, length = text.length; i < length; i ++) {
+    for (let i = 0, length = text.length; i < length; ++i) {
         let letter = text[i];
         if (letter == 'Z') {
             Clear(DEV);
@@ -739,7 +739,7 @@ function parseDev() {
 
         let i2 = i + 1,
             value = 0;
-        for (; i2 < length && IsDigit(text[i2]); i2 ++)
+        for (; i2 < length && IsDigit(text[i2]); ++i2)
             value = value * 10 + text[i2] * 1;
         if (i2 == i + 1)
             value = 1;
@@ -860,8 +860,8 @@ function resetSettings(is_default) {
         Assign(Y, DEFAULTS);
     }
 
-    if (vi_resetSettingsSpecial)
-        vi_resetSettingsSpecial(is_default);
+    if (vi_resetSettingsAfter)
+        vi_resetSettingsAfter(is_default);
 }
 
 /**
@@ -901,8 +901,8 @@ function sanitiseData() {
             Y[key] = DefaultInt(value, value);
     });
 
-    if (vi_sanitiseDataSpecial)
-        vi_sanitiseDataSpecial();
+    if (vi_sanitiseDataAfter)
+        vi_sanitiseDataAfter();
 }
 
 /**
@@ -1231,13 +1231,13 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
             offset = split;
         keys = keys.filter(key => (key != '_split' && !settings[key]['_pop']));
 
-        for (let i = 0; i < split; i ++) {
+        for (let i = 0; i < split; ++i) {
             new_keys.push(keys[i]);
             if (keys[i][0] == '_')
                 new_keys.push('');
             else {
                 new_keys.push(keys[offset] || '');
-                offset ++;
+                ++offset;
             }
         }
         keys = new_keys;
@@ -1373,11 +1373,11 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 
         if (!smulti || !sclass || !sclass.includes('span')) {
             lines.push(
-                `<a${is_string} class="${item_class}${more_class}${title === 0? ' off': ''}"${more_data}${title2}>`
-                    + (ssvg? `<i class="icon" data-svg="${ssvg}"></i>`: '')
-                    + `<i${sid} data-t="${label}"${style}></i>`
-                    + ((setting == '')? ' ...': '')
-                + '</a>'
+                `<a${is_string} class="${item_class}${more_class}${title === 0? ' off': ''}"${more_data}${title2}>`,
+                    (ssvg? `<i class="icon" data-svg="${ssvg}"></i>`: ''),
+                    `<i${sid} data-t="${label}"${style}></i>`,
+                    ((setting == '')? ' ...': ''),
+                '</a>',
             );
         }
 
@@ -1394,7 +1394,7 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
             let data = datas[key];
             if (!data || key[0] == '_')
                 return;
-            id ++;
+            ++id;
 
             // multi
             if (smulti) {
@@ -1417,9 +1417,9 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
             if (IsArray(data)) {
                 if (data == ON_OFF) {
                     lines.push(
-                        `<vert class="fcenter fastart${iclass}">`
-                            + `<input name="${key}" type="checkbox" ${y_key? 'checked': ''}>`
-                        + '</vert>'
+                        `<v class="fcenter fastart${iclass}">`,
+                            `<input name="${key}" type="checkbox" ${y_key? 'checked': ''}>`,
+                        '</v>',
                     );
                 }
                 else {
@@ -1427,9 +1427,9 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
                     if (slower != undefined)
                         dico.lower = slower;
                     lines.push(
-                        `<vert class="fcenter${iclass}">`
-                            + `<select name="${key}">${fillCombo(null, data, y_key, dico)}</select>`
-                        + '</vert>'
+                        `<v class="fcenter${iclass}">`,
+                            `<select name="${key}">${fillCombo(null, data, y_key, dico)}</select>`,
+                        '</v>',
                     );
                 }
                 return;
@@ -1450,7 +1450,7 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
                 title = ` title="${translateExpression(title)}"`;
 
             if (id == 0)
-                lines.push(smulti? `<hori class="faround${iclass}">`: `<vert class="fcenter${iclass}">`);
+                lines.push(smulti? `<h class="faround${iclass}">`: `<v class="fcenter${iclass}">`);
 
             // c) placeholder + autocomplete
             if (holder)
@@ -1474,16 +1474,16 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
                 Attrs(CacheId('file'), {'data-x': key});
                 break;
             case 'list':
-                lines.push([
-                    '<hori class="w100">',
+                lines.push(
+                    '<h class="w100">',
                     data.list.map(item => {
                         let parts = item.split('='),
                             name = parts[0],
                             title = parts[1]? ` title="${name}"`: '';
                         return `<a class="item item3" name="${key}_${name}"${title} data-t="${parts[1] || name}"></a>`;
                     }).join(''),
-                    '</hori>',
-                ].join(''));
+                    '</h>',
+                );
                 break;
             case 'number':
                 lines.push(`<input name="${key}" type="${type}"${class_} min="${data.min}" max="${data.max}" step="${data.step || 1}"${holder} value="${y_key}"${focus}${title}>`);
@@ -1514,7 +1514,7 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
             }
 
             if (!smulti || id == smulti - 1)
-                lines.push(smulti? '</hori>': '</vert>');
+                lines.push(smulti? '</h>': '</v>');
         });
     });
 
@@ -1523,11 +1523,11 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
         if (parent_id && !(flag & 4) && (Y['join_next'] || Y['drag_and_drop'])) {
             let context_area = context_areas[parent_id] || {};
             lines.push(
-                `<hori class="span">`
-                    + `<div class="item2" data-set="-1" data-t="ok"></div>`
-                    + `<div class="item2${context_area[1]? ' active': ''}" data-t="join next"></div>`
-                    + `<div class="item2" data-t="hide"></div>`
-                + '</hori>'
+                `<h class="span">`,
+                    `<div class="item2" data-set="-1" data-t="ok"></div>`,
+                    `<div class="item2${context_area[1]? ' active': ''}" data-t="join next"></div>`,
+                    `<div class="item2" data-t="hide"></div>`,
+                '</h>',
             );
         }
         else if (name) {
@@ -1850,27 +1850,27 @@ function updateTheme(themes, callback, version=1) {
         min = Min(num_child, num_theme);
 
     // 1) replace existing links
-    for (let i = 0; i < min; i ++) {
+    for (let i = 0; i < min; ++i) {
         let child = children[i],
             base_href = child.href.split('/').slice(-1)[0].split('.')[0],
             theme = themes[i];
 
         if (base_href != theme) {
             child.setAttribute('href', links[i]);
-            changes ++;
+            ++changes;
         }
     }
 
     // 2) remove extra links
     if (num_child > num_theme) {
-        changes ++;
-        for (let i = num_theme; i < num_child; i ++)
+        ++changes;
+        for (let i = num_theme; i < num_child; ++i)
             children[i].removeAttribute('href');
     }
     // 3) add extra links
     else if (num_child < num_theme) {
-        changes ++;
-        for (let i = num_child; i < num_theme; i ++) {
+        ++changes;
+        for (let i = num_child; i < num_theme; ++i) {
             let child = CreateNode('link', null, {'href': links[i], rel: 'stylesheet'});
             parent.appendChild(child);
         }
@@ -2118,7 +2118,7 @@ function handlePing(data) {
     ping_diff[0] = ping;
     ping_values[count & 15] = ping;
     server_diffs[count & 15] = diff;
-    pings[2] ++;
+    ++pings[2];
 
     if (pings[2] < 16) {
         ping_diff[1] = ping;
@@ -2195,7 +2195,7 @@ function initWebsockets({close, message, open}={}) {
 function socketError(text) {
     if (!socket_fail)
         LS(text);
-    socket_fail ++;
+    ++socket_fail;
     if (socket_fail > 3) {
         if (me['session'] && vi_logout)
             vi_logout();
@@ -2212,7 +2212,7 @@ function socketPing() {
     if (!socket || socket.readyState != WS.OPEN)
         return false;
     pings[0] = Now(2);
-    pings[3] ++;
+    ++pings[3];
     socket.send(Uint16Array.of(pings[0] & 0xffff));
     return true;
 }
@@ -2224,7 +2224,7 @@ function socketPing() {
 function socketPings() {
     if (!socket || socket.readyState != WS.OPEN)
         return false;
-    for (let i = 0; i < 16; i ++)
+    for (let i = 0; i < 16; ++i)
         AddTimeout(`ping_${i}`, socketPing, i * 200);
     return true;
 }
@@ -2797,16 +2797,16 @@ function createPageArray(num_page, page, extra) {
     array[page]= 2;
 
     let off = 1;
-    for (let i = 0; i < num_page && left > 0; i ++) {
+    for (let i = 0; i < num_page && left > 0; ++i) {
         let id = page + off;
         if (id >= 0 && id < num_page && !array[id]) {
             array[id] = 2;
-            left --;
+            --left;
         }
 
         off = -off;
         if (off > 0)
-            off ++;
+            ++off;
     }
 
     if (array[2])
@@ -2870,13 +2870,13 @@ function createUrlList(dico) {
     if (is_grid)
         html += '</grid>';
 
-    return `<vert class="fastart">${html}</vert>`;
+    return `<v class="fastart">${html}</v>`;
 }
 
 /**
  * Draw a rectangle around the node
  * @param {Node} node
- * @param {number=} orient &1:hori &2:vert
+ * @param {number=} orient &1:h &2:v
  * @param {number=} mx mouse x
  * @param {number=} my mouse y
  */
@@ -2921,7 +2921,7 @@ function findArea(name) {
     let areas = Y['areas'];
     for (let key of Keys(areas)) {
         let vector = areas[key];
-        for (let i = 0; i < vector.length; i ++)
+        for (let i = 0, length = vector.length; i < length; ++i)
             if (vector[i][0] == name)
                 return {area: vector[i], id: i, key: key};
     }
@@ -3068,7 +3068,7 @@ function populateAreas(activate) {
                         if (!sorder.includes(torder))
                             error = `sub: ${sorder} : ${torder}`;
 
-                        child_id ++;
+                        ++child_id;
                         child = children[child_id];
                     }
 
@@ -3094,7 +3094,7 @@ function populateAreas(activate) {
                 }
             }
 
-            child_id ++;
+            ++child_id;
             child = children[child_id];
         }
 
@@ -3127,9 +3127,9 @@ function populateAreas(activate) {
             if (tab || prev_tab) {
                 if (show & 1) {
                     if (!prev_tab || !tabs) {
-                        tabs = CreateNode('horis', '', {'class': 'tabs', 'style': exist? 'margin-top:1em': ''});
+                        tabs = CreateNode('hs', '', {'class': 'tabs', 'style': exist? 'margin-top:1em': ''});
                         parent.appendChild(tabs);
-                        exist ++;
+                        ++exist;
                     }
 
                     let text = id.split('-');
@@ -3170,7 +3170,7 @@ function populateAreas(activate) {
 
             context_areas[id] = vector;
             if (show & 1)
-                exist ++;
+                ++exist;
         }
     });
 
@@ -3182,8 +3182,8 @@ function populateAreas(activate) {
     translateNodes('body');
     setDraggable();
 
-    if (vi_populateAreasSpecial)
-        vi_populateAreasSpecial();
+    if (vi_populateAreasAfter)
+        vi_populateAreasAfter();
 }
 
 /**
@@ -3402,7 +3402,7 @@ function getIp(name, callback) {
 /**
  * Drag and drop events
  * @param {Function=} handleDrop
- * @param {number=} force_orient 1:vert, 2:hori
+ * @param {number=} force_orient 1:v, 2:h
  */
 function setDragEvents(handleDrop, force_orient=0) {
     Events(window, 'dragstart', e => {
@@ -3593,8 +3593,8 @@ function setModalEvents(parent) {
         changeSetting(this.getAttribute('name'));
     }, parent);
 
-    if (vi_setModalEventsSpecial)
-        vi_setModalEventsSpecial();
+    if (vi_setModalEventsAfter)
+        vi_setModalEventsAfter();
 }
 
 // STARTUP

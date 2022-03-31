@@ -1,6 +1,6 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // utility JS functions used in all the sites
 // jshint -W069
@@ -629,7 +629,7 @@ function Index(node) {
     let index = 0;
     while (node) {
         node = node.previousElementSibling;
-        index ++;
+        ++index;
     }
     return index;
 }
@@ -696,7 +696,7 @@ function Parent(node, {tag, class_, attrs, self}={}) {
         parent = /** @type {Node} */(node),
         tags = tag? tag.split(' '): null;
 
-    for (let depth = 0; ; depth ++) {
+    for (let depth = 0; ; ++depth) {
         if (depth || !self || parent.nodeType != 1) {
             parent = parent.parentNode;
             if (!parent || !parent.tagName)

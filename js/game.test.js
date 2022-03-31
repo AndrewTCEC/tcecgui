@@ -1,6 +1,6 @@
 // game.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 /*
 globals
 expect, global, require, test
@@ -518,12 +518,12 @@ function initPlayers(ply, players, evals) {
 ].forEach(([names, rows, answer, answer2], id) => {
     test(`calculateH2h:${id}`, () => {
         let players = xboards.live.players;
-        for (let i = 0; i < names.length; i ++)
+        for (let i = 0, length = names.length; i < length; ++i)
             players[i].name = names[i];
 
         expect(calculateH2h('live', rows)).toEqual(answer);
 
-        for (let i = 0; i < answer2.length; i ++)
+        for (let i = 0, length = answer2.length; i < length; ++i)
             expect(players[i].score).toEqual(answer2[i]);
     });
 });

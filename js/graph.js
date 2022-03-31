@@ -1,6 +1,6 @@
 // graph.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // jshint -W069
 /*
@@ -128,12 +128,12 @@ function checkFirstNum(num) {
             let data = chart_data[key];
 
             // labels
-            for (let ply = first_num - 1; ply >= num; ply --)
+            for (let ply = first_num - 1; ply >= num; --ply)
                 data.labels.unshift(ply / 2 + 1);
 
             // datasets
             for (let dataset of data.datasets) {
-                for (let ply = first_num - 1; ply >= num; ply --)
+                for (let ply = first_num - 1; ply >= num; --ply)
                     dataset.data.unshift(undefined);
             }
         });
@@ -304,7 +304,7 @@ function fixLabels(labels) {
     if (isNaN(offset))
         return;
 
-    for (let i = 0; i < num_label; i ++)
+    for (let i = 0; i < num_label; ++i)
         if (labels[i] == undefined)
             labels[i] = i + offset;
 }
@@ -674,7 +674,7 @@ function updateChartOptions(name, mode) {
                 return;
             let datasets = data.datasets;
 
-            for (let id = 0; id < 4; id ++) {
+            for (let id = 0; id < 4; ++id) {
                 let color = Y[`graph_color_${id}`];
                 Assign(datasets[id], {
                     backgroundColor: color,
@@ -851,10 +851,10 @@ function updatePlayerChart(name, moves) {
 
     // 1) skip all book moves
     while (offset < num_move && (!moves[offset] || moves[offset].book))
-        offset ++;
+        ++offset;
 
     // 2) add data
-    for (let i = offset; i < num_move; i ++) {
+    for (let i = offset; i < num_move; ++i) {
         let move = moves[i],
             ply = getMovePly(move),
             num = ply;

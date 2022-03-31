@@ -74,7 +74,7 @@ var Stats = function () {
 
 		end: function () {
 
-			frames ++;
+			++frames;
 
 			var time = ( performance || Date ).now();
 

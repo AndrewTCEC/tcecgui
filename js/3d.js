@@ -1,6 +1,6 @@
 // 3d.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // general 3d rendering code
 //
@@ -109,7 +109,7 @@ let audiobox = {
     last_gamepad_time = 0,
     light_ambient,
     /** @type {Light} */light_main,
-    light_target,
+    light_main_obj,
     light_under,
     modal_name,
     model_filenames = {},                       // mapping of {name: filename}
@@ -165,20 +165,20 @@ let audiobox = {
     vi_gameActionKey,
     vi_gameActionKeyup,
     vi_gameActions,
-    vi_init3dSpecial,
-    vi_initLightsSpecial,
+    vi_init3dAfter,
+    vi_initLightsAfter,
     vi_postRender,
     vi_postSimulation,
     vi_preRender,
     vi_preSimulation,
     vi_randomPosition,
     vi_resize3dSpecial,
-    vi_showModalSpecial,
+    vi_showModalAfter,
     vi_simulateObject,
     vi_updateCamera,
     vi_updateDebugSpecial,
     vi_updateLightSettingsSpecial,
-    vi_updateRendererSpecial,
+    vi_updateRendererAfter,
     world,
     world_transform,
     y_three;
@@ -278,15 +278,12 @@ let Cube;
 /**
  * Add a cube to the list
  * @param {Cube} cube
- * @param {string=} unique_name replace existing cube with this one
  * @returns {boolean}
  */
-function addCube(cube, unique_name) {
+function addCube(cube) {
     let index = cubes.indexOf(cube);
     if (index >= 0)
         return false;
-    if (unique_name)
-        delete cubes[unique_name];
     cubes.push(cube);
     return true;
 }
@@ -396,8 +393,8 @@ function init3d(force) {
     renderer.shadowMap.enabled = !!Y['shadow'];
     // renderer.shadowMap.type = T.PCFSoftShadowMap;
 
-    if (vi_init3dSpecial)
-        vi_init3dSpecial();
+    if (vi_init3dAfter)
+        vi_init3dAfter();
 
     // more
     if (DEV['frame']) {
@@ -425,17 +422,17 @@ function initLights() {
     scene.add(light_ambient);
 
     // target
-    light_target = new Object3D();
-    light_target.name = 'light_target';
-    scene.add(light_target);
+    light_main_obj = new Object3D();
+    light_main_obj.name = 'light_main_obj';
+    scene.add(light_main_obj);
 
     // follows the target in front of the ship
     light_main = createLight('direction');
     scene.add(light_main);
     updateLightSettings();
 
-    if (vi_initLightsSpecial)
-        vi_initLightsSpecial();
+    if (vi_initLightsAfter)
+        vi_initLightsAfter();
 }
 
 /**
@@ -693,10 +690,10 @@ function render() {
                         camera.lookAt(camera_look);
                     }
 
-                    frame ++;
+                    ++frame;
                     deltas[1] = frame / SIMULATION_HZ;
                     deltas[4] = Now(2);
-                    step ++;
+                    ++step;
                 }
                 STEPS[step] = (STEPS[step] || 0) + 1;
 
@@ -731,7 +728,7 @@ function render() {
 
     // render
     if (!(dirty & 4) && dirty > 1)
-        dirty --;
+        --dirty;
     if (dirty) {
         // interpolate?
         if (epsilon > 0) {
@@ -749,7 +746,7 @@ function render() {
         if (vi_preRender)
             vi_preRender();
         renderer.render(scene, camera);
-        rendered ++;
+        ++rendered;
         if (vi_postRender)
             vi_postRender();
 
@@ -863,8 +860,8 @@ function resize3d() {
  */
 function updateLight() {
     let camera_forward = t_vector.copy(VECTOR_Z).negate().applyQuaternion(camera.quaternion);
-    if (light_target)
-        light_target.position.copy(camera.position).addScaledVector(camera_forward, light_main.shadow.camera.right);
+    if (light_main_obj)
+        light_main_obj.position.copy(camera.position).addScaledVector(camera_forward, light_main.shadow.camera.right);
 }
 
 /**
@@ -880,7 +877,7 @@ function updateLightSettings() {
 
     light_main.intensity = main_intensity;
     light_main.castShadow = !!quality;
-    light_main.target = light_target;
+    light_main.target = light_main_obj;
     if (light_under)
         light_under.intensity = under_intensity;
 
@@ -931,8 +928,8 @@ function updateRenderer() {
     }
     updateLightSettings();
 
-    if (vi_updateRendererSpecial)
-        vi_updateRendererSpecial();
+    if (vi_updateRendererAfter)
+        vi_updateRendererAfter();
 }
 
 /**
@@ -1044,7 +1041,7 @@ function forgetKeys(cube, keys) {
             prev = key[1];
         else if (!keys[key[0]])
             cube_keys[id] = null;
-        id --;
+        --id;
     }
 
     cube.keys = cube_keys.filter(value => value);
@@ -1302,8 +1299,8 @@ function showModal(show, text, name) {
             vi_gameActionKey(0);
     }
 
-    if (vi_showModalSpecial)
-        vi_showModalSpecial(show, text, name);
+    if (vi_showModalAfter)
+        vi_showModalAfter(show, text, name);
 
     modal_name = name;
 }
@@ -1334,15 +1331,18 @@ function updateDebug() {
 
     // gamepad
     if (DEV['input']) {
-        lines.push('&nbsp;');
-        lines.push(`nick=${cube.nick}`);
-        lines.push(`id=${gamepad_id}`);
-        lines.push(`axes=${Format(axes, sep)}`);
-        let text = Keys(buttons).map(key => `${buttons[key]? `${key} `: ''}`).join('');
-        lines.push(`buttons=${text}`);
-        lines.push(`keys=${Format(cube.keys, sep)}`);
-        text = [37, 38, 39, 40].map(code => KEYS[code]);
-        lines.push(`KEYS=${Format(text, sep)}`);
+        let sbuttons = Keys(buttons).map(key => `${buttons[key]? `${key} `: ''}`).join(''),
+            vaxes = [37, 38, 39, 40].map(code => KEYS[code]);
+
+        lines.push(
+            '&nbsp;',
+            `nick=${cube.nick}`,
+            `id=${gamepad_id}`,
+            `axes=${Format(axes, sep)}`,
+            `buttons=${sbuttons}`,
+            `keys=${Format(cube.keys, sep)}`,
+            `KEYS=${Format(vaxes, sep)}`,
+        );
     }
 
     // debugs

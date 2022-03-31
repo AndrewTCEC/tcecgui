@@ -1,5 +1,5 @@
 // chart.js
-// @version 2021-06-05
+// @version 2022-03-29
 /*
 globals
 Abs, AnimationFrame, Assign, Ceil, Clamp, console, Cos,
@@ -6581,7 +6581,7 @@ function skip(ticks, spacing) {
         zero = 0;
 
     // 1) find zero
-    for (let i = Max(start, 0); i < end; i ++) {
+    for (let i = Max(start, 0); i < end; ++i) {
         let tick = ticks[i];
         if (tick.value == 0) {
             zero = i;
@@ -6592,7 +6592,7 @@ function skip(ticks, spacing) {
     spacing = Ceil(spacing);
 
     // 2) check below 0
-    for (let i = 0, next = zero; next >= 0; i --) {
+    for (let i = 0, next = zero; next >= 0; --i) {
         let tick = ticks[next];
         if (tick)
             prunes.add(next);
@@ -6600,7 +6600,7 @@ function skip(ticks, spacing) {
     }
 
     // 3) check above 0
-    for (let i = 1, next = zero; i < end; i ++) {
+    for (let i = 1, next = zero; i < end; ++i) {
         next = Round(zero + i * spacing);
         let tick = ticks[next];
         if (tick)
@@ -7897,7 +7897,7 @@ function generateTicks$1(generationOptions, dataRange) {
             // base = Log10(first),
             pow = first;
 
-        // for (let i = 3; i >= 0; i --) {
+        // for (let i = 3; i >= 0; --i) {
         //     if (i >= tick)
         //         continue;
         //     let div = Pow(10, Floor(base - i)),

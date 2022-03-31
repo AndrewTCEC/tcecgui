@@ -1,6 +1,6 @@
 // network
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // all socket functions are here
 //
@@ -242,7 +242,7 @@ function listenLog(new_room) {
         new_room = 'all';
         Y['live_log'] = 'all';
     }
-    num_listen ++;
+    ++num_listen;
 
     // 1) leave the previous room
     if (prev_room && prev_room != new_room) {

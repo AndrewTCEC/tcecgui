@@ -1,6 +1,9 @@
+/**
+ * @jest-environment jsdom
+ */
 // common.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 /*
 globals
@@ -529,11 +532,11 @@ function endDateNow() {
     ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#first', 1],
     ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#second', 2],
     ['<table><tr><td id="first"></td><td id="second"></td></tr></table>', '#third', -1],
-    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#box', 1],
-    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i0', 1],
-    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i1', 2],
-    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', '#i2', 3],
-    ['<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>', 'span', 1],
+    ['<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>', '#box', 1],
+    ['<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>', '#i0', 1],
+    ['<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>', '#i1', 2],
+    ['<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>', '#i2', 3],
+    ['<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>', 'span', 1],
 ].forEach(([html, sel, answer], id) => {
     test(`Index:${id}`, () => {
         let soup = CreateNode('div', html),
@@ -545,25 +548,25 @@ function endDateNow() {
 // InsertNodes
 [
     [
-        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        '<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>',
         'div',
         '#box',
         false,
-        '<hori id="box"><a id="i0"></a><div id="i1"></div><div id="i2"><span>big</span></div></hori>',
+        '<h id="box"><a id="i0"></a><div id="i1"></div><div id="i2"><span>big</span></div></h>',
     ],
     [
-        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        '<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>',
         'div',
         '#box',
         true,
-        '<hori id="box"><div id="i1"></div><div id="i2"><span>big</span></div><a id="i0"></a></hori>',
+        '<h id="box"><div id="i1"></div><div id="i2"><span>big</span></div><a id="i0"></a></h>',
     ],
     [
-        '<hori id="box"><a id="i0"></a></hori><div id="i1"></div><div id="i2"><span>big</span></div>',
+        '<h id="box"><a id="i0"></a></h><div id="i1"></div><div id="i2"><span>big</span></div>',
         'span',
         '#box',
         true,
-        '<hori id="box"><span>big</span><a id="i0"></a></hori><div id="i1"></div><div id="i2"></div>',
+        '<h id="box"><span>big</span><a id="i0"></a></h><div id="i1"></div><div id="i2"></div>',
     ],
 ].forEach(([html, sel, parent, prepend, answer], id) => {
     test(`InsertNodes:${id}`, () => {
@@ -786,7 +789,7 @@ function endDateNow() {
     ['', undefined, undefined],
     ['', 0, 0],
     ['[]', undefined, []],
-    ['{"key":"record_get"}', undefined, {key: 'record_get'}],
+    ['{"key":"RecordGet"}', undefined, {key: 'RecordGet'}],
 ].forEach(([text, def, answer], id) => {
     test(`ParseJSON:${id}`, () => {
         expect(ParseJSON(text, def)).toEqual(answer);

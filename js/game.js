@@ -1,6 +1,6 @@
 // game.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // Game specific code:
 // - control the board, moves
@@ -28,7 +28,7 @@ Show, showPopup, Sign, sliceCharts, SP, Split, splitMoveString, SPRITE_OFFSETS, 
 stockfishWdl, Stringify, Style, SUB_BOARDS, TEXT, TextHTML, timers, Title, TITLES, Toggle, touchHandle,
 translateDefault, translateNodes,
 Undefined, updateChart, updateChartOptions, updateLiveChart, updateLiveCharts, updateMarkers, updatePlayerChart,
-updatePlayerCharts, updateSvg, Upper, vi_clickTab:true, vi_closePopups:true, vi_init3dSpecial:true,
+updatePlayerCharts, updateSvg, Upper, vi_clickTab:true, vi_closePopups:true, vi_init3dAfter:true,
 vi_randomPosition:true, Visible, VisibleHeight, VisibleWidth, WB_LOWER, WB_TITLE, window, X_SETTINGS, XBoard, xboards,
 Y, y_x, Z
 */
@@ -552,7 +552,7 @@ function formatEngine(engine, multi_line, scale, split) {
         let parts = [],
             prev = 0,
             start = 0;
-        for (let i = 0, length = name.length; i < length; i ++) {
+        for (let i = 0, length = name.length; i < length; ++i) {
             let code = name.charCodeAt(i);
             // a:97, Z:90
             if (prev >= 97 && code <= 90) {
@@ -1239,7 +1239,7 @@ function analyseCrosstable(section, data) {
                         }
 
                         let class_ = `${SCORE_NAMES[score]}${color}${(i && !sep && !(i & 1))? ' gap': ''}`;
-                        count ++;
+                        ++count;
                         total += score;
                         return `${sep}<a href="${link}" data-g="${game['Game']}" class="${class_}">${text}</a>`;
                 }).join('');
@@ -1445,7 +1445,7 @@ function checkPagination(parent) {
         let lines = ['<a class="page page-prev" data-p="-1">&lt;</a>'];
         if (parent == 'table') {
             let array = createPageArray(num_page, page, 2);
-            for (let id = 0; id < num_page; id ++) {
+            for (let id = 0; id < num_page; ++id) {
                 if (array[id] == 2)
                     lines.push(`<a class="page${page == id? ' active': ''}" data-p="${id}">${id + 1}</a>`);
                 else if (array[id])
@@ -1516,7 +1516,7 @@ function checkQueuedTables() {
  */
 function createLiveTable(is_live, id) {
     let html =
-        '<vert class="live fastart">'
+        '<v class="live fastart">'
             + '<grid class="live-basic">'
                 + '<div class="engine" data-x="name"></div>'
                 + '<div class="eval" data-x="eval"></div>'
@@ -1532,7 +1532,7 @@ function createLiveTable(is_live, id) {
 
     html +=
             '{TEMP}'
-        + '</vert>';
+        + '</v>';
     return html;
 }
 
@@ -1599,7 +1599,7 @@ function createTables() {
     // 2) live tables
     for (let [node, box_node] of LIVE_TABLES) {
         let html = createLiveTable(node.includes('live'), node.slice(-1));
-        HTML(node, html.replace('{TEMP}', '<horis class="live-pv fabase"></horis>'));
+        HTML(node, html.replace('{TEMP}', '<hs class="live-pv fabase"></hs>'));
         HTML(box_node, html.replace('{TEMP}', ''));
     }
 
@@ -1621,7 +1621,7 @@ function downloadLive() {
         return;
 
     function _done() {
-        left --;
+        --left;
         if (!left)
             redrawEvalCharts(section);
     }
@@ -2124,10 +2124,10 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
                 else {
                     td_class = 'tal';
                     value = [
-                        '<hori>',
+                        '<h>',
                             `<img class="left-image" src="image/engine/${getShortName(value)}.png">`,
                             `<div class="split">${formatEngine(value, wrap, 0, true)}</div>`,
-                        '</hori>',
+                        '</h>',
                     ].join('');
                 }
                 break;
@@ -2143,12 +2143,12 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
                     value = createGameLink(section, game);
                     if ((is_h2h || is_sched) && tour_url)
                         value = [
-                            '<hori>',
+                            '<h>',
                                 `<a href="${HOST_ARCHIVE}/${tour_url}_${game}.pgn">`,
                                     `<i style="margin-right:1em" data-svg="download"></i>`,
                                 '</a>',
                                 value,
-                            '</hori>',
+                            '</h>',
                         ].join('');
                 }
                 break;
@@ -2191,9 +2191,9 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
                             lines.push(`<div class="sub sub2">${text}</div><div></div>`);
                         else
                             lines.push(
-                                `<a class="sub" data-u="${sub.url}">${text}</a>`
-                                + `<a href="${HOST_ARCHIVE}/${sub.abb}.pgn.zip"><i data-svg="download"></i></a>`
-                        );
+                                `<a class="sub" data-u="${sub.url}">${text}</a>`,
+                                `<a href="${HOST_ARCHIVE}/${sub.abb}.pgn.zip"><i data-svg="download"></i></a>`,
+                            );
                     }
                     lines.push('</grid>');
                 }
@@ -2302,9 +2302,9 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
                 CopyClipboard(TEXT(this));
                 let overlay = xboards['xfen'].xoverlay;
                 HTML(overlay,
-                    '<vert class="fcenter facenter h100">'
+                    '<v class="fcenter facenter h100">'
                         + `<div class="xcopy">${translateDefault('COPIED')}</div>`
-                    + '</vert>'
+                    + '</v>'
                 );
                 Style(overlay, [['opacity', 1], ['transition', 'opacity 0s']]);
             }
@@ -2337,7 +2337,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 
     // 8) update shortcuts
     if (parent == 'table' && !Y.sort) {
-        for (let id = 1; id <= 3; id ++) {
+        for (let id = 1; id <= 3; ++id) {
             // shortcut matches this table?
             let key = `shortcut_${id}`;
             if (name != Y[key])
@@ -2609,7 +2609,7 @@ function calculateSeeds(num_team, new_mode) {
     while (number < num_team) {
         number *= 2;
         let seeds = [];
-        for (let i = 0; i < number; i ++) {
+        for (let i = 0; i < number; ++i) {
             let value = (i & 1)? (new_mode? (number/2 + seeds[i - 1]) % (number + 1): (number + 1 - seeds[i - 1])): nexts[Floor(i / 2)];
             seeds[i] = (value <= num_team)? value: 0;
         }
@@ -2666,7 +2666,7 @@ function calculateEventStats(section, rows) {
             // ideally, this should be the starting FEN after the book
             unique = (num_engine <= 2 || 1)? 'x': row['eco'];
 
-        games ++;
+        ++games;
         moves += move;
         results[result] = (results[result] || 0) + 1;
         seconds += time;
@@ -2700,7 +2700,7 @@ function calculateEventStats(section, rows) {
         let open_engine = open_engines[eco];
         Keys(open_engine).forEach(pair => {
             let value = open_engine[pair];
-            for (let i = 0; i < value.length; i += 2) {
+            for (let i = 0, length = value.length; i < length; i += 2) {
                 let curr = value[i],
                     next = value[i + 1];
                 if (!next)
@@ -2711,7 +2711,7 @@ function calculateEventStats(section, rows) {
                 double_draws += !!(decisive & 8);
                 double_wins += !!(decisive & 4);
                 win_draws += !!(decisive & 2);
-                num_pair ++;
+                ++num_pair;
 
                 let text = ` dec=${Pad(decisive, 2)}${(decisive & 1)? ' dec=01': ''}`;
                 for (let item of [curr, next])
@@ -2780,9 +2780,9 @@ function calculateEventStats(section, rows) {
 
         let tag = seek? 'a': 'div';
         return [
-            '<vert class="stats faround">',
+            '<v class="stats faround">',
                 `<div class="stats-title" data-t="${name}"${title}></div><${tag} class="link"${seek}>${stat}</${tag}>`,
-            '</vert>',
+            '</v>',
         ].join('');
     });
 
@@ -2792,7 +2792,7 @@ function calculateEventStats(section, rows) {
     translateNodes(node);
 
     // 6) shortcuts?
-    for (let id = 1; id <= 3; id ++) {
+    for (let id = 1; id <= 3; ++id) {
         let key = `shortcut_${id}`;
         if (Y[key] == 'stats')
             HTML(CacheId(key), HTML(parent));
@@ -2822,7 +2822,7 @@ function calculateEstimates(section, rows) {
             // 01:04:50 => seconds
             let [hour, min, sec] = time.split(':');
             time = hour * 3600 + min * 60 + sec * 1;
-            games ++;
+            ++games;
             seconds += time;
         }
         row['start'] = parseDateTime(start);
@@ -2867,7 +2867,7 @@ function createBracket(section, data) {
 
     // 1) create seeds
     let game = 1,
-        lines = ['<hori id="bracket" class="fastart noselect pr">'],
+        lines = ['<h id="bracket" class="fastart noselect pr">'],
         matches = data['matchresults'] || [],
         forwards = Assign({}, ...matches.map(item =>
             ({[`${item[0]['name']}|${item[1]['name']}`]: [item[0]['origscore'], item[1]['origscore']]})
@@ -2897,11 +2897,11 @@ function createBracket(section, data) {
             results = round_results[round] || [];
 
         lines.push(
-            `<vert class="rounds fstart h100">`
-            + `<div class="round" data-t="${name}"></div>`
-            + `<vert class="${number == 1? 'fcenter final': 'faround'} h100" data-r="${round}">`
+            `<v class="rounds fstart h100">`,
+                `<div class="round" data-t="${name}"></div>`,
+                `<v class="${number == 1? 'fcenter final': 'faround'} h100" data-r="${round}">`,
         );
-        for (let i = 0; i < number2; i ++) {
+        for (let i = 0; i < number2; ++i) {
             let finished = false,
                 link = ROUND_LINKS[number] || `round${number * 2}`,
                 names = [0, 0],
@@ -2933,10 +2933,10 @@ function createBracket(section, data) {
                     names[id] = [
                         class_,
                         seed?
-                        `<hori title="${item.name}">`
+                        `<h title="${item.name}">`
                             + `<img class="match-logo" src="image/engine/${short}.png">`
                             + `<div class="seed">#${seed}</div><div>${resizeText(short, 17)}</div>`
-                        + '</hori>' : '',
+                        + '</h>' : '',
                         short,
                     ];
                     scores[id] = [
@@ -2966,10 +2966,10 @@ function createBracket(section, data) {
                 undo_class = finished? '': ' undone';
 
             lines.push(
-                `<vert class="match fastart" data-n="${names[0]? names[0][2]: ''}|${names[1]? names[1][2]: ''}" data-r="${link}">`
+                `<v class="match fastart" data-n="${names[0]? names[0][2]: ''}|${names[1]? names[1][2]: ''}" data-r="${link}">`,
                     // final has 3rd place game too
-                    + `<div class="match-title${active_class || do_class}">#${game + (number == 1? 1 - i * 2: 0)}</div>`
-                    + `<grid class="match-grid${do_class}">`
+                    `<div class="match-title${active_class || do_class}">#${game + (number == 1? 1 - i * 2: 0)}</div>`,
+                    `<grid class="match-grid${do_class}">`,
             );
 
             for (let id of [0, 1]) {
@@ -2994,29 +2994,29 @@ function createBracket(section, data) {
                     score = is_current? 0: '--';
 
                 lines.push(
-                    `<vert class="name${name_class}${undo_class} fcenter" data-s="${seed}">${name}</vert>`
-                    + `<vert class="score${score_class}${undo_class} fcenter" data-s="${seed}"${place}>${score}</vert>`
+                    `<v class="name${name_class}${undo_class} fcenter" data-s="${seed}">${name}</v>`,
+                    `<v class="score${score_class}${undo_class} fcenter" data-s="${seed}"${place}>${score}</v>`,
                 );
             }
 
             lines.push(
-                    '</grid>'
-                + '</vert>'
+                    '</grid>',
+                '</v>',
             );
             prev_finished = finished;
-            game ++;
+            ++game;
         }
         lines.push(
-                '</vert>'
-            + '</vert>'
+                '</v>',
+            '</v>',
         );
 
-        round ++;
+        ++round;
         teams = nexts;
     }
 
     // 3) result
-    lines.push('<div id="svgs"></div></hori>');
+    lines.push('<div id="svgs"></div></h>');
     let node = CacheId('table-brak');
     HTML(node, lines.join(''));
     translateNodes(node);
@@ -3084,7 +3084,7 @@ function createConnectors() {
         svg_node = Id('svgs'),
         svgs = [];
 
-    for (let round = 0; ; round ++) {
+    for (let round = 0; ; ++round) {
         let nexts = A(`[data-r="${round + 1}"] .match-grid`, parent);
         if (!nexts.length)
             break;
@@ -3185,7 +3185,7 @@ function createMedals(parent) {
             ].join(''),
             style = `left:${ax + 4}px;top:${ay}px`;
         return CreateNode(
-            'hori', html, {'class': `place place${place} fastart`, 'data-s': dataset['s'], 'style': style});
+            'h', html, {'class': `place place${place} fastart`, 'data-s': dataset['s'], 'style': style});
     });
 }
 
@@ -3275,7 +3275,7 @@ function checkMissingMoves(ply, round, pos, force) {
         if (ply && !moves[ply - 1])
             empty = ply - 1;
         else
-            for (let i = num_move - 1; i >= 0; i --)
+            for (let i = num_move - 1; i >= 0; --i)
                 if (!moves[i]) {
                     empty = i;
                     break;
@@ -3404,7 +3404,7 @@ function fixHeaderOpening(board, headers) {
     // - only done once, then it's cached in memory
     if (!Keys(id_frcs).length) {
         let chess = board.chess;
-        for (let id = 0; id < 960; id ++)
+        for (let id = 0; id < 960; ++id)
             id_frcs[chess.fen960(id).split(' ')[0]] = id;
     }
     headers['Opening'] = `FRC #${id_frcs[fen.split(' ')[0]] || '???'}`;
@@ -3468,7 +3468,7 @@ function parsePgn(section, data, {mode=15, origin=''}={}) {
         pgn = {};
 
     // 1) headers
-    for (let i = 0; i < length; i ++) {
+    for (let i = 0; i < length; ++i) {
         let char = data[i];
         if (inside) {
             if (char == ']' && '\r\n '.includes(data[i + 1])) {
@@ -3481,7 +3481,7 @@ function parsePgn(section, data, {mode=15, origin=''}={}) {
                         let left = text.slice(0, pos),
                             right = text.slice(pos + 1, pos2);
                         headers[left.trim()] = right.trim();
-                        num_header ++;
+                        ++num_header;
                     }
                     end = i + 1;
                     start = 0;
@@ -3579,7 +3579,7 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={}) {
     if (mode & 8)
         board.chessLoad(last_fen);
 
-    for (let i = 0; i < length; i ++) {
+    for (let i = 0; i < length; ++i) {
         let char = data[i];
 
         if (char == '{') {
@@ -3643,8 +3643,8 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={}) {
             let dots = 0;
             while (' .'.includes(data[i + 1])) {
                 if (data[i + 1] == '.')
-                    dots ++;
-                i ++;
+                    ++dots;
+                ++i;
             }
 
             if (has_text) {
@@ -3668,7 +3668,7 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={}) {
                     break;
 
                 let move_fen;
-                ply ++;
+                ++ply;
 
                 // fix move?
                 if (mode & 8) {
@@ -3835,7 +3835,7 @@ function updateAgree(section, id) {
     // TODO: accelerate the process if repeated multiple times in succession
     let ply = moves0.length;
     while (ply > 0) {
-        ply --;
+        --ply;
         let move0 = moves0[ply],
             move1 = moves1[ply + offset];
         if (!move0 || !move1 || (move0.agree != undefined && move1.agree != undefined))
@@ -3870,13 +3870,13 @@ function updateAgree(section, id) {
             j = ply - ply1;
 
         while (splits0[i] && splits0[i] == splits1[j]) {
-            agree ++;
-            i ++;
-            j ++;
+            ++agree;
+            ++i;
+            ++j;
         }
         moves0[ply].agree = agree;
         moves1[ply].agree = agree;
-        changes ++;
+        ++changes;
     }
 
     if (id == -1)
@@ -3943,12 +3943,12 @@ function updateMaterials(move) {
         let id = (value > 0)? 0: 1,
             id2 = invert? 1 - id: id;
 
-        for (let i = 0; i < Abs(value); i ++) {
+        for (let i = 0; i < Abs(value); ++i) {
             let offset = -SPRITE_OFFSETS[id2? Upper(key): key] * piece_size;
             materials[id].push(
-                `<div style="height:${size}px;width:${size}px;transform:scale(${scale})">`
-                    + `<div style="${piece_style};background-position-x:${offset}px"></div>`
-                + '</div>'
+                `<div style="height:${size}px;width:${size}px;transform:scale(${scale})">`,
+                    `<div style="${piece_style};background-position-x:${offset}px"></div>`,
+                '</div>',
             );
         }
     });
@@ -4283,7 +4283,7 @@ function updateOverviewMoves(section, headers, moves, is_new) {
     // 4) materials
     // - only update if the ply is the current one
     if (ply == cur_ply) {
-        for (let i = num_move - 1; i >= 0 && i >= num_move - 2; i --) {
+        for (let i = num_move - 1; i >= 0 && i >= num_move - 2; --i) {
             let move = moves[i],
                 ply2 = getMovePly(move);
             updateMoveInfo(section, ply2, move, true);
@@ -4582,7 +4582,7 @@ function analyseLog(line) {
         player = players[id],
         prev_info = player.info || {};
 
-    for (let i = 0; i < num_item; i ++) {
+    for (let i = 0; i < num_item; ++i) {
         let key = items[i],
             log_key = LOG_KEYS[key];
         if (!log_key)
@@ -4591,15 +4591,15 @@ function analyseLog(line) {
         let [number, type] = log_key,
             value,
             values = [];
-        i ++;
-        for (let j = 0; i < num_item && (number < 0 || j < number); j ++) {
+        ++i;
+        for (let j = 0; i < num_item && (number < 0 || j < number); ++j) {
             let item = items[i];
             if (LOG_KEYS[item])
                 break;
             values.push(item);
-            i ++;
+            ++i;
         }
-        i --;
+        --i;
         if (number == 1) {
             value = values[0];
             if (type == 1)
@@ -4848,7 +4848,7 @@ function checkBoom(section, offset, force, only_check) {
         // check diff + ratio with X previous evals
         let count = 0,
             worst = null;
-        for (let prev = ply - 1; prev >= BOOM_MIN_PLY - 1 && prev >= ply - 12; prev --) {
+        for (let prev = ply - 1; prev >= BOOM_MIN_PLY - 1 && prev >= ply - 12; --prev) {
             let prev_eval = scaleBoom(clampEval(evals[prev]));
             if (prev_eval == undefined)
                 continue;
@@ -4860,7 +4860,7 @@ function checkBoom(section, offset, force, only_check) {
                     LS('worst=', ply, id, worst);
             }
 
-            count ++;
+            ++count;
             if (count >= 3)
                 break;
         }
@@ -4937,7 +4937,7 @@ function checkExplosion(section, is_boom, force) {
         two = new Set([players[0][1], players[1][1]]);
 
     // if LCZero is a player + kibitzer => don't include the kibitzer
-    for (let id = 2; id < players.length; id ++)
+    for (let id = 2, length = players.length; id < length; ++id)
         if (players[id] && two.has(players[id][1]))
             players[id] = null;
     players = players.filter(player => player && player[1]);
@@ -5685,13 +5685,13 @@ function gameActionKey(code) {
             }
             if (tag == 'SELECT') {
                 node.selectedIndex = (node.selectedIndex - 1 + node.options.length) % node.options.length;
-                changes ++;
+                ++changes;
             }
             else if (tag == 'INPUT') {
                 let min = parseInt(node.min, 10);
                 if (isNaN(min) || node.value > min) {
-                    node.value --;
-                    changes ++;
+                    --node.value;
+                    ++changes;
                 }
             }
             break;
@@ -5707,13 +5707,13 @@ function gameActionKey(code) {
             }
             if (tag == 'SELECT') {
                 node.selectedIndex = (node.selectedIndex + 1) % node.options.length;
-                changes ++;
+                ++changes;
             }
             else if (tag == 'INPUT') {
                 let max = parseInt(node.max, 10);
                 if (isNaN(max) || node.value < max) {
-                    node.value ++;
-                    changes ++;
+                    ++node.value;
+                    ++changes;
                 }
             }
             break;
@@ -5845,7 +5845,7 @@ function loadBenchmark(step) {
             bench_try = 100;
         }
 
-        bench_try ++;
+        ++bench_try;
         if (bench_try > 100)
             ClearTimeout(name);
     }, TIMEOUT_bench_load, true);
@@ -5896,7 +5896,7 @@ function pasteText(text) {
 /**
  * Initialise the 3D engine
  */
-function init3dSpecial() {
+function init3dAfter() {
     loadModel('pieces', 'export/pieces-draco.glb', object => {
         cube = object;
         scene.add(cube);
@@ -6103,7 +6103,7 @@ function changedHash() {
         string = ARCHIVE_KEYS.map(key => {
             let value = Y[key];
             if (value == undefined)
-                missing ++;
+                ++missing;
             return `${key}=${value}`;
         }).join('&');
 
@@ -6175,7 +6175,7 @@ function changedSection() {
     updateOptions(section);
     updateAgrees(section);
 
-    changed_sections ++;
+    ++changed_sections;
 }
 
 /**
@@ -6732,7 +6732,7 @@ function popupCustom(id, name, e, scolor, text) {
             });
 
             num_col = Ceil(lines.length / 11);
-            HTML(popup, `<verts class="list fastart">${lines.join('')}</verts>`);
+            HTML(popup, `<vs class="list fastart">${lines.join('')}</vs>`);
         }
         else if (name == 'fen') {
             let xfen = xboards['xfen'];
@@ -6896,7 +6896,7 @@ function startupGame() {
 
     vi_clickTab = openTable;
     vi_closePopups = popupCustom;
-    vi_init3dSpecial = init3dSpecial;
+    vi_init3dAfter = init3dAfter;
     vi_randomPosition = randomPosition;
 }
 

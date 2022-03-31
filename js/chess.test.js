@@ -1,6 +1,6 @@
 // chess.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 /*
 globals
@@ -348,7 +348,7 @@ beforeEach(() => {
         let moves = ArrayJS(chess.moves());
         chess.search(moves.join(' '), '', false);
         let stats = ArrayJS(chess.hashStats());
-        for (let i = 0; i < 2; i ++) {
+        for (let i = 0; i < 2; ++i) {
             let item = answer[i],
                 stat = stats[i];
             if (IsArray(item)) {
@@ -1458,7 +1458,7 @@ beforeEach(() => {
         }
         else
             chess.makeMove(chess.packObject(moves));
-        for (let i = 0; i < steps; i ++)
+        for (let i = 0; i < steps; ++i)
             chess.undo();
         expect(chess.fen()).toEqual(answer || fen);
         if (!answer) {

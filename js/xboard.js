@@ -1,6 +1,6 @@
 // xboard.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 //
 // game board:
 // - 4 rendering modes:
@@ -312,7 +312,7 @@ class XBoard {
             visibles = new Set();
 
         // 1) gather moves
-        for (let i = start; i < num_new; i ++) {
+        for (let i = start; i < num_new; ++i) {
             let move = moves[i],
                 ply = getMovePly(move),
                 ply2 = (ply << 1) + 1;
@@ -349,7 +349,7 @@ class XBoard {
 
         // 2) handle skipped moves
         if (this.main && first_ply < Infinity)
-            for (let ply = num_move; ply < first_ply; ply ++) {
+            for (let ply = num_move; ply < first_ply; ++ply) {
                 let ply2 = (ply << 1) + 1;
                 texts[ply2] = ['...', 0];
                 visibles.add(ply2);
@@ -461,7 +461,7 @@ class XBoard {
 
                 visibles.add(ply2);
                 visibles.add(ply2 - ((ply & 1)? 3: 1));
-                ply ++;
+                ++ply;
             }
             // turn? => use it
             else if (IsDigit(item[0])) {
@@ -481,7 +481,7 @@ class XBoard {
                 visibles.add(ply2 - ((ply & 1)? 3: 1));
 
                 moves[ply] = {'m': item};
-                ply ++;
+                ++ply;
             }
         });
 
@@ -558,7 +558,7 @@ class XBoard {
                     counts[char] = count;
                     if (count > items.length)
                         items.push([0, -1]);
-                    col ++;
+                    ++col;
                 }
                 // void
                 else
@@ -1015,7 +1015,7 @@ class XBoard {
         let moves = this.moves,
             real_moves = this.real.moves;
 
-        for (let curr = ply - 1; curr >= -1; curr --) {
+        for (let curr = ply - 1; curr >= -1; --curr) {
             let move = moves[curr],
                 fen = move? move['fen']: null;
             if (!move) {
@@ -1040,7 +1040,7 @@ class XBoard {
 
             if (fen) {
                 this.chessLoad(fen);
-                for (let next = curr + 1; next <= ply; next ++) {
+                for (let next = curr + 1; next <= ply; ++next) {
                     let move_next = moves[next],
                         result = this.chessMove(move_next['m']);
                     if (result['from'] == result['to']) {
@@ -1190,7 +1190,7 @@ class XBoard {
             move_list = this.move_list,
             num_list = move_list.length;
 
-        for (let i = last_id; i < num_list; i ++) {
+        for (let i = last_id; i < num_list; ++i) {
             let list = move_list[i];
             if (!list[0])
                 continue;
@@ -1256,7 +1256,7 @@ class XBoard {
             num_move = Min(duals.length, moves.length),
             ply = num_ply;
 
-        for (let i = num_ply; i < num_move; i ++) {
+        for (let i = num_ply; i < num_move; ++i) {
             let dual_m = (duals[i] || {})['m'],
                 move_m = (moves[i] || {})['m'];
             if (DEV['div'])
@@ -1270,7 +1270,7 @@ class XBoard {
             ply = i;
             if (dual_m != move_m)
                 break;
-            agree ++;
+            ++agree;
         }
 
         if (DEV['div'])
@@ -1373,7 +1373,7 @@ class XBoard {
                 if (char)
                     char = `&#${char};`;
             }
-            html = `<vert style="${style};color:${COLOR(piece)? '#000': '#fff'}">${char}</vert>`;
+            html = `<v style="${style};color:${COLOR(piece)? '#000': '#fff'}">${char}</v>`;
         }
         // png/svg piece
         else
@@ -1402,7 +1402,7 @@ class XBoard {
         let shared_array_buffer = window.SharedArrayBuffer;
         this.shared = shared_array_buffer? new shared_array_buffer(1): [];
 
-        for (let id = 0; id < number; id ++) {
+        for (let id = 0; id < number; ++id) {
             let worker = new Worker(`js/worker.js?ts=${Now()}`);
 
             worker.onerror = error => {
@@ -1645,7 +1645,7 @@ class XBoard {
      * @returns {number} -1 if nothing found
      */
     frcIndex(fen) {
-        for (let i = 0; i < 960; i ++) {
+        for (let i = 0; i < 960; ++i) {
             let fen960 = this.chess.fen960(i);
             if (fen960 == fen)
                 return i;
@@ -1691,7 +1691,7 @@ class XBoard {
         let num_move = this.moves.length,
             ply = this.ply + 1;
         while (ply < num_move - 1 && !this.moves[ply])
-            ply ++;
+            ++ply;
 
         let success = this.setPly(ply, {animate: 1, manual: true});
         if (!is_manual)
@@ -1717,7 +1717,7 @@ class XBoard {
         let ply = this.ply - 1,
             start = this.main_manual? -1: 0;
         while (ply > start && !this.moves[ply])
-            ply --;
+            --ply;
         let move = this.setPly(ply, {animate: 1, manual: true});
         this.setAi(false, 0);
         this.setAi(false, 1);
@@ -1733,7 +1733,7 @@ class XBoard {
         let num_move = this.moves.length,
             ply = 0;
         while (ply < num_move - 1 && !this.moves[ply])
-            ply ++;
+            ++ply;
 
         // initial board
         if (!ply && this.main_manual)
@@ -1862,41 +1862,41 @@ class XBoard {
             let attr = ` data-x="${name}"`,
                 svg = `<i data-svg="${icon}"${title}></i>`;
             if (dual) {
-                svg = `<vert class="fcenter w100 h100"${attr}>${svg}</vert>`
-                    + `<vert class="fcenter w100 h100 dn" data-x="${dual}"><i data-svg="${dual}"></i></vert>`;
+                svg = `<v class="fcenter w100 h100"${attr}>${svg}</v>`
+                    + `<v class="fcenter w100 h100 dn" data-x="${dual}"><i data-svg="${dual}"></i></v>`;
                 attr = '';
             }
 
             // counter
             if (name == this.count)
-                svg += `<vert class="count fcenter dn" data-x="end"></vert>`;
+                svg += `<v class="count fcenter dn" data-x="end"></v>`;
 
-            return `<vert class="control fcenter${class_}"${attr}>${svg}</vert>`;
+            return `<v class="control fcenter${class_}"${attr}>${svg}</v>`;
         }).join('');
 
         HTML(root, [
-            '<hori class="xtop xcolor1 dn">',
-                '<hori class="xshort fbetween"></hori>',
+            '<h class="xtop xcolor1 dn">',
+                '<h class="xshort fbetween"></h>',
                 '<div class="xleft"></div>',
                 '<div class="xtime"></div>',
                 '<div class="xeval"></div>',
                 '<div class="xcog dn"><i data-svg="cog"></i></div>',
-            '</hori>',
+            '</h>',
             '<div class="xframe"></div>',
             '<div class="xcontain">',
                 '<grid class="xsquares"></grid>',
                 '<div class="xoverlay"></div>',
                 '<div class="xpieces"></div>',
-                '<hori class="xbottom xcolor0 dn">',
-                    '<hori class="xshort fbetween"></hori>',
+                '<h class="xbottom xcolor0 dn">',
+                    '<h class="xshort fbetween"></h>',
                     '<div class="xleft"></div>',
                     '<div class="xtime"></div>',
                     '<div class="xeval"></div>',
                     '<div class="xcog dn"><i data-svg="cog"></i></div>',
-                '</hori>',
-                `<hori class="xcontrol">${controls}</hori>`,
+                '</h>',
+                `<h class="xcontrol">${controls}</h>`,
             '</div>',
-            `<horis class="xmoves fabase${this.list? '': ' dn'}"></horis>`,
+            `<hs class="xmoves fabase${this.list? '': ' dn'}"></hs>`,
         ].join(''));
 
         this.xframe = _('.xframe', root);
@@ -1998,7 +1998,7 @@ class XBoard {
 
         for (let material of materials)
             if (material.some(item => 'prq'.includes(item)))
-                enough ++;
+                ++enough;
 
         if (!enough) {
             for (let i of [0, 1])
@@ -2006,7 +2006,7 @@ class XBoard {
 
             for (let material of materials)
                 if (['k', 'kb', 'kn', 'knn'].includes(material))
-                    enough ++;
+                    ++enough;
 
             if (enough == 2) {
                 LS(`Insufficient material: ${materials.join(' vs ')}.`);
@@ -2283,7 +2283,7 @@ class XBoard {
             this.smooth0 = -1;
         }
         this.last_time = Now(1);
-        this.frame ++;
+        ++this.frame;
     }
 
     /**
@@ -2316,10 +2316,10 @@ class XBoard {
             let lines = [],
                 notation = this.notation;
 
-            for (let i = 0; i < num_row; i ++) {
+            for (let i = 0; i < num_row; ++i) {
                 let row_name = rotate? i + 1: 8 - i;
 
-                for (let j = 0; j < num_col; j ++) {
+                for (let j = 0; j < num_col; ++j) {
                     let col_name = COLUMN_LETTERS[ROTATE(rotate, j)],
                         even = (i + j) & 1,
                         note_x = '',
@@ -2340,9 +2340,9 @@ class XBoard {
                     }
 
                     lines.push(
-                        `<div class="xsquare" data-c="${rotate? 119 - square: square}" data-q="${col_name}${row_name}" style="background:${colors[even]}${style}">${note_x}${note_y}`
-                            + `<div class="xhigh"></div>`
-                        + `</div>`
+                        `<div class="xsquare" data-c="${rotate? 119 - square: square}" data-q="${col_name}${row_name}" style="background:${colors[even]}${style}">${note_x}${note_y}`,
+                            `<div class="xhigh"></div>`,
+                        `</div>`,
                     );
                 }
             }
@@ -2460,13 +2460,13 @@ class XBoard {
             lines.push(`+ ${scolumn}`);
 
         // parse all cells
-        for (let i = 0; i < num_row; i ++) {
+        for (let i = 0; i < num_row; ++i) {
             let vector = [];
 
             if (notation & 4)
                 vector.push(`${8 - i}`);
 
-            for (let j = 0; j < num_col; j ++)
+            for (let j = 0; j < num_col; ++j)
                 vector.push(grid[off + j] || '.');
 
             if (notation & 8)
@@ -2949,7 +2949,7 @@ class XBoard {
                         lines.push('<i>...</i>');
                 }
                 lines.push(`<i class="real">${resizeText(move['m'], 4, 'mini-move')}</i>`);
-                number ++;
+                ++number;
                 return lines.join('');
             }).join('');
 
@@ -3120,10 +3120,10 @@ class XBoard {
         // 5) split moves across workers
         let masks = [],
             specials = new Set(folds.map(fold => fold['m']));
-        for (let i = 0; i < num_worker; i ++)
+        for (let i = 0; i < num_worker; ++i)
             masks.push([]);
 
-        for (let i = 0; i < num_move; i ++) {
+        for (let i = 0; i < num_move; ++i) {
             let move = moves[i],
                 uci = chess.ucifyMove(move);
             if (specials.has(uci))
@@ -3131,7 +3131,7 @@ class XBoard {
             let id = i % num_worker;
             masks[id].push(move);
         }
-        for (let id = 0; id < num_worker; id ++)
+        for (let id = 0; id < num_worker; ++id)
             if (masks[id].length)
                 reply.lefts[id] = id + 1;
 
@@ -3150,7 +3150,7 @@ class XBoard {
                 },
             });
         }
-        for (let id = 0; id < num_worker; id ++) {
+        for (let id = 0; id < num_worker; ++id) {
             if (!masks[id].length)
                 continue;
             this.workers[id].postMessage({
@@ -3282,7 +3282,7 @@ class XBoard {
             num_child = move_list.length;
 
         // 1) fill past data
-        for (let id = num_child; id <= (cur_ply + 2) << 1; id ++) {
+        for (let id = num_child; id <= (cur_ply + 2) << 1; ++id) {
             let dico, tag,
                 id4 = id % 4,
                 ply = Floor(id / 2),
@@ -3448,7 +3448,7 @@ class XBoard {
                 LS(this.fen);
             LS(`>> ${id}${fen == this.fen? '': 'X'} : ${obj? obj['m']: '----'} : ${eval_} : ${lefts} : ${combine.length}`);
         }
-        reply.count ++;
+        ++reply.count;
         if (!reply.lefts.every(item => !item))
             return;
 
@@ -3535,7 +3535,7 @@ class XBoard {
                     }
                 }
 
-                this.depth ++;
+                ++this.depth;
                 this.think(suggest, 1);
                 return;
             }

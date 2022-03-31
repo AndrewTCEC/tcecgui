@@ -26,7 +26,7 @@ if (cluster.isMaster) {
         count = 0,
         cpus = os.cpus().length;
 
-    for (let i = 0; i < numServer; i ++) {
+    for (let i = 0; i < numServer; ++i) {
         LS(`Forking for ${cpus} CPUs`);
         count = 0;
         let worker = cluster.fork();
@@ -35,7 +35,7 @@ if (cluster.isMaster) {
             if (typeof msg.users != 'undefined') {
                 LS(`CLUSTER: count=${count} : msg.users=${parseInt(msg.users)} : clientCount=${clientCount}`);
                 count = parseInt(count) + parseInt(msg.users);
-                clientCount ++;
+                ++clientCount;
             }
         });
     }

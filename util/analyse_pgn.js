@@ -1,6 +1,6 @@
 // analyse_pgn.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-08-02
+// @version 2022-03-29
 /*
 globals
 process, require
@@ -140,13 +140,13 @@ function getPgnStats(data, origin) {
 
         // interquartile range
         values.sort((a, b) => a[0] - b[0]);
-        for (let i = 0; i < num_value; i ++) {
+        for (let i = 0; i < num_value; ++i) {
             let value = values[i];
             number += value[1];
             if (number >= half) {
                 let sum_move = 0,
                     sum_time = 0;
-                for (let j = i - interval; j <= i + interval; j ++) {
+                for (let j = i - interval; j <= i + interval; ++j) {
                     let value2 = values[j];
                     if (!value2)
                         continue;
@@ -226,7 +226,7 @@ function mergeStats(result) {
         maxs[1] = Max(maxs[1], `${median}`.length);
         maxs[2] = Max(maxs[2], FormatUnit(median).length);
 
-        for (let i = 3; i < 6; i ++)
+        for (let i = 3; i < 6; ++i)
             maxs[i] = Max(maxs[i], (splits[i] || '').length);
 
         maxs[6] = Max(maxs[6], `${reduce[2]}`.length);
@@ -271,7 +271,7 @@ function mergeStats(result) {
                     Pad(FormatUnit(median, undefined, true), maxs[2], spaces[2]),
                 ];
 
-            for (let i = 1; i < 4; i ++)
+            for (let i = 1; i < 4; ++i)
                 items.push(((splits[i] || '') + spaces[i + 2]).slice(0, maxs[i + 2]));
             items.push(games);
 
@@ -331,7 +331,7 @@ function openFile(filename, result, callback) {
 
                 if (verbose && !number)
                     LS(filename);
-                number ++;
+                ++number;
                 if (verbose)
                     LS(`  ${number} : ${name}`);
                 entry.buffer().then(content => {
@@ -407,7 +407,7 @@ function main() {
             start: Now(1),
         };
 
-    for (let i = 2; i < num_arg; i ++) {
+    for (let i = 2; i < num_arg; ++i) {
         let arg = args[i];
         if (arg.slice(0, 2) == '--')
             options[arg.slice(2)] = true;
@@ -444,10 +444,10 @@ function main() {
                 let left2 = files.length;
                 for (let file of files) {
                     openFile(file, result, () => {
-                        left2 --;
+                        --left2;
                         LS(`${left2} : ${filename} / ${file}`);
                         if (!left2) {
-                            left --;
+                            --left;
                             LS(`left=${left} : ${filename} / ${file}`);
                             if (!left)
                                 done(result, filenames);
@@ -458,7 +458,7 @@ function main() {
         }
         else {
             openFile(filename, result, () => {
-                left --;
+                --left;
                 LS(`A:left=${left} : ${filename}`);
                 if (!left)
                     done(result, filenames);

@@ -1,6 +1,6 @@
 // chess.cpp
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2021-05-21
+// @version 2022-03-29
 // - wasm implementation, 2x faster than fast chess.js
 // - FRC support
 // - emcc --bind -o ../js/chess-wasm.js chess.cpp -s WASM=1 -Wall -s MODULARIZE=1 -O3 --closure 1
@@ -497,7 +497,7 @@ private:
         if (!promote) {
             // TODO:
             // empty => give bonus for controlling the square, especially if near the other king (or in the center)
-            mobilities[piece] ++;
+            ++mobilities[piece];
         }
     }
 
@@ -510,9 +510,9 @@ private:
             if (only_capture)
                 addMove(moves, piece, from, to, flag, QUEEN, value);
             else
-                for (auto promote = QUEEN; promote >= KNIGHT; promote --)
+                for (auto promote = QUEEN; promote >= KNIGHT; --promote)
                     addMove(moves, piece, from, to, flag, promote, value);
-            mobilities[piece] ++;
+            ++mobilities[piece];
         }
         else
             addMove(moves, piece, from, to, flag, 0, value);
@@ -537,7 +537,7 @@ private:
         auto uci = ucifyMove(move),
             pv_string = uci;
         if (pv)
-            for (auto i = 0; i < pv->length; i ++) {
+            for (auto i = 0; i < pv->length; ++i) {
                 pv_string += " ";
                 pv_string += ucifyMove(pv->moves[i]);
             }
@@ -559,7 +559,7 @@ private:
     int alphaBeta(int alpha, int beta, int depth, int max_depth, PV *pv) {
         // extend depth if in check
         if (max_depth < max_extend && kingAttacked(turn))
-            max_depth ++;
+            ++max_depth;
 
         // transposition
         bool hit = false,
@@ -568,8 +568,8 @@ private:
         auto idepth = max_depth - depth;
 
         if (depth > 0 && hit && entry->depth >= idepth) {
-            nodes ++;
-            tt_hits ++;
+            ++nodes;
+            ++tt_hits;
 
             if (entry->bound & BOUND_EXACT)
                 return entry->score;
@@ -583,14 +583,14 @@ private:
             pv->length = 0;
             int score;
             if (!max_quiesce) {
-                nodes ++;
+                ++nodes;
                 score = evaluate();
             }
             else
                 score = quiesce(alpha, beta, max_quiesce);
 
             updateEntry(entry, board_hash, score, BOUND_EXACT, idepth, 0);
-            move_id ++;
+            ++move_id;
             return score;
         }
 
@@ -605,7 +605,7 @@ private:
         if (depth == 0)
             moves = first_moves;
         else {
-            nodes ++;
+            ++nodes;
             if (ply >= avg_depth)
                 avg_depth = ply + 1;
         }
@@ -614,7 +614,7 @@ private:
         for (auto &move : moves) {
             if (!makeMove(move))
                 continue;
-            num_valid ++;
+            ++num_valid;
 
             int score;
             // pv search
@@ -701,12 +701,12 @@ private:
             // if a move of the same piece type ends on the same to square,
             // we'll need to add a disambiguator to the algebraic notation
             if (type == board[ambig_from] && from != ambig_from && to == ambig_to) {
-                ambiguities ++;
+                ++ambiguities;
 
                 if (Rank(from) == Rank(ambig_from))
-                    same_rank ++;
+                    ++same_rank;
                 if (Filer(from) == Filer(ambig_from))
-                    same_file ++;
+                    ++same_file;
             }
         }
 
@@ -736,10 +736,10 @@ private:
      * Initialise piece squares
      */
     void initSquares() {
-        for (auto piece = PAWN; piece <= KING; piece ++) {
+        for (auto piece = PAWN; piece <= KING; ++piece) {
             auto bsquares = PIECE_SQUARES[1][piece],
                 wsquares = PIECE_SQUARES[0][piece];
-            for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++)
+            for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
                 bsquares[((7 - Rank(i)) << 4) + Filer(i)] = wsquares[i];
         }
     }
@@ -753,13 +753,13 @@ private:
         auto entry = findEntry(board_hash, hit);
         auto idepth = max_depth - depth;
         if (depth > 0 && hit && entry->depth >= idepth) {
-            nodes ++;
-            tt_hits ++;
+            ++nodes;
+            ++tt_hits;
             return entry->score;
         }
 
         if (depth >= max_depth) {
-            nodes ++;
+            ++nodes;
             pv->length = 0;
             return evaluate();
         }
@@ -774,7 +774,7 @@ private:
         if (depth == 0)
             moves = first_moves;
         else {
-            nodes ++;
+            ++nodes;
             if (ply >= avg_depth)
                 avg_depth = ply + 1;
         }
@@ -783,7 +783,7 @@ private:
         for (auto &move : moves) {
             if (!makeMove(move))
                 continue;
-            num_valid ++;
+            ++num_valid;
 
             int score = -miniMax(depth + 1, max_depth, &line);
             undoMove();
@@ -820,7 +820,7 @@ private:
      */
     std::string moveList() {
         std::string text;
-        for (auto i = 0 ; i <= ply; i ++) {
+        for (auto i = 0 ; i <= ply; ++i) {
             auto state = ply_states[i & 127];
             if (text.size())
                 text += " ";
@@ -834,7 +834,7 @@ private:
      */
     void nullSearch(int depth) {
         if (depth <= 0) {
-            nodes ++;
+            ++nodes;
             return;
         }
 
@@ -853,7 +853,7 @@ private:
      */
     int quiesce(int alpha, int beta, int depth_left) {
         auto delta = PIECE_SCORES[QUEEN];
-        nodes ++;
+        ++nodes;
         auto score = evaluate();
         if (depth_left <= 0)
             return score;
@@ -908,7 +908,7 @@ private:
         entry->bound = bound;
         entry->depth = depth;
         entry->move = move;
-        tt_adds ++;
+        ++tt_adds;
     }
 
 public:
@@ -958,12 +958,12 @@ public:
 
         // bishop + pawn + rook + queen
         auto offsets = PIECE_OFFSETS[QUEEN];
-        for (auto j = 0; j < 8; j ++) {
+        for (auto j = 0; j < 8; ++j) {
             auto offset = offsets[j];
             auto pos = square;
             auto target = BISHOP + (j & 1);
 
-            for (auto k = 0; ; k ++) {
+            for (auto k = 0; ; ++k) {
                 pos += offset;
                 if (pos & 0x88)
                     break;
@@ -999,9 +999,9 @@ public:
      */
     std::string cleanSan(std::string san) {
         int i = san.size() - 1;
-        for (; i >= 0 && strchr("+#?!", san[i]); i --)
+        for (; i >= 0 && strchr("+#?!", san[i]); --i)
             san.erase(i, 1);
-        for (; i >= 0; i --)
+        for (; i >= 0; --i)
             if (san[i] == '=') {
                 san.erase(i, 1);
                 break;
@@ -1064,7 +1064,7 @@ public:
         std::regex re("\\s+");
         std::sregex_token_iterator it(options.begin(), options.end(), re, -1);
         std::sregex_token_iterator reg_end;
-        for (; it != reg_end; it ++) {
+        for (; it != reg_end; ++it) {
             auto option = it->str();
             if (option.size() < 3 || option.at(1) != '=')
                 continue;
@@ -1127,10 +1127,10 @@ public:
         auto empty = 0;
         fen = "";
 
-        for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+        for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
             auto piece = board[i];
             if (!piece)
-                empty ++;
+                ++empty;
             else {
                 if (empty > 0) {
                     fen += ('0' + empty);
@@ -1198,36 +1198,36 @@ public:
         q = index % 6;
         index /= 6;
 
-        for (n1 = 0; n1 < 4; n1 ++) {
+        for (n1 = 0; n1 < 4; ++n1) {
             n2 = index + ((3 - n1) * (4 - n1)) / 2 - 5;
             if (n1 < n2 && n2 > 0 && n2 < 5)
                 break;
         }
 
         // queen
-        for (i = 0; i < 8; i ++)
+        for (i = 0; i < 8; ++i)
             if (line[i] == ' ') {
                 if (!q) {
                     line[i] = 'Q';
                     break;
                 }
-                q --;
+                --q;
             }
 
         // knights
-        for (i = 0; i < 8; i ++)
+        for (i = 0; i < 8; ++i)
             if (line[i] == ' ') {
                 if (!n1 || !n2)
                     line[i] = 'N';
-                n1 --;
-                n2 --;
+                --n1;
+                --n2;
             }
 
         // rook - king - rook
         std::string castle, castle2;
         i = 7;
         for (auto type : "RKR")
-            for (; i >= 0; i --) {
+            for (; i >= 0; --i) {
                 if (line[i] == ' ') {
                     line[i] = type;
                     if (type == 'R') {
@@ -1258,14 +1258,14 @@ public:
             us8 = us << 3,
             them = us ^ 1;
 
-        for (auto i = us8; i < us8 + 8; i ++) {
+        for (auto i = us8; i < us8 + 8; ++i) {
             attacks[i] = 0;
             defenses[i] = 0;
             mobilities[i] = 0;
         }
 
         // 1) collect all moves
-        for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+        for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
             // off board
             if (i & 0x88) {
                 i += 7;
@@ -1322,7 +1322,7 @@ public:
             else {
                 auto offsets = PIECE_OFFSETS[piece_type],
                     piece_attacks = PIECE_ATTACKS[piece];
-                for (auto j = 0; j < 8; j ++) {
+                for (auto j = 0; j < 8; ++j) {
                     auto offset = offsets[j];
                     auto square = i;
                     if (!offset)
@@ -1362,7 +1362,7 @@ public:
                 pos0 = Rank(king) << 4;
 
             // q=0: king side, q=1: queen side
-            for (auto q = 0; q < 2; q ++) {
+            for (auto q = 0; q < 2; ++q) {
                 auto rook = castling[(us << 1) + q];
                 if (rook == EMPTY)
                     continue;
@@ -1376,7 +1376,7 @@ public:
                     min_path = Min(min_king, Min(rook, rook_to));
 
                 // check that all squares are empty along the path
-                for (auto j = min_path; j <= max_path; j ++)
+                for (auto j = min_path; j <= max_path; ++j)
                     if (j != king && j != rook && board[j]) {
                         error = true;
                         break;
@@ -1385,7 +1385,7 @@ public:
                     continue;
 
                 // check that the king is not attacked
-                for (auto j = min_king; j <= max_king; j ++)
+                for (auto j = min_king; j <= max_king; ++j)
                     if (attacked(them, j)) {
                         error = true;
                         break;
@@ -1467,7 +1467,7 @@ public:
                 score += mobilities[6] * 15;
             }
             else
-                for (auto i = 1; i < 7; i ++)
+                for (auto i = 1; i < 7; ++i)
                     score += Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * factor;
 
             if (mat1 <= 5000) {
@@ -1478,21 +1478,21 @@ public:
                 score -= mobilities[14] * 15;
             }
             else
-                for (auto i = 9; i < 15; i ++)
+                for (auto i = 9; i < 15; ++i)
                     score -= Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * factor;
         }
 
         // 4) attacks + defenses
         if (eval_mode & 4) {
-            for (auto i = 1; i < 7; i ++)
+            for (auto i = 1; i < 7; ++i)
                 score += attacks[i] + defenses[i];
-            for (auto i = 9; i < 15; i ++)
+            for (auto i = 9; i < 15; ++i)
                 score -= attacks[i] + defenses[i];
         }
 
         // 5) pawns
         if (eval_mode & 8) {
-            for (auto square = SQUARE_A8; square <= SQUARE_H1; square ++) {
+            for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square) {
                 if (square & 0x88) {
                     square += 7;
                     continue;
@@ -1525,7 +1525,7 @@ public:
         memset(mobilities, 0, sizeof(mobilities));
         memset(positions, 0, sizeof(positions));
 
-        for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+        for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
             if (i & 0x88) {
                 i += 7;
                 continue;
@@ -1548,7 +1548,7 @@ public:
 
         // 1) board
         board_hash = 0;
-        for (auto square = SQUARE_A8; square <= SQUARE_H1; square ++) {
+        for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square) {
             if (square & 0x88) {
                 square += 7;
                 continue;
@@ -1562,7 +1562,7 @@ public:
         hashEnPassant();
 
         // 3) castle
-        for (auto id = 0; id < 4; id ++)
+        for (auto id = 0; id < 4; ++id)
             if (castling[id] != EMPTY)
                 board_hash ^= zobrist[0][id];
 
@@ -1611,17 +1611,17 @@ public:
         zobrist_side = xorshift64();
         std::set<Hash> seens;
 
-        for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+        for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
             if (i & 0x88) {
                 i += 7;
                 continue;
             }
-            for (auto j = 0; j <= 14; j ++) {
+            for (auto j = 0; j <= 14; ++j) {
                 if (j && !PIECE_ORDERS[j])
                     continue;
                 auto x = xorshift64();
                 if (seens.find(x) != seens.end()) {
-                    collision ++;
+                    ++collision;
                     break;
                 }
                 zobrist[j][i] = x;
@@ -1681,10 +1681,10 @@ public:
             square = 0;
         std::string castle, ep;
 
-        for (auto i = 0; i < fen.size(); i ++) {
+        for (auto i = 0; i < fen.size(); ++i) {
             auto value = fen[i];
             if (value == ' ') {
-                step ++;
+                ++step;
                 if (step == 2)
                     step2 = i;
                 else if (step == 3)
@@ -1701,7 +1701,7 @@ public:
                     square += value - '0';
                 else {
                     put(PIECES[value], square);
-                    square ++;
+                    ++square;
                 }
                 break;
             // turn
@@ -1759,18 +1759,18 @@ public:
             // fix corrupted FEN (only for the initial board)
             if (error) {
                 castle = "";
-                for (auto color = 0; color < 2; color ++) {
+                for (auto color = 0; color < 2; ++color) {
                     char file_letter = color? 'a': 'A';
                     auto king = kings[color];
 
-                    for (int i = king + 1; Filer(i) <= 7; i ++)
+                    for (int i = king + 1; Filer(i) <= 7; ++i)
                         if (TYPE(board[i]) == ROOK) {
                             castling[color * 2] = i;
                             castle += file_letter + Filer(i);
                             break;
                         }
 
-                    for (int i = king - 1; Filer(i) >= 0; i --)
+                    for (int i = king - 1; Filer(i) >= 0; --i)
                         if (TYPE(board[i]) == ROOK) {
                             castling[color * 2 + 1] = i;
                             castle += file_letter + Filer(i);
@@ -1799,7 +1799,7 @@ public:
             move_to = MoveTo(move);
         if (move_from == move_to) {
             // addState(move);
-            // ply ++;
+            // ++ply;
             // turn ^= 1;
             return false;
         }
@@ -1846,7 +1846,7 @@ public:
         // 2) move is legal => do all other stuff
         addState(move);
 
-        half_moves ++;
+        ++half_moves;
         hashEnPassant();
         ep_square = EMPTY;
 
@@ -1924,9 +1924,9 @@ public:
             positions[us] += psquares[piece_to] - psquares[piece_from];
         }
 
-        ply ++;
+        ++ply;
         if (turn == BLACK)
-            move_number ++;
+            ++move_number;
         turn ^= 1;
         board_hash ^= zobrist_side;
         return true;
@@ -1953,7 +1953,7 @@ public:
             if (!piece) {
                 if (std::abs(Filer(move_from) - Filer(move_to)) == 2) {
                     if (move_to > move_from)
-                        move_to ++;
+                        ++move_to;
                     else
                         move_to -= 2;
                 }
@@ -2072,7 +2072,7 @@ public:
         std::vector<MoveText> result;
         int prev = 0,
             size = multi.size();
-        for (int i = 0; i <= size; i ++) {
+        for (int i = 0; i <= size; ++i) {
             if (i < size && multi[i] != ' ')
                 continue;
 
@@ -2101,7 +2101,7 @@ public:
         std::vector<MoveText> result;
         int prev = 0,
             size = multi.size();
-        for (int i = 0; i <= size; i ++) {
+        for (int i = 0; i <= size; ++i) {
             if (i < size && multi[i] != ' ')
                 continue;
 
@@ -2139,7 +2139,7 @@ public:
             for (auto &move : moves) {
                 if (MoveFrom(move) == from && MoveTo(move) == to && MovePromote(move) == promote)
                     moves[id] += 1023 - (move & 1023);
-                id ++;
+                ++id;
             }
         }
 
@@ -2228,7 +2228,7 @@ public:
         first_moves.clear();
         if (move_string.size()) {
             std::sregex_token_iterator it(move_string.begin(), move_string.end(), re, -1);
-            for (; it != reg_end; it ++) {
+            for (; it != reg_end; ++it) {
                 auto move = static_cast<uint32_t>(std::stoul(it->str()));
                 first_moves.push_back(move);
             }
@@ -2237,7 +2237,7 @@ public:
         prev_pv.clear();
         if (pv_string.size()) {
             std::sregex_token_iterator it2(pv_string.begin(), pv_string.end(), re, -1);
-            for (; it2 != reg_end; it2 ++)
+            for (; it2 != reg_end; ++it2)
                 prev_pv.push_back(it2->str());
         }
 
@@ -2257,7 +2257,7 @@ public:
      */
     std::string print(bool console) {
         std::string text;
-        for (auto i = SQUARE_A8; i <= SQUARE_H1; i ++) {
+        for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
             // off board
             if (i & 0x88) {
                 i += 7;
@@ -2324,27 +2324,27 @@ public:
         // analyse backwards
         if (strchr("bnrqBNRQ", clean[i])) {
             promote = TYPE(PIECES[clean[i]]);
-            i --;
+            --i;
         }
         // to
         if (clean[i] < '1' || clean[i] > '8')
             return NULL_OBJ;
-        i --;
+        --i;
         if (clean[i] < 'a' || clean[i] > 'j')
             return NULL_OBJ;
         to = clean[i] - 'a' + (('8' - clean[i + 1]) << 4);
-        i --;
+        --i;
         //
         if (i >= 0 && clean[i] == 'x')
-            i --;
+            --i;
         // from
         if (i >= 0 && clean[i] >= '1' && clean[i] <= '8') {
             from_rank = '8' - clean[i];
-            i --;
+            --i;
         }
         if (i >= 0 && clean[i] >= 'a' && clean[i] <= 'j') {
             from_file = clean[i] - 'a';
-            i --;
+            --i;
         }
         // type
         type = TYPE(PIECES[clean[i]]);
@@ -2452,7 +2452,7 @@ public:
     bool undoMove() {
         if (ply <= 0)
             return false;
-        ply --;
+        --ply;
 
         auto &state = ply_states[ply & 127];
         board_hash = state.hash;
@@ -2463,7 +2463,7 @@ public:
 
         turn ^= 1;
         if (turn == BLACK)
-            move_number --;
+            --move_number;
 
         auto move_capture = MoveCapture(move);
         auto move_flag = MoveFlag(move);

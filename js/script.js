@@ -1,6 +1,6 @@
 // script.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2020-09-30
+// @version 2022-04-03
 /*
 globals
 startup, window
@@ -9,18 +9,18 @@ startup, window
 
 /** @namespace */
 window.onload = function() {
-    // @import {common.js}
-    // @import {chess.js}
-    // @import {engine.js}
-    // @import {global.js}
-    // @import {3d.js}
-    // @import {xboard.js}
-    // @import {chart.js}
-    // @import {graph.js}
-    // @import {game.js}
-    // @import {network.js}
-    // @import {startup.js}
-    // @import {config.js}
+	// @import {common.js}
+	// @import {chess.js}
+	// @import {engine.js}
+	// @import {global.js}
+	// @import {3d.js}
+	// @import {xboard.js}
+	// @import {chart.js}
+	// @import {graph.js}
+	// @import {game.js}
+	// @import {network.js}
+	// @import {startup.js}
+	// @import {config.js}
 
-    startup();
+	startup();
 };

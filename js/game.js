@@ -1,6 +1,6 @@
 // game.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-03-29
+// @version 2022-04-03
 //
 // Game specific code:
 // - control the board, moves
@@ -2381,8 +2381,7 @@ function analyseSeasons(data) {
         let parent = Parent(node, {tag: 'grid'});
         if (!parent)
             return;
-        Class(node, 'active');
-        Class(node.nextElementSibling, 'active');
+        Class([node, node.nextElementSibling], 'active');
         expandSeason(parent.previousElementSibling, true);
         tour_info[section].link = link;
     }
@@ -2555,17 +2554,14 @@ function setSeasonEvents() {
         openEvent('archive');
 
         Class('a.active', '-active', true, table);
-        Class(this, 'active');
-        Class(this.nextElementSibling, 'active');
+        Class([this, this.nextElementSibling], 'active');
     }, table);
 
     // hover
     Events('#table-season a', 'mouseenter mouseleave', function(e) {
         Class('a.hover', '-hover');
-        if (e.type == 'mouseenter') {
-            Class(this, 'hover');
-            Class(this.dataset['u']? this.nextElementSibling: this.previousElementSibling, 'hover');
-        }
+        if (e.type == 'mouseenter')
+            Class([this, this.dataset['u']? this.nextElementSibling: this.previousElementSibling], 'hover');
     });
 }
 

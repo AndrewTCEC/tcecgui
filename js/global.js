@@ -1,6 +1,6 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-03-29
+// @version 2022-04-03
 //
 // global variables/functions shared across multiple js files
 //
@@ -15,20 +15,20 @@ Max, Min, node_modal, Pow, require, saveDefault, Split, vi_canClosePopups:true, 
 
 // <<
 if (typeof global != 'undefined') {
-    ['common', 'engine'].forEach(key => {
-        Object.assign(global, require(`./${key}.js`));
-    });
+	['common', 'engine'].forEach(key => {
+		Object.assign(global, require(`./${key}.js`));
+	});
 }
 // >>
 
 // modify those values in config.js
 let HOST_ARCHIVE,
-    SF_COEFF_AS = [-8.24404295, 64.23892342, -95.73056462, 153.86478679],
-    SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
-    SF_PAWN_VALUE = 2.06,
-    VERSION = '20210802',
-    vi_closePopups,
-    xboards = {};
+	SF_COEFF_AS = [-8.24404295, 64.23892342, -95.73056462, 153.86478679],
+	SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
+	SF_PAWN_VALUE = 2.06,
+	VERSION = '20210802',
+	vi_closePopups,
+	xboards = {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -40,11 +40,11 @@ let HOST_ARCHIVE,
  * @param {number|string} eval_
  */
 function addPlayerEval(player, ply, eval_) {
-    if (eval_ == undefined)
-        return;
-    if (!player.evals)
-        player.evals = [];
-    player.evals[ply] = eval_;
+	if (eval_ == undefined)
+		return;
+	if (!player.evals)
+		player.evals = [];
+	player.evals[ply] = eval_;
 }
 
 /**
@@ -54,9 +54,9 @@ function addPlayerEval(player, ply, eval_) {
  * @returns {number}
  */
 function allieCpToScore(cp) {
-    if (Abs(cp) > 1000)
-        return (cp + (cp > 0 ? 127407 : -127407)) / 153007;
-    return Atan(cp / 111) / 1.74;
+	if (Abs(cp) > 1000)
+		return (cp + (cp > 0 ? 127407 : -127407)) / 153007;
+	return Atan(cp / 111) / 1.74;
 }
 
 /**
@@ -65,12 +65,12 @@ function allieCpToScore(cp) {
  * @param {!Object} dico
  */
 function assignMove(move, dico) {
-    Assign(move, ...Keys(dico).filter(key => {
-        let value = dico[key];
-        if (value == '' || (key == 'ply' && value < -1))
-            return false;
-        return true;
-    }).map(key => ({[key]: dico[key]})));
+	Assign(move, ...Keys(dico).filter(key => {
+		let value = dico[key];
+		if (value == '' || (key == 'ply' && value < -1))
+			return false;
+		return true;
+	}).map(key => ({[key]: dico[key]})));
 }
 
 /**
@@ -82,30 +82,30 @@ function assignMove(move, dico) {
  * @returns {number} q %
  */
 function calculateFeatureQ(feature, eval_, ply) {
-    let white_win;
+	let white_win;
 
-    if (feature & 1) {
-        let cp = eval_ * 100;
-        if (feature & 2)
-            white_win = leelaCpToScore(cp);
-        else if (feature & 4)
-            white_win = allieCpToScore(cp);
-        else if (feature & 8)
-            white_win = stoofCpToScore(cp);
-        else
-            white_win = (Atan((eval_ * 100) / 290.680623072) / 3.096181612 + 0.5) * 2 - 1;
+	if (feature & 1) {
+		let cp = eval_ * 100;
+		if (feature & 2)
+			white_win = leelaCpToScore(cp);
+		else if (feature & 4)
+			white_win = allieCpToScore(cp);
+		else if (feature & 8)
+			white_win = stoofCpToScore(cp);
+		else
+			white_win = (Atan((eval_ * 100) / 290.680623072) / 3.096181612 + 0.5) * 2 - 1;
 
-        // this is the HALF white win %
-        white_win *= 50;
-    }
-    else if (ply >= 0) {
-        let wdl = stockfishWdl(eval_ * 100, ply);
-        white_win = (wdl[0] - wdl[2]) / 20;
-    }
-    else
-        white_win = (50 - (100 / (1 + Pow(10, eval_/ 4))));
+		// this is the HALF white win %
+		white_win *= 50;
+	}
+	else if (ply >= 0) {
+		let wdl = stockfishWdl(eval_ * 100, ply);
+		white_win = (wdl[0] - wdl[2]) / 20;
+	}
+	else
+		white_win = (50 - (100 / (1 + Pow(10, eval_/ 4))));
 
-    return white_win;
+	return white_win;
 }
 
 /**
@@ -113,12 +113,12 @@ function calculateFeatureQ(feature, eval_, ply) {
  * @returns {boolean}
  */
 function canClosePopups() {
-    if (vi_closePopups)
-        vi_closePopups('popup-fen', 'fen', {type: 'mouseleave'});
+	if (vi_closePopups)
+		vi_closePopups('popup-fen', 'fen', {type: 'mouseleave'});
 
-    // empty the content to prevent controls for still interacting with the popup (ex: SELECT)
-    HTML(node_modal, '');
-    return true;
+	// empty the content to prevent controls for still interacting with the popup (ex: SELECT)
+	HTML(node_modal, '');
+	return true;
 }
 
 /**
@@ -130,46 +130,46 @@ function canClosePopups() {
  * @returns {string}
  */
 function convertCheckmate(value, ply) {
-    let positive = 1,
-        want_ply = (Y['checkmate'] == 'plies');
+	let positive = 1,
+		want_ply = (Y['checkmate'] == 'plies');
 
-    // 1) already got M or M# => good sign
-    if (IsString(value)) {
-        value = /** @type {string} */(value);
-        positive = (value[0] == '-')? 0: 1;
+	// 1) already got M or M# => good sign
+	if (IsString(value)) {
+		value = /** @type {string} */(value);
+		positive = (value[0] == '-')? 0: 1;
 
-        if (value.includes('M#')) {
-            if (!want_ply)
-                return value;
+		if (value.includes('M#')) {
+			if (!want_ply)
+				return value;
 
-            value = value.replace('M#', '') << 1;
-            if ((ply & 1) == positive)
-                --value;
-        }
-        else if (value.includes('M')) {
-            if (want_ply)
-                return value;
+			value = value.replace('M#', '') << 1;
+			if ((ply & 1) == positive)
+				--value;
+		}
+		else if (value.includes('M')) {
+			if (want_ply)
+				return value;
 
-            value = value.replace('M', '');
-            if ((ply & 1) == positive)
-                ++value;
-            value = (value / 2) >> 0;
-        }
-    }
-    // 2) number => mate is in moves by default + invert sign if black
-    else {
-        if (ply & 1)
-            value = -value;
-        positive = (value < 0)? 0: 1;
+			value = value.replace('M', '');
+			if ((ply & 1) == positive)
+				++value;
+			value = (value / 2) >> 0;
+		}
+	}
+	// 2) number => mate is in moves by default + invert sign if black
+	else {
+		if (ply & 1)
+			value = -value;
+		positive = (value < 0)? 0: 1;
 
-        if (want_ply) {
-            value <<= 1;
-            if ((ply & 1) == positive)
-                --value;
-        }
-    }
+		if (want_ply) {
+			value <<= 1;
+			if ((ply & 1) == positive)
+				--value;
+		}
+	}
 
-    return `${positive? '': '-'}M${want_ply? '': '#'}${Abs(value)}`;
+	return `${positive? '': '-'}M${want_ply? '': '#'}${Abs(value)}`;
 }
 
 /**
@@ -177,51 +177,51 @@ function convertCheckmate(value, ply) {
  * @param {Move} move
  */
 function fixMoveFormat(move) {
-    if (move._fixed || move['book'])
-        return;
+	if (move._fixed || move['book'])
+		return;
 
-    // fix eval
-    if (move['wv'] == undefined)
-        move['wv'] = move['ev'];
+	// fix eval
+	if (move['wv'] == undefined)
+		move['wv'] = move['ev'];
 
-    // fix move time
-    if (isNaN(move['mt']) && move['mt'])
-        move['mt'] = parseTime(move['mt']) * 1000;
+	// fix move time
+	if (isNaN(move['mt']) && move['mt'])
+		move['mt'] = parseTime(move['mt']) * 1000;
 
-    // fix time left
-    if (isNaN(move['tl']) && move['tl'])
-        move['tl'] = parseTime(move['tl']) * 1000;
+	// fix time left
+	if (isNaN(move['tl']) && move['tl'])
+		move['tl'] = parseTime(move['tl']) * 1000;
 
-    // fix speed
-    if (isNaN(move['s']) && move['s']) {
-        let items = move['s'].split(' ');
-        if (items.length >= 2)
-            move['s'] = parseFloat(items[0]) * ({k: 1000, M: 1e6}[items[1][0]] || 1);
-    }
+	// fix speed
+	if (isNaN(move['s']) && move['s']) {
+		let items = move['s'].split(' ');
+		if (items.length >= 2)
+			move['s'] = parseFloat(items[0]) * ({k: 1000, M: 1e6}[items[1][0]] || 1);
+	}
 
-    // fix nodes
-    // note: it's an approximation, not reliable at low values => skipped there
-    if (move['n'] == undefined && move['mt'] >= 2000)
-        move['n'] = Floor(move['s'] / move['mt'] * 1000 + 0.5);
+	// fix nodes
+	// note: it's an approximation, not reliable at low values => skipped there
+	if (move['n'] == undefined && move['mt'] >= 2000)
+		move['n'] = Floor(move['s'] / move['mt'] * 1000 + 0.5);
 
-    // fix too fast speed: > 10Bnps
-    if (move['s'] > 1e10) {
-        move['n'] = '-';
-        move['s'] = '-';
-    }
-    else if (move['n']) {
-        // fix missing speed
-        if (!move['s'])
-            move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000): '-';
-        // fix insta-moves speed
-        else if (move['mt'] && move['mt'] < 2000) {
-            let speed = move['n'] / (move['mt'] + (move['n'] > 500)? 5: 300) * 1000;
-            if (move['s'] > speed * 3)
-                move['s'] = '-';
-        }
-    }
+	// fix too fast speed: > 10Bnps
+	if (move['s'] > 1e10) {
+		move['n'] = '-';
+		move['s'] = '-';
+	}
+	else if (move['n']) {
+		// fix missing speed
+		if (!move['s'])
+			move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000): '-';
+		// fix insta-moves speed
+		else if (move['mt'] && move['mt'] < 2000) {
+			let speed = move['n'] / (move['mt'] + (move['n'] > 500)? 5: 300) * 1000;
+			if (move['s'] > speed * 3)
+				move['s'] = '-';
+		}
+	}
 
-    move._fixed = 1;
+	move._fixed = 1;
 }
 
 /**
@@ -233,34 +233,34 @@ function fixMoveFormat(move) {
  * @returns {string}
  */
 function formatEval(value, ply, process) {
-    if (value == undefined || Number.isNaN(value))
-        return '-';
+	if (value == undefined || Number.isNaN(value))
+		return '-';
 
-    let float = parseFloat(value);
-    if (isNaN(float)) {
-        // checkmate conversion?
-        value = value + '';
-        if (value.includes('M'))
-            value = convertCheckmate(value, ply);
-        return value;
-    }
+	let float = parseFloat(value);
+	if (isNaN(float)) {
+		// checkmate conversion?
+		value = value + '';
+		if (value.includes('M'))
+			value = convertCheckmate(value, ply);
+		return value;
+	}
 
-    let small_decimal = Y['small_decimal'],
-        text = float.toFixed(2);
+	let small_decimal = Y['small_decimal'],
+		text = float.toFixed(2);
 
-    if (!process || !small_decimal)
-        return text;
+	if (!process || !small_decimal)
+		return text;
 
-    let items = text.split('.');
+	let items = text.split('.');
 
-    if (small_decimal != 1) {
-        let abs = Abs(float);
-        if (abs < 10 && small_decimal == 10)
-            return text;
-        if (abs < 100 && small_decimal == 100)
-            return text;
-    }
-    return `<i>${items[0]}.</i><i class="smaller">${items[1]}</i>`;
+	if (small_decimal != 1) {
+		let abs = Abs(float);
+		if (abs < 10 && small_decimal == 10)
+			return text;
+		if (abs < 100 && small_decimal == 100)
+			return text;
+	}
+	return `<i>${items[0]}.</i><i class="smaller">${items[1]}</i>`;
 }
 
 /**
@@ -271,7 +271,7 @@ function formatEval(value, ply, process) {
  * @returns {string}
  */
 function formatUnit(number, def, keep_decimal) {
-    return FormatUnit(number, def, keep_decimal, Y['SI_units']);
+	return FormatUnit(number, def, keep_decimal, Y['SI_units']);
 }
 
 /**
@@ -280,11 +280,11 @@ function formatUnit(number, def, keep_decimal) {
  * @returns {number}
  */
 function getFenPly(fen) {
-    if (!fen)
-        return -2;
-    let items = fen.split(' '),
-        ply = ((items[5] || 1) - 1) * 2 - (items[1] == 'w') * 1;
-    return isNaN(ply)? -1: ply;
+	if (!fen)
+		return -2;
+	let items = fen.split(' '),
+		ply = ((items[5] || 1) - 1) * 2 - (items[1] == 'w') * 1;
+	return isNaN(ply)? -1: ply;
 }
 
 /**
@@ -294,20 +294,20 @@ function getFenPly(fen) {
  * @returns {number} ply -2 on error, -1 on the initial position, otherwise >= 0
  */
 function getMovePly(move) {
-    if (!move)
-        return -2;
-    let move_ply = move['ply'];
-    if (move_ply != undefined && move_ply >= -1)
-        return move_ply;
-    if (!move['fen'])
-        return -2;
+	if (!move)
+		return -2;
+	let move_ply = move['ply'];
+	if (move_ply != undefined && move_ply >= -1)
+		return move_ply;
+	if (!move['fen'])
+		return -2;
 
-    let ply = getFenPly(move['fen']);
-    if (ply >= -1) {
-        move['ply'] = ply;
-        return ply;
-    }
-    return -2;
+	let ply = getFenPly(move['fen']);
+	if (ply >= -1) {
+		move['ply'] = ply;
+		return ply;
+	}
+	return -2;
 }
 
 /**
@@ -317,7 +317,7 @@ function getMovePly(move) {
  * @returns {number}
  */
 function leelaCpToScore(cp) {
-    return Atan(cp / 90) / 1.5637541897;
+	return Atan(cp / 90) / 1.5637541897;
 }
 
 /**
@@ -326,10 +326,10 @@ function leelaCpToScore(cp) {
  * @returns {number}
  */
 function parseTime(time) {
-    if (!time)
-        return 0;
-    let [hour, min, sec] = time.split(':');
-    return hour * 3600 + min * 60 + sec * 1;
+	if (!time)
+		return 0;
+	let [hour, min, sec] = time.split(':');
+	return hour * 3600 + min * 60 + sec * 1;
 }
 
 /**
@@ -338,22 +338,22 @@ function parseTime(time) {
  * @param {!Array<string>} keys
  */
 function resetOldSettingsSpecial(version, keys) {
-    if (version < '20200930')
-        keys.push('game_wasm');
-    if (version < '20201003b')
-        keys.push('game_threads');
-    if (version < '20210109') {
-        Keys(DEFAULTS).filter(key => key.slice(0, 6) == 'sound_').map(key => {
-            keys.push(key);
-        });
-        keys.push('boom_volume');
-    }
-    if (version < '20210109e')
-        keys.push('boom_threshold');
-    if (version < '20210127b') {
-        saveDefault('arrow_color_01', Y['arrow_combine_01']);
-        saveDefault('arrow_color_23', Y['arrow_combine_23']);
-    }
+	if (version < '20200930')
+		keys.push('game_wasm');
+	if (version < '20201003b')
+		keys.push('game_threads');
+	if (version < '20210109') {
+		Keys(DEFAULTS).filter(key => key.slice(0, 6) == 'sound_').map(key => {
+			keys.push(key);
+		});
+		keys.push('boom_volume');
+	}
+	if (version < '20210109e')
+		keys.push('boom_threshold');
+	if (version < '20210127b') {
+		saveDefault('arrow_color_01', Y['arrow_combine_01']);
+		saveDefault('arrow_color_23', Y['arrow_combine_23']);
+	}
 }
 
 /**
@@ -365,18 +365,18 @@ function resetOldSettingsSpecial(version, keys) {
  * @returns {!{items:Array<string>, ply:number}}
  */
 function splitMoveString(text, no_number, def_ply=-2) {
-    if (!text)
-        return {items: [], ply: -2};
+	if (!text)
+		return {items: [], ply: -2};
 
-    let items = text.replace(/[.]{2,}/, ' ... ').split(' '),
-        ply = (parseInt(items[0], 10) - 1) * 2 + (items[1] == '...'? 1: 0);
+	let items = text.replace(/[.]{2,}/, ' ... ').split(' '),
+		ply = (parseInt(items[0], 10) - 1) * 2 + (items[1] == '...'? 1: 0);
 
-    if (no_number)
-        items = items.filter(item => !IsDigit(item[0]) && item != '...');
-    return {
-        items: items,
-        ply: isNaN(ply)? def_ply: ply,
-    };
+	if (no_number)
+		items = items.filter(item => !IsDigit(item[0]) && item != '...');
+	return {
+		items: items,
+		ply: isNaN(ply)? def_ply: ply,
+	};
 }
 
 /**
@@ -387,11 +387,11 @@ function splitMoveString(text, no_number, def_ply=-2) {
  * @returns {!Array<number>} w,d,l
  */
 function stockfishWdl(cp, ply) {
-    let win = stockfishWinRateModel(cp, ply),
-        loss = stockfishWinRateModel(-cp, ply),
-        draw = Max(0, 1000 - win - loss);
+	let win = stockfishWinRateModel(cp, ply),
+		loss = stockfishWinRateModel(-cp, ply),
+		draw = Max(0, 1000 - win - loss);
 
-    return [win, draw, loss];
+	return [win, draw, loss];
 }
 
 /**
@@ -404,15 +404,15 @@ function stockfishWdl(cp, ply) {
  * @returns {number}
  */
 function stockfishWinRateModel(cp, ply) {
-    let as = SF_COEFF_AS,
-        bs = SF_COEFF_BS,
-        m = Min(240, ply) / 64,
-        a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3],
-        b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3],
-        v = cp * SF_PAWN_VALUE,
-        x = Clamp(v / SF_PAWN_VALUE, -1000, 1000);
+	let as = SF_COEFF_AS,
+		bs = SF_COEFF_BS,
+		m = Min(240, ply) / 64,
+		a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3],
+		b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3],
+		v = cp * SF_PAWN_VALUE,
+		x = Clamp(v / SF_PAWN_VALUE, -1000, 1000);
 
-    return Floor(0.5 + 1000 / (1 + Exp((a - x) / b)));
+	return Floor(0.5 + 1000 / (1 + Exp((a - x) / b)));
 }
 
 /**
@@ -421,7 +421,7 @@ function stockfishWinRateModel(cp, ply) {
  * @returns {number}
  */
 function stoofCpToScore(cp) {
-    return Atan(cp / 194) / 1.55564;
+	return Atan(cp / 194) / 1.55564;
 }
 
 // STARTUP
@@ -431,32 +431,32 @@ function stoofCpToScore(cp) {
  * Initialise structures with global data
  */
 function startupGlobal() {
-    vi_canClosePopups = canClosePopups;
-    vi_resetOldSettingsSpecial = resetOldSettingsSpecial;
+	vi_canClosePopups = canClosePopups;
+	vi_resetOldSettingsSpecial = resetOldSettingsSpecial;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
 if (typeof exports != 'undefined') {
-    Assign(exports, {
-        addPlayerEval: addPlayerEval,
-        allieCpToScore: allieCpToScore,
-        assignMove: assignMove,
-        calculateFeatureQ: calculateFeatureQ,
-        convertCheckmate: convertCheckmate,
-        fixMoveFormat: fixMoveFormat,
-        formatEval: formatEval,
-        formatUnit: formatUnit,
-        getFenPly: getFenPly,
-        getMovePly: getMovePly,
-        leelaCpToScore: leelaCpToScore,
-        splitMoveString: splitMoveString,
-        stockfishWdl: stockfishWdl,
-        stockfishWinRateModel: stockfishWinRateModel,
-        stoofCpToScore: stoofCpToScore,
-        VERSION: VERSION,
-        xboards: xboards,
-    });
+	Assign(exports, {
+		addPlayerEval: addPlayerEval,
+		allieCpToScore: allieCpToScore,
+		assignMove: assignMove,
+		calculateFeatureQ: calculateFeatureQ,
+		convertCheckmate: convertCheckmate,
+		fixMoveFormat: fixMoveFormat,
+		formatEval: formatEval,
+		formatUnit: formatUnit,
+		getFenPly: getFenPly,
+		getMovePly: getMovePly,
+		leelaCpToScore: leelaCpToScore,
+		splitMoveString: splitMoveString,
+		stockfishWdl: stockfishWdl,
+		stockfishWinRateModel: stockfishWinRateModel,
+		stoofCpToScore: stoofCpToScore,
+		VERSION: VERSION,
+		xboards: xboards,
+	});
 }
 // >>

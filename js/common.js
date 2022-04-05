@@ -1,90 +1,90 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-03-29
+// @version 2022-04-03
 //
 // utility JS functions used in all the sites
 // jshint -W069
 /*
 globals
 cancelAnimationFrame, clearInterval, clearTimeout, console, document, exports, FormData, global,
-location, navigator, Node, requestAnimationFrame, screen, setInterval, setTimeout, window, XMLHttpRequest
+location, navigator, Node, performance, requestAnimationFrame, screen, setInterval, setTimeout, window, XMLHttpRequest
 */
 'use strict';
 
 // SHORTCUTS
 ////////////
 
-let Abs = Math.abs,
-    Assign = Object.assign,
-    Atan = Math.atan,
-    CACHE_COUNTS = {},
-    CACHE_IDS = {},
-    Ceil = Math.ceil,
-    Cos = Math.cos,
-    // dummy object
-    DUMMY_OBJECT = {
-        addEventListener: () => 0,
-        children: [],
-        classList: {
-            add: () => 0,
-            contains: () => false,
-            remove: () => 0,
-            toggle: () => 0,
-        },
-        clientHeight: 0,
-        dataset: {},
-        getAttribute: () => undefined,
-        getAttributeNS: () => undefined,
-        getBoundingClientRect: () => ({bottom: 0, height: 0, left: 0, right: 0, top: 0, width: 0}),
-        offsetHeight: 0,
-        removeAttribute: () => 0,
-        removeAttributeNS: () => 0,
-        setAttribute: () => 0,
-        setAttributeNS: () => 0,
-        style: {
-            getPropertyValue: () => 0,
-            removeProperty: () => 0,
-            setProperty: () => 0,
-        },
-        textContent: '',
-        top: 0,
-        value: '',
-    },
-    Exp = Math.exp,
-    Floor = Math.floor,
-    From = Array.from,
-    HAS_DOCUMENT = (typeof document != 'undefined')? document: null,
-    HAS_GLOBAL = (typeof global != 'undefined')? global: null,
-    IsArray = Array.isArray,
-    IsFloat = value => (Number.isFinite(value) && !Number.isInteger(value)),
-    IsFunction = value => (typeof(value) == 'function'),
-    IsObject = value => (value != null && typeof(value) == 'object'),
-    IsString = value => (typeof(value) == 'string'),
-    Keys = Object.keys,
-    Log = Math.log,
-    Log10 = Math.log10,
-    Lower = text => text? text.toLowerCase(): '',
-    LS = console.log.bind(console),
-    Max = Math.max,
-    Min = Math.min,
-    NAMESPACE_SVG = 'http://www.w3.org/2000/svg',
-    PD = e => e.preventDefault(),
-    PI = Math.PI,
-    Pow = Math.pow,
-    Random = Math.random,
-    Round = Math.round,
-    Sign = Math.sign,
-    Sin = Math.sin,
-    SP = e => e.stopPropagation(),
-    Sqrt = Math.sqrt,
-    Stringify = JSON.stringify.bind(JSON),
-    Tanh = Math.tanh,
-    Uint8From = text => Uint8Array.from(From(text).map(letter => letter.charCodeAt(0))),
-    Upper = text => text? text.toUpperCase(): '';
+const Abs = Math.abs,
+	Assign = Object.assign,
+	Atan = Math.atan,
+	CACHE_COUNTS = {},
+	CACHE_IDS = {},
+	Ceil = Math.ceil,
+	Cos = Math.cos,
+	// dummy object
+	DUMMY_OBJECT = {
+		addEventListener: () => 0,
+		children: [],
+		classList: {
+			add: () => 0,
+			contains: () => false,
+			remove: () => 0,
+			toggle: () => 0,
+		},
+		clientHeight: 0,
+		dataset: {},
+		getAttribute: () => undefined,
+		getAttributeNS: () => undefined,
+		getBoundingClientRect: () => ({bottom: 0, height: 0, left: 0, right: 0, top: 0, width: 0}),
+		offsetHeight: 0,
+		removeAttribute: () => 0,
+		removeAttributeNS: () => 0,
+		setAttribute: () => 0,
+		setAttributeNS: () => 0,
+		style: {
+			getPropertyValue: () => 0,
+			removeProperty: () => 0,
+			setProperty: () => 0,
+		},
+		textContent: '',
+		top: 0,
+		value: '',
+	},
+	Exp = Math.exp,
+	Floor = Math.floor,
+	From = Array.from,
+	HAS_DOCUMENT = (typeof document != 'undefined')? document : null,
+	HAS_GLOBAL = (typeof global != 'undefined')? global : null,
+	IsArray = Array.isArray,
+	IsFloat = value => (Number.isFinite(value) && !Number.isInteger(value)),
+	IsFunction = value => (typeof(value) == 'function'),
+	IsObject = value => (value != null && typeof(value) == 'object'),
+	IsString = value => (typeof(value) == 'string'),
+	Keys = Object.keys,
+	Log = Math.log,
+	Log10 = Math.log10,
+	Lower = text => text? text.toLowerCase() : '',
+	LS = console.log.bind(console),
+	Max = Math.max,
+	Min = Math.min,
+	NAMESPACE_SVG = 'http://www.w3.org/2000/svg',
+	PD = e => e.preventDefault(),
+	PI = Math.PI,
+	Pow = Math.pow,
+	Random = Math.random,
+	Round = Math.round,
+	Sign = Math.sign,
+	Sin = Math.sin,
+	SP = e => e.stopPropagation(),
+	Sqrt = Math.sqrt,
+	Stringify = JSON.stringify.bind(JSON),
+	Tanh = Math.tanh,
+	Uint8From = text => Uint8Array.from(From(text).map(letter => letter.charCodeAt(0))),
+	Upper = text => text? text.toUpperCase() : '';
 
 // global vars
-let animation_frames = {},
-    timeouts = {};
+const animation_frames = {},
+	timeouts = {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,11 +98,11 @@ let animation_frames = {},
  * @returns {Node} found node
  */
 function _(sel, parent) {
-    if (!sel)
-        return null;
-    if (IsObject(sel))
-        return /** @type {Node} */(sel);
-    return (parent || document).querySelector(/** @type {string} */(sel));
+	if (!sel)
+		return null;
+	if (IsObject(sel))
+		return /** @type {Node} */(sel);
+	return (parent || document).querySelector(/** @type {string} */(sel));
 }
 
 /**
@@ -112,26 +112,32 @@ function _(sel, parent) {
  * @returns {!Array<Node>} found nodes
  */
 function A(sel, parent) {
-    if (!sel)
-        return [];
-    if (IsArray(sel))
-        return /** @type {!Array<Node>} */(sel);
-    return (parent || document).querySelectorAll(sel);
+	if (!sel)
+		return [];
+	if (IsArray(sel))
+		return /** @type {!Array<Node>} */(sel);
+	return (parent || document).querySelectorAll(sel);
 }
 
 /**
  * Execute a function on multiple nodes
- * @param {string|Array<Node>} sel CSS selector OR list of nodes
+ * @param {Node|!Array<Node>|string} sel CSS selector OR list of nodes
  * @param {Function} callback (node, index=, array=)
  * @param {Node=} parent
  */
 function E(sel, callback, parent) {
-    if (!sel)
-        return;
-    if (IsArray(sel))
-        sel.forEach(callback);
-    else
-        A(sel, parent).forEach(callback);
+	if (!sel)
+		return;
+	if (IsArray(sel)) {
+		let id = 0;
+		sel.forEach(item => {
+			if (item) callback(item, id++);
+		});
+	}
+	else if (IsObject(sel))
+		callback(sel, 0);
+	else
+		A(sel, parent).forEach(callback);
 }
 
 /**
@@ -141,13 +147,13 @@ function E(sel, callback, parent) {
  * @returns {Node}
  */
 function Id(id, parent) {
-    if (!id)
-        return null;
-    if (IsObject(id))
-        return /** @type {Node} */(id);
-    if (HAS_GLOBAL)
-        return (parent || document).querySelector(`#${id}`);
-    return (parent || document).getElementById(id);
+	if (!id)
+		return null;
+	if (IsObject(id))
+		return /** @type {Node} */(id);
+	if (HAS_GLOBAL)
+		return (parent || document).querySelector('#' + id);
+	return (parent || document).getElementById(id);
 }
 
 // DERIVED NODE FUNCTIONS
@@ -155,85 +161,58 @@ function Id(id, parent) {
 
 /**
  * Change attributes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {!Object} attrs attribute to change
  * @param {Node=} parent
  */
 function Attrs(sel, attrs, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        Keys(attrs).forEach(key => {
-            let value = attrs[key];
-            if (value == undefined)
-                sel.removeAttribute(key);
-            else
-                sel.setAttribute(key, value);
-        });
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        Keys(attrs).forEach(key => {
-            let value = attrs[key];
-            if (value == undefined)
-                node.removeAttribute(key);
-            else
-                node.setAttribute(key, value);
-        });
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		Keys(attrs).forEach(key => {
+			const value = attrs[key];
+			if (value == undefined)
+				node.removeAttribute(key);
+			else
+				node.setAttribute(key, value);
+		});
+	}, parent);
 }
 
 /**
  * Change attributes
- * @param {Node|string} sel
+ * @param {Node|!Array<Node>|string} sel
  * @param {!Object} attrs
  * @param {Node=} parent
  */
 function AttrsNS(sel, attrs, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        Keys(attrs).forEach(key => {
-            let value = attrs[key];
-            if (value == undefined)
-                sel.removeAttributeNS(null, key);
-            else
-                sel.setAttributeNS(null, key, value);
-        });
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        Keys(attrs).forEach(key => {
-            let value = attrs[key];
-            if (value == undefined)
-                node.removeAttributeNS(null, key);
-            else
-                node.setAttributeNS(null, key, value);
-        });
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		Keys(attrs).forEach(key => {
+			const value = attrs[key];
+			if (value == undefined)
+				node.removeAttributeNS(null, key);
+			else
+				node.setAttributeNS(null, key, value);
+		});
+	}, parent);
 }
 
 /**
  * Click event on nodes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * C('img', function() {LS(this.src)})  // print the URL of the image being clicked
  */
 function C(sel, callback, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        sel.onclick = callback;
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        node.onclick = callback;
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		node.onclick = callback;
+	}, parent);
 }
 
 /**
@@ -243,142 +222,87 @@ function C(sel, callback, parent) {
  * @returns {Node}
  */
 function CacheId(id, parent) {
-    // <<
-    CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
-    // >>
-    if (CACHE_IDS[id])
-        return CACHE_IDS[id];
-    let node = Id(id, parent);
-    if (node)
-        CACHE_IDS[id] = node;
-    return node;
+	// <<
+	CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
+	// >>
+	if (CACHE_IDS[id])
+		return CACHE_IDS[id];
+	const node = Id(id, parent);
+	if (node)
+		CACHE_IDS[id] = node;
+	return node;
 }
 
 /**
  * Add / remove classes
- * @param {Node|string} sel CSS selector or node
- * @param {!Array<*>|string} classes [['dn', flag=]], flag:0=add, 1=remove, 2=toggle
+ * @param {Node|!Array<Node>|string} sel CSS selector or node or array of nodes
+ * @param {!Array<*>|string} classes [['dn', flag=]], flag:0=add, 1=remove, -1=toggle
  * @param {boolean|number=} add true for normal behavior (default), otherwise invert all - and +
  * @param {Node?=} parent
  */
 function Class(sel, classes, add=true, parent=null) {
-    if (!sel)
-        return;
+	if (!sel)
+		return;
 
-    // string
-    if (IsString(classes)) {
-        classes = /** @type {string} */(classes);
-        if (IsObject(sel)) {
-            let list = sel.classList;
-            classes.split(' ').forEach(item => {
-                if (!item)
-                    return;
-                let first = item.substr(0, 1),
-                    right = item.substr(1);
-                if (first == '-') {
-                    if (add)
-                        list.remove(right);
-                    else
-                        list.add(right);
-                }
-                else if (first == '+') {
-                    if (add)
-                        list.add(right);
-                    else
-                        list.remove(right);
-                }
-                else if (first == '^')
-                    list.toggle(right);
-                else if (add)
-                    list.add(item);
-                else
-                    list.remove(item);
-            });
-            return;
-        }
-        //
-        E(/** @type {string} */(sel), node => {
-            let list = node.classList;
-            classes.split(' ').forEach(item => {
-                if (!item)
-                    return;
-                let first = item.substr(0, 1),
-                    right = item.substr(1);
-                if (first == '-') {
-                    if (add)
-                        list.remove(right);
-                    else
-                        list.add(right);
-                }
-                else if (first == '+') {
-                    if (add)
-                        list.add(right);
-                    else
-                        list.remove(right);
-                }
-                else if (first == '^')
-                    list.toggle(right);
-                else if (add)
-                    list.add(item);
-                else
-                    list.remove(item);
-            });
-        }, parent);
-        return;
-    }
+	// string
+	if (IsString(classes)) {
+		classes = /** @type {string} */(classes);
+		E(sel, node => {
+			const list = node.classList;
+			classes.split(' ').forEach(item => {
+				if (!item)
+					return;
+				const first = item.substr(0, 1),
+					right = item.substr(1);
+				if (first == '-') {
+					if (add)
+						list.remove(right);
+					else
+						list.add(right);
+				}
+				else if (first == '+') {
+					if (add)
+						list.add(right);
+					else
+						list.remove(right);
+				}
+				else if (first == '^')
+					list.toggle(right);
+				else if (add)
+					list.add(item);
+				else
+					list.remove(item);
+			});
+		}, parent);
+		return;
+	}
 
-    // array
-    classes = /** @type {!Array<!Array<string,number>>} */(classes);
-    if (IsObject(sel)) {
-        let list = sel.classList;
-        for (let [name, flag] of classes) {
-            if (!name)
-                continue;
-            // add
-            if (!flag) {
-                if (add)
-                    list.add(name);
-                else
-                    list.remove(name);
-            }
-            // remove
-            else if (flag > 0) {
-                if (add)
-                    list.remove(name);
-                else
-                    list.add(name);
-            }
-            // toggle
-            else
-                list.toggle(name);
-        }
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        let list = node.classList;
-        for (let [name, flag] of classes) {
-            if (!name)
-                continue;
-            // add
-            if (!flag) {
-                if (add)
-                    list.add(name);
-                else
-                    list.remove(name);
-            }
-            // remove
-            else if (flag > 0) {
-                if (add)
-                    list.remove(name);
-                else
-                    list.add(name);
-            }
-            // toggle
-            else
-                list.toggle(name);
-        }
-    }, parent);
+	// array
+	classes = /** @type {!Array<!Array<string,number>>} */(classes);
+	E(sel, node => {
+		const list = node.classList;
+		for (const [name, flag] of classes) {
+			if (!name)
+				continue;
+			// add
+			if (!flag) {
+				if (add)
+					list.add(name);
+				else
+					list.remove(name);
+			}
+			// remove
+			else if (flag > 0) {
+				if (add)
+					list.remove(name);
+				else
+					list.add(name);
+			}
+			// toggle
+			else
+				list.toggle(name);
+		}
+	}, parent);
 }
 
 /**
@@ -388,33 +312,33 @@ function Class(sel, classes, add=true, parent=null) {
  * @returns {boolean}
  */
 function Contain(list, pattern) {
-    let first = pattern.substr(0, 1),
-        length = pattern.length - 1,
-        right = pattern.substr(1);
+	const first = pattern.slice(0, 1),
+		length = pattern.length - 1,
+		right = pattern.slice(1);
 
-    // starts with
-    if (first == '^') {
-        for (let item of list)
-            if (item.substr(0, length) == right)
-                return true;
-    // ends with
-    } else if (first == '$') {
-        for (let item of list)
-            if (item.substr(-length) == right)
-                return true;
-    // includes
-    } else if (first == '*') {
-        for (let item of list)
-            if (item.indexOf(right) >= 0)
-                return true;
-    }
-    // exact match
-    else if (list.contains)
-        return list.contains(pattern);
-    else
-        return list.indexOf(pattern) >= 0;
+	// starts with
+	if (first == '^') {
+		for (const item of list)
+			if (item.slice(0, length) == right)
+				return true;
+	// ends with
+	} else if (first == '$') {
+		for (const item of list)
+			if (item.slice(-length) == right)
+				return true;
+	// includes
+	} else if (first == '*') {
+		for (const item of list)
+			if (item.indexOf(right) >= 0)
+				return true;
+	}
+	// exact match
+	else if (list.contains)
+		return list.contains(pattern);
+	else
+		return list.indexOf(pattern) >= 0;
 
-    return false;
+	return false;
 }
 
 /**
@@ -428,19 +352,19 @@ function Contain(list, pattern) {
  * @returns {Node} created node
  */
 function CreateNode(tag, html, attrs, children) {
-    let node = document.createElement(tag);
-    if (html)
-        node.innerHTML = html;
-    if (attrs)
-        Keys(attrs).forEach(key => {
-            node.setAttribute(key, attrs[key]);
-        });
+	const node = document.createElement(tag);
+	if (html)
+		node.innerHTML = html;
+	if (attrs)
+		Keys(attrs).forEach(key => {
+			node.setAttribute(key, attrs[key]);
+		});
 
-    if (children)
-        for (let child of children)
-            node.appendChild(child);
+	if (children)
+		for (const child of children)
+			node.appendChild(child);
 
-    return node;
+	return node;
 }
 
 /**
@@ -451,24 +375,24 @@ function CreateNode(tag, html, attrs, children) {
  * @returns {Node} created node
  */
 function CreateSVG(type, attrs, children) {
-    let node = document.createElementNS(NAMESPACE_SVG, type);
-    if (attrs)
-        Keys(attrs).forEach(key => {
-            node.setAttributeNS(null, key, attrs[key]);
-        });
+	const node = document.createElementNS(NAMESPACE_SVG, type);
+	if (attrs)
+		Keys(attrs).forEach(key => {
+			node.setAttributeNS(null, key, attrs[key]);
+		});
 
-    if (children)
-        for (let child of children)
-            node.appendChild(child);
+	if (children)
+		for (const child of children)
+			node.appendChild(child);
 
-    return node;
+	return node;
 }
 
 /**
  * Handle any events on nodes
  * + mouseenter => will use node.addEventListener('mouseenter', callback)
  * + !mouseenter => will use node.onmouseenter = callback
- * @param {Node|string|Window} sel CSS selector or node
+ * @param {Node|!Array<Node>|string|Window} sel CSS selector or node
  * @param {string} events
  * @param {Function} callback
  * @param {!AddEventListenerOptions|boolean=} options
@@ -478,35 +402,25 @@ function CreateSVG(type, attrs, children) {
  * Events(window, '!resize', e => {LS(e)});     // window.onresize = function ...
  */
 function Events(sel, events, callback, options, parent) {
-    if (!sel)
-        return;
+	if (!sel)
+		return;
 
-    let direct;
-    if (events.slice(0, 1) == '!') {
-        events = events.slice(1);
-        direct = true;
-    }
-    else
-        direct = false;
+	let direct;
+	if (events.slice(0, 1) == '!') {
+		events = events.slice(1);
+		direct = true;
+	}
+	else
+		direct = false;
 
-    if (IsObject(sel)) {
-        events.split(' ').forEach(event => {
-            if (direct)
-                sel[`on${event}`] = callback;
-            else
-                sel.addEventListener(event, callback, options);
-        });
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        events.split(' ').forEach(event => {
-            if (direct)
-                node[`on${event}`] = callback;
-            else
-                node.addEventListener(event, callback, options);
-        });
-    }, parent);
+	E(sel, node => {
+		events.split(' ').forEach(event => {
+			if (direct)
+				node['on' + event] = callback;
+			else
+				node.addEventListener(event, callback, options);
+		});
+	}, parent);
 }
 
 /**
@@ -516,12 +430,12 @@ function Events(sel, events, callback, options, parent) {
  * @returns {boolean}
  */
 function HasClass(node, class_) {
-    if (IsString(node))
-        node = _(node);
-    if (!node)
-        return false;
+	if (IsString(node))
+		node = _(node);
+	if (!node)
+		return false;
 
-    return node.classList && node.classList.contains(class_);
+	return node.classList && node.classList.contains(class_);
 }
 
 /**
@@ -531,88 +445,82 @@ function HasClass(node, class_) {
  * @returns {boolean}
  */
 function HasClasses(node, classes) {
-    if (IsString(node))
-        node = _(node);
-    if (!node)
-        return false;
+	if (IsString(node))
+		node = _(node);
+	if (!node)
+		return false;
 
-    let list = node.classList;
-    if (!list)
-        return false;
+	const list = node.classList;
+	if (!list)
+		return false;
 
-    // match all classes, ex: 'visible -shown'
-    for (let item of classes.split(' ')) {
-        let a = item.substr(0, 1),
-            b = item.substr(1);
-        if (a == '-') {
-            if (Contain(list, b))
-                return false;
-        }
-        else if (a == '+') {
-            if (!Contain(list, b))
-                return false;
-        }
-        else if (!item.split('|').some(key => Contain(list, key)))
-            return false;
-    }
+	// match all classes, ex: 'visible -shown'
+	for (const item of classes.split(' ')) {
+		const a = item.substr(0, 1),
+			b = item.substr(1);
+		if (a == '-') {
+			if (Contain(list, b))
+				return false;
+		}
+		else if (a == '+') {
+			if (!Contain(list, b))
+				return false;
+		}
+		else if (!item.split('|').some(key => Contain(list, key)))
+			return false;
+	}
 
-    return true;
+	return true;
 }
 
 /**
  * Hide nodes
  * + handle dn
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  */
 function Hide(sel, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        sel.classList.remove('dn');
-        sel.style.display = 'none';
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        node.classList.remove('dn');
-        node.style.display = 'none';
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		node.classList.remove('dn');
+		node.style.display = 'none';
+	}, parent);
 }
 
 /**
  * Get / set HTML
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {string|number=} html
  * @param {Node=} parent
  * @returns {string} html of the first matched node
  */
 function HTML(sel, html, parent) {
-    if (!sel)
-        return '';
-    if (IsObject(sel)) {
-        if (html !== undefined) {
-            html = html + '';
-            if (html != sel.innerHTML)
-                sel.innerHTML = html;
-            return html;
-        }
-        return sel.innerHTML;
-    }
-    //
-    if (html === undefined) {
-        let node = _(sel, parent);
-        return node? node.innerHTML: '';
-    }
-    html = html + '';
-    let result;
-    E(/** @type {string} */(sel), node => {
-        if (html != node.innerHTML)
-            node.innerHTML = html;
-        if (result === undefined)
-            result = html;
-    }, parent);
-    return result || '';
+	if (!sel)
+		return '';
+	if (IsObject(sel)) {
+		if (html !== undefined) {
+			html = html + '';
+			if (html != sel.innerHTML)
+				sel.innerHTML = html;
+			return html;
+		}
+		return sel.innerHTML;
+	}
+	//
+	if (html === undefined) {
+		const node = _(sel, parent);
+		return node? node.innerHTML : '';
+	}
+	html = html + '';
+	let result;
+	E(sel, node => {
+		if (html != node.innerHTML)
+			node.innerHTML = html;
+		if (result === undefined)
+			result = html;
+	}, parent);
+	return result || '';
 }
 
 /**
@@ -621,38 +529,33 @@ function HTML(sel, html, parent) {
  * @returns {number} computed index
  */
 function Index(node) {
-    if (IsString(node))
-        node = _(node);
-    if (!node)
-        return -1;
+	if (IsString(node))
+		node = _(node);
+	if (!node)
+		return -1;
 
-    let index = 0;
-    while (node) {
-        node = node.previousElementSibling;
-        ++index;
-    }
-    return index;
+	let index = 0;
+	while (node) {
+		node = node.previousElementSibling;
+		++index;
+	}
+	return index;
 }
 
 /**
  * Input event on nodes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * Input('input[sb-field=username]', e => {LS(e)})   // username is being modified
  */
 function Input(sel, callback, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        sel.oninput = callback;
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        node.oninput = callback;
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		node.oninput = callback;
+	}, parent);
 }
 
 /**
@@ -662,17 +565,17 @@ function Input(sel, callback, parent) {
  * @param {boolean=} prepend should the nodes be preprended or appended?
  */
 function InsertNodes(parent, nodes, prepend) {
-    if (IsString(parent))
-        parent = _(parent);
-    if (!parent)
-        return;
+	if (IsString(parent))
+		parent = _(parent);
+	if (!parent)
+		return;
 
-    let child = parent.firstChild;
-    for (let node of nodes)
-        if (prepend && child)
-            parent.insertBefore(node, child);
-        else
-            parent.appendChild(node);
+	const child = parent.firstChild;
+	for (const node of nodes)
+		if (prepend && child)
+			parent.insertBefore(node, child);
+		else
+			parent.appendChild(node);
 }
 
 /**
@@ -686,90 +589,84 @@ function InsertNodes(parent, nodes, prepend) {
  * @returns {Node} parent node or null or undefined
  */
 function Parent(node, {tag, class_, attrs, self}={}) {
-    if (IsString(node))
-        node = _(node);
-    if (!node)
-        return null;
+	if (IsString(node))
+		node = _(node);
+	if (!node)
+		return null;
 
-    let aitems = attrs? attrs.split(' '): [],
-        citems = class_? class_.split(' '): [],
-        parent = /** @type {Node} */(node),
-        tags = tag? tag.split(' '): null;
+	const aitems = attrs? attrs.split(' ') : [],
+		citems = class_? class_.split(' ') : [],
+		tags = tag? tag.split(' ') : null;
+	let parent = /** @type {Node} */(node);
 
-    for (let depth = 0; ; ++depth) {
-        if (depth || !self || parent.nodeType != 1) {
-            parent = parent.parentNode;
-            if (!parent || !parent.tagName)
-                return null;
-        }
-        let ok = true;
+	for (let depth = 0; ; ++depth) {
+		if (depth || !self || parent.nodeType != 1) {
+			parent = parent.parentNode;
+			if (!parent || !parent.tagName)
+				return null;
+		}
+		let ok = true;
 
-        // 1) tag
-        if (tags && !tags.includes(Lower(parent.tagName)))
-            continue;
+		// 1) tag
+		if (tags && !tags.includes(Lower(parent.tagName)))
+			continue;
 
-        // 2) match all attrs
-        for (let item of aitems) {
-            let [key, value] = item.split('='),
-                attr = parent.getAttribute(key);
-            if ((!attr && !parent.hasOwnProperty(key)) || (value && attr != value)) {
-                ok = false;
-                break;
-            }
-        }
-        if (!ok)
-            continue;
+		// 2) match all attrs
+		for (const item of aitems) {
+			const [key, value] = item.split('='),
+				attr = parent.getAttribute(key);
+			if ((!attr && !parent.hasOwnProperty(key)) || (value && attr != value)) {
+				ok = false;
+				break;
+			}
+		}
+		if (!ok)
+			continue;
 
-        // 3) match all classes, ex: 'visible -shown'
-        let list = parent.classList;
-        for (let item of citems) {
-            let a = item.substr(0, 1),
-                b = item.substr(1);
-            if (a == '-') {
-                if (Contain(list, b)) {
-                    ok = false;
-                    break;
-                }
-            }
-            else if (a == '+') {
-                if (!Contain(list, b)) {
-                    ok = false;
-                    break;
-                }
-            }
-            else if (!item.split('|').some(key => Contain(list, key))) {
-                ok = false;
-                break;
-            }
-        }
-        if (ok)
-            break;
-    }
+		// 3) match all classes, ex: 'visible -shown'
+		const list = parent.classList;
+		for (const item of citems) {
+			const a = item.substr(0, 1),
+				b = item.substr(1);
+			if (a == '-') {
+				if (Contain(list, b)) {
+					ok = false;
+					break;
+				}
+			}
+			else if (a == '+') {
+				if (!Contain(list, b)) {
+					ok = false;
+					break;
+				}
+			}
+			else if (!item.split('|').some(key => Contain(list, key))) {
+				ok = false;
+				break;
+			}
+		}
+		if (ok)
+			break;
+	}
 
-    return parent;
+	return parent;
 }
 
 /**
  * Show / hide nodes
  * + handle dn
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {*=} show true to show the node
  * @param {Node=} parent
  * @param {string=} mode to use for node.display, by default '' but could be block
  */
 function S(sel, show, parent, mode='') {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        sel.classList.remove('dn');
-        sel.style.display = show? mode: 'none';
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        node.classList.remove('dn');
-        node.style.display = show? mode: 'none';
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		node.classList.remove('dn');
+		node.style.display = show? mode : 'none';
+	}, parent);
 }
 
 /**
@@ -779,7 +676,7 @@ function S(sel, show, parent, mode='') {
  * @returns {Node|Object} found node or {}
  */
 function Safe(sel, parent) {
-    return _(sel, parent) || Assign({}, DUMMY_OBJECT);
+	return _(sel, parent) || Assign({}, DUMMY_OBJECT);
 }
 
 /**
@@ -789,7 +686,7 @@ function Safe(sel, parent) {
  * @returns {Node|Object} found node or {}
  */
 function SafeId(sel, parent) {
-    return Id(sel, parent) || Assign({}, DUMMY_OBJECT);
+	return Id(sel, parent) || Assign({}, DUMMY_OBJECT);
 }
 
 /**
@@ -800,327 +697,212 @@ function SafeId(sel, parent) {
  * @returns {number|undefined}
  */
 function ScrollDocument(top, smooth, offset=0) {
-    let scroll = document.scrollingElement;
-    if (top != undefined) {
-        // top can be a selector too
-        if (isNaN(top)) {
-            top = _(/** @type {Node|string} */(top));
-            if (!top)
-                return;
-            let value = 0;
-            while (top) {
-                value += top.offsetTop;
-                top = top.offsetParent;
-            }
-            top = value;
-        }
-        if (smooth) {
-            window.scrollTo({top: Max(0, top + offset), behavior: 'smooth'});
-            return top;
-        }
-        scroll.scrollTop = top;
-    }
-    return scroll.scrollTop;
+	const scroll = document.scrollingElement;
+	if (top != undefined) {
+		// top can be a selector too
+		if (isNaN(top)) {
+			top = _(/** @type {Node|string} */(top));
+			if (!top)
+				return;
+			let value = 0;
+			while (top) {
+				value += top.offsetTop;
+				top = top.offsetParent;
+			}
+			top = value;
+		}
+		if (smooth) {
+			window.scrollTo({top: Max(0, top + offset), behavior: 'smooth'});
+			return top;
+		}
+		scroll.scrollTop = top;
+	}
+	return scroll.scrollTop;
 }
 
 /**
  * Show nodes
  * + handle dn
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  * @param {string=} mode to use for node.display, by default '' but could be block
  */
 function Show(sel, parent, mode='') {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        sel.classList.remove('dn');
-        sel.style.display = mode;
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        node.classList.remove('dn');
-        node.style.display = mode;
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		node.classList.remove('dn');
+		node.style.display = mode;
+	}, parent);
 }
 
 /**
  * Change the style of nodes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {!Array<*>|string} styles [['font-size', 10, flag=]], flag:0=add, 1=remove, 2=toggle
  * @param {boolean=} add to set/add the style, otherwise remove it
  * @param {Node?=} parent
  */
 function Style(sel, styles, add=true, parent=null) {
-    if (!sel)
-        return;
+	if (!sel)
+		return;
 
-    // string
-    if (IsString(styles)) {
-        styles = /** @type {string} */(styles);
-        if (IsObject(sel)) {
-            let list = sel.style;
-            styles.split(/\s*;+\s*/).forEach(item => {
-                let split,
-                    first = item.substr(0, 1),
-                    right = item.substr(1);
-                if (first == '-') {
-                    split = right.split(':');
-                    if (add)
-                        list.removeProperty(split[0]);
-                    else
-                        list.setProperty(split[0], split[1]);
-                } else if (first == '+') {
-                    split = right.split(':');
-                    if (add)
-                        list.setProperty(split[0], split[1]);
-                    else
-                        list.removeProperty(split[0]);
-                } else if (first == '^') {
-                    split = right.split(':');
-                    if (list.getPropertyValue(split[0]))
-                        list.removeProperty(split[0]);
-                    else
-                        list.setProperty(split[0], split[1]);
-                } else {
-                    split = item.split(':');
-                    if (add)
-                        list.setProperty(split[0], split[1]);
-                    else
-                        list.removeProperty(split[0]);
-                }
-            });
-            return;
-        }
-        //
-        E(/** @type {string} */(sel), node => {
-            let list = node.style;
-            styles.split(/\s*;+\s*/).forEach(item => {
-                let split,
-                    first = item.substr(0, 1),
-                    right = item.substr(1);
-                if (first == '-') {
-                    split = right.split(':');
-                    if (add)
-                        list.removeProperty(split[0]);
-                    else
-                        list.setProperty(split[0], split[1]);
-                } else if (first == '+') {
-                    split = right.split(':');
-                    if (add)
-                        list.setProperty(split[0], split[1]);
-                    else
-                        list.removeProperty(split[0]);
-                } else if (first == '^') {
-                    split = right.split(':');
-                    if (list.getPropertyValue(split[0]))
-                        list.removeProperty(split[0]);
-                    else
-                        list.setProperty(split[0], split[1]);
-                } else {
-                    split = item.split(':');
-                    if (add)
-                        list.setProperty(split[0], split[1]);
-                    else
-                        list.removeProperty(split[0]);
-                }
-            });
-        }, parent);
-    }
+	// string
+	if (IsString(styles)) {
+		styles = /** @type {string} */(styles);
+		E(sel, node => {
+			let list = node.style;
+			styles.split(/\s*;+\s*/).forEach(item => {
+				const first = item.substr(0, 1),
+					right = item.substr(1);
+				let split;
 
-    // array
-    styles = /** @type {!Array<!Array<string,*,number>>} */(styles);
-    if (IsObject(sel)) {
-        let list = sel.style;
-        for (let [name, value, flag] of styles) {
-            if (!name)
-                continue;
-            // add
-            if (!flag) {
-                if (add)
-                    list.setProperty(name, value);
-                else
-                    list.removeProperty(name);
-            }
-            // remove
-            else if (flag > 0) {
-                if (add)
-                    list.removeProperty(name);
-                else
-                    list.setProperty(name, value);
-            }
-            // toggle
-            else if (list.getPropertyValue(name))
-                list.removeProperty(name);
-            else
-                list.setProperty(name, value);
-        }
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        let list = node.style;
-        for (let [name, value, flag] of styles) {
-            if (!name)
-                continue;
-            // add
-            if (!flag) {
-                if (add)
-                    list.setProperty(name, value);
-                else
-                    list.removeProperty(name);
-            }
-            // remove
-            else if (flag > 0) {
-                if (add)
-                    list.removeProperty(name);
-                else
-                    list.setProperty(name, value);
-                break;
-            }
-            // toggle
-            else if (list.getPropertyValue(name))
-                list.removeProperty(name);
-            else
-                list.setProperty(name, value);
-        }
-    }, parent);
+				if (first == '-') {
+					split = right.split(':');
+					if (add)
+						list.removeProperty(split[0]);
+					else
+						list.setProperty(split[0], split[1]);
+				} else if (first == '+') {
+					split = right.split(':');
+					if (add)
+						list.setProperty(split[0], split[1]);
+					else
+						list.removeProperty(split[0]);
+				} else if (first == '^') {
+					split = right.split(':');
+					if (list.getPropertyValue(split[0]))
+						list.removeProperty(split[0]);
+					else
+						list.setProperty(split[0], split[1]);
+				} else {
+					split = item.split(':');
+					if (add)
+						list.setProperty(split[0], split[1]);
+					else
+						list.removeProperty(split[0]);
+				}
+			});
+		}, parent);
+	}
+
+	// array
+	styles = /** @type {!Array<!Array<string,*,number>>} */(styles);
+	E(sel, node => {
+		const list = node.style;
+		for (const [name, value, flag] of styles) {
+			if (!name)
+				continue;
+			// add
+			if (!flag) {
+				if (add)
+					list.setProperty(name, value);
+				else
+					list.removeProperty(name);
+			}
+			// remove
+			else if (flag > 0) {
+				if (add)
+					list.removeProperty(name);
+				else
+					list.setProperty(name, value);
+				break;
+			}
+			// toggle
+			else if (list.getPropertyValue(name))
+				list.removeProperty(name);
+			else
+				list.setProperty(name, value);
+		}
+	}, parent);
 }
 
 /**
  * Get / set the textContent of nodes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {string|number=} text
  * @param {Node=} parent
  * @returns {string}
  */
 function TEXT(sel, text, parent) {
-    if (!sel)
-        return '';
-    if (IsObject(sel)) {
-        if (text !== undefined) {
-            text = text + '';
-            if (!sel.childElementCount) {
-                let child = sel.firstChild;
-                if (!child)
-                    sel.appendChild(document.createTextNode(text));
-                else if (child.nodeType == 3) {
-                    if (child.nodeValue != text)
-                        child.nodeValue = text;
-                }
-                else if (sel.innerHTML != text)
-                    sel.textContent = text;
-            }
-            else if (sel.innerHTML != text)
-                 sel.textContent = text;
-            return text;
-        }
-        return sel.textContent.trim();
-    }
-    //
-    if (text === undefined) {
-        let node = _(sel, parent);
-        return node? node.textContent.trim(): '';
-    }
-    text = text + '';
-    let result;
-    E(/** @type {string} */(sel), node => {
-        if (!node.childElementCount) {
-            let child = node.firstChild;
-            if (!child)
-                node.appendChild(document.createTextNode(/** @type {string} */(text)));
-            else if (child.nodeType == 3) {
-                if (child.nodeValue != text)
-                    child.nodeValue = text;
-            }
-            else if (node.innerHTML != text)
-                node.textContent = text;
-        }
-        else if (node.innerHTML != text)
-            node.textContent = text;
-        if (result === undefined)
-            result = text;
-    }, parent);
-    return result || '';
+	if (!sel)
+		return '';
+	if (text === undefined) {
+		const node = _(sel, parent);
+		return node? node.textContent.trim() : '';
+	}
+	//
+	text = text + '';
+	let result;
+	E(sel, node => {
+		if (!node.childElementCount) {
+			const child = node.firstChild;
+			if (!child)
+				node.appendChild(document.createTextNode(/** @type {string} */(text)));
+			else if (child.nodeType == 3) {
+				if (child.nodeValue != text)
+					child.nodeValue = text;
+			}
+			else if (node.innerHTML != text)
+				node.textContent = text;
+		}
+		else if (node.innerHTML != text)
+			node.textContent = text;
+		if (result === undefined)
+			result = text;
+	}, parent);
+	return result || '';
 }
 
 /**
  * Get / set TEXT/HTML of nodes
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {string|number=} text
  * @param {Node=} parent
  * @returns {string}
  */
 function TextHTML(sel, text, parent) {
-    if (!sel)
-        return '';
-    if (IsObject(sel)) {
-        if (text !== undefined) {
-            text = text + '';
-            if (!sel.childElementCount && !text.includes('<')) {
-                let child = sel.firstChild;
-                if (!child)
-                    sel.appendChild(document.createTextNode(text));
-                else if (child.nodeType == 3) {
-                    if (child.nodeValue != text)
-                        child.nodeValue = text;
-                }
-                else if (sel.innerHTML != text)
-                    sel.textContent = text;
-                return text;
-            }
-            else if (sel.innerHTML != text)
-                sel.innerHTML = text;
-            return text;
-        }
-        return sel.textContent.trim();
-    }
-    //
-    if (text === undefined) {
-        let node = _(sel, parent);
-        return node? node.textContent.trim(): '';
-    }
-    text = text + '';
-    let is_html = (text.includes('<')),
-        result;
-    E(/** @type {string} */(sel), node => {
-        if (!is_html && !node.childElementCount) {
-            let child = node.firstChild;
-            if (!child)
-                node.appendChild(document.createTextNode(/** @type {string} */(text)));
-            else if (child.nodeType == 3) {
-                if (child.nodeValue != text)
-                    child.nodeValue = text;
-            }
-            else if (node.innerHTML != text)
-                node.textContent = text;
-        }
-        else if (node.innerHTML != text)
-            node.innerHTML = text;
-        if (result === undefined)
-            result = text;
-    }, parent);
-    return result || '';
+	if (!sel)
+		return '';
+	if (text === undefined) {
+		const node = _(sel, parent);
+		return node? node.textContent.trim() : '';
+	}
+	text = text + '';
+	const is_html = (text.includes('<'));
+	let result;
+	E(sel, node => {
+		if (!is_html && !node.childElementCount) {
+			const child = node.firstChild;
+			if (!child)
+				node.appendChild(document.createTextNode(/** @type {string} */(text)));
+			else if (child.nodeType == 3) {
+				if (child.nodeValue != text)
+					child.nodeValue = text;
+			}
+			else if (node.innerHTML != text)
+				node.textContent = text;
+		}
+		else if (node.innerHTML != text)
+			node.innerHTML = text;
+		if (result === undefined)
+			result = text;
+	}, parent);
+	return result || '';
 }
 
 /**
  * Toggle nodes
  * + handle dn
- * @param {Node|string} sel CSS selector or node
+ * @param {Node|!Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  */
 function Toggle(sel, parent) {
-    if (!sel)
-        return;
-    if (IsObject(sel)) {
-        S(sel, !Visible(sel));
-        return;
-    }
-    //
-    E(/** @type {string} */(sel), node => {
-        S(node, !Visible(node));
-    }, parent);
+	if (!sel)
+		return;
+	E(sel, node => {
+		S(node, !Visible(node));
+	}, parent);
 }
 
 /**
@@ -1130,24 +912,20 @@ function Toggle(sel, parent) {
  * @returns {boolean?} true if ALL nodes are visible
  */
 function Visible(sel, parent) {
-    if (!sel)
-        return null;
-    if (IsObject(sel)) {
-        if (sel.classList.contains('dn'))
-            return false;
-        return sel.style.display != 'none' && sel.style.visibility != 'hidden';
-    }
-    //
-    let nodes = A(/** @type {string} */(sel), parent);
-    if (!nodes.length)
-        return false;
-    for (let node of nodes) {
-        if (node.classList.contains('dn'))
-            return false;
-        if (node.style.display == 'none' || node.style.visibility == 'hidden')
-            return false;
-    }
-    return true;
+	if (!sel)
+		return null;
+	let visible;
+	E(sel, node => {
+		if (visible == false)
+			return;
+		else if (node.classList.contains('dn'))
+			visible = false;
+		else if (node.style.display == 'none' || node.style.visibility == 'hidden')
+			visible = false;
+		else
+			visible = true;
+	}, parent);
+	return visible;
 }
 
 // NON-NODE FUNCTIONS
@@ -1161,17 +939,18 @@ function Visible(sel, parent) {
  * @param {boolean=} is_interval
  */
 function AddTimeout(name, func, timeout, is_interval) {
-    ClearTimeout(name);
-    if (timeout < 0)
-        return;
+	ClearTimeout(name);
+	if (timeout < 0)
+		return;
 
-    if (timeout)
-        timeouts[name] = [
-            is_interval? setInterval(func, timeout): setTimeout(() => {delete timeouts[name]; func();}, timeout),
-            is_interval? 1: 0,
-        ];
-    else
-        func();
+	if (timeout)
+		timeouts[name] = [
+			is_interval? setInterval(func, timeout) : setTimeout(() => {delete timeouts[name]; func();}, timeout),
+			is_interval? 1 : 0,
+			Now(),
+		];
+	else
+		func();
 }
 
 /**
@@ -1179,16 +958,16 @@ function AddTimeout(name, func, timeout, is_interval) {
  * @param {string} name
  */
 function ClearTimeout(name) {
-    let timeout = timeouts[name];
-    if (!timeout)
-        return;
+	const timeout = timeouts[name];
+	if (!timeout)
+		return;
 
-    if (timeout[1])
-        clearInterval(timeout[0]);
-    else
-        clearTimeout(timeout[0]);
+	if (timeout[1])
+		clearInterval(timeout[0]);
+	else
+		clearTimeout(timeout[0]);
 
-    delete timeouts[name];
+	delete timeouts[name];
 }
 
 /**
@@ -1199,13 +978,13 @@ function ClearTimeout(name) {
  * @returns {number|*}
  */
 function AnimationFrame(name, callback, direct) {
-    CancelAnimationFrame(name);
-    if (direct)
-        return callback();
+	CancelAnimationFrame(name);
+	if (direct)
+		return callback();
 
-    let handle = requestAnimationFrame(() => callback());
-    animation_frames[name] = handle;
-    return handle;
+	const handle = requestAnimationFrame(() => callback());
+	animation_frames[name] = handle;
+	return handle;
 }
 
 /**
@@ -1214,9 +993,9 @@ function AnimationFrame(name, callback, direct) {
  * @returns {!Array<*>}
  */
 function ArrayJS(vector) {
-    if (vector.size)
-        vector = Array(vector.size()).fill(0).map((_, id) => vector.get(id));
-    return /** @type {!Array<*>} */(vector);
+	if (vector.size)
+		vector = Array(vector.size()).fill(0).map((_, id) => vector.get(id));
+	return /** @type {!Array<*>} */(vector);
 }
 
 /**
@@ -1224,11 +1003,11 @@ function ArrayJS(vector) {
  * @param {string} name
  */
 function CancelAnimationFrame(name) {
-    let handle = animation_frames[name];
-    if (!handle)
-        return;
-    cancelAnimationFrame(handle);
-    delete animation_frames[name];
+	const handle = animation_frames[name];
+	if (!handle)
+		return;
+	cancelAnimationFrame(handle);
+	delete animation_frames[name];
 }
 
 /**
@@ -1243,9 +1022,9 @@ function CancelAnimationFrame(name) {
  * @returns {number} clamped number
  */
 function Clamp(number, min, max, min_set) {
-    return (number < min)?
-        (Number.isFinite(/** @type {number} */(min_set))? /** @type {number} */(min_set): min)
-    : ((!isNaN(max) && number > max)? max: number);
+	return (number < min)?
+		(Number.isFinite(/** @type {number} */(min_set))? /** @type {number} */(min_set) : min)
+	: ((!isNaN(max) && number > max)? max : number);
 }
 
 /**
@@ -1254,10 +1033,12 @@ function Clamp(number, min, max, min_set) {
  * @returns {!Object}
  */
 function Clear(dico) {
-    Keys(dico).forEach(key => {
-        delete dico[key];
-    });
-    return dico;
+	if (!dico)
+		return;
+	Keys(dico).forEach(key => {
+		delete dico[key];
+	});
+	return dico;
 }
 
 /**
@@ -1267,26 +1048,35 @@ function Clear(dico) {
  * @param {Function=} callback
  */
 function CopyClipboard(text, callback) {
-    let clipboard = navigator['clipboard'];
-    if (clipboard) {
-        clipboard.writeText(text).then(() => {
-            if (callback)
-                callback();
-        });
-    }
-    // support for old browsers
-    else {
-        let node = CreateNode('input');
-        node.value = text;
-        Style(node, [['left', '-9999px'], ['position', 'absolute']]);
-        document.body.appendChild(node);
-        node.select();
-        if (document.execCommand)
-            document.execCommand('copy');
-        document.body.removeChild(node);
-        if (callback)
-            callback();
-    }
+	const clipboard = navigator['clipboard'];
+	if (clipboard) {
+		clipboard.writeText(text).then(() => {
+			if (callback)
+				callback();
+		});
+	}
+	// support for old browsers
+	else {
+		const node = CreateNode('input');
+		node.value = text;
+		Style(node, [['left', '-9999px'], ['position', 'absolute']]);
+		document.body.appendChild(node);
+		node.select();
+		if (document.execCommand)
+			document.execCommand('copy');
+		document.body.removeChild(node);
+		if (callback)
+			callback();
+	}
+}
+
+/**
+ * Make a deep copy of an object
+ * @param {Object} object
+ * @returns {Object}
+ */
+function DeepCopy(object) {
+	return ParseJSON(Stringify(object));
 }
 
 /**
@@ -1297,12 +1087,12 @@ function CopyClipboard(text, callback) {
  * @returns {!Array} dico[key]
  */
 function DefaultArray(dico, key, def) {
-    let child = dico[key];
-    if (child === undefined) {
-        dico[key] = def;
-        child = dico[key];
-    }
-    return child;
+	let child = dico[key];
+	if (child === undefined) {
+		dico[key] = def;
+		child = dico[key];
+	}
+	return child;
 }
 
 /**
@@ -1312,10 +1102,10 @@ function DefaultArray(dico, key, def) {
  * @returns {number}
  */
 function DefaultFloat(value, def) {
-    if (Number.isFinite(/** @type {number} */(value)))
-        return /** @type {number} */(value);
-    value = parseFloat(value);
-    return isNaN(value)? def: value;
+	if (Number.isFinite(/** @type {number} */(value)))
+		return /** @type {number} */(value);
+	value = parseFloat(value);
+	return isNaN(value)? def : value;
 }
 
 /**
@@ -1325,10 +1115,10 @@ function DefaultFloat(value, def) {
  * @returns {number|string|boolean}
  */
 function DefaultInt(value, def) {
-    if (Number.isInteger(/** @type {number} */(value)))
-        return /** @type {number} */(value);
-    value = parseInt(value, 10);
-    return isNaN(value)? def: value;
+	if (Number.isInteger(/** @type {number} */(value)))
+		return /** @type {number} */(value);
+	value = parseInt(value, 10);
+	return isNaN(value)? def : value;
 }
 
 /**
@@ -1339,12 +1129,12 @@ function DefaultInt(value, def) {
  * @returns {!Object} dico[key]
  */
 function DefaultObject(dico, key, def) {
-    let child = dico[key];
-    if (child === undefined) {
-        dico[key] = def;
-        child = dico[key];
-    }
-    return child;
+	let child = dico[key];
+	if (child === undefined) {
+		dico[key] = def;
+		child = dico[key];
+	}
+	return child;
 }
 
 /**
@@ -1355,35 +1145,35 @@ function DefaultObject(dico, key, def) {
  * @param {string=} space JSON space for pretty output
  */
 function DownloadObject(object, name, mode, space) {
-    let text,
-        node = document.createElement('a');
+	const node = document.createElement('a');
+	let text;
 
-    if (mode == 1)
-        text = object;
-    else {
-        let json, type_;
-        if (mode == 2) {
-            if (!IsString(object))
-                return;
-            json = object;
-            type_ = 'plain';
-        }
-        else {
-            json = Stringify(object, null, space);
-            type_ = 'json';
-        }
-        // add a newline to formatted JSON
-        if (space && json.slice(-1) != '\n')
-            json += '\n';
-        text = `data:text/${type_};charset=utf-8,${encodeURIComponent(/** @type {string} */(json))}`;
-    }
+	if (mode == 1)
+		text = object;
+	else {
+		let json, type_;
+		if (mode == 2) {
+			if (!IsString(object))
+				return;
+			json = object;
+			type_ = 'plain';
+		}
+		else {
+			json = Stringify(object, null, space);
+			type_ = 'json';
+		}
+		// add a newline to formatted JSON
+		if (space && json.slice(-1) != '\n')
+			json += '\n';
+		text = `data:text/${type_};charset=utf-8,${encodeURIComponent(/** @type {string} */(json))}`;
+	}
 
-    node.setAttribute('href', /** @type {string} */(text));
-    node.setAttribute('download', name);
-     // required for firefox
-    document.body.appendChild(node);
-    node.click();
-    node.remove();
+	node.setAttribute('href', /** @type {string} */(text));
+	node.setAttribute('download', name);
+	 // required for firefox
+	document.body.appendChild(node);
+	node.click();
+	node.remove();
 }
 
 /**
@@ -1394,28 +1184,28 @@ function DownloadObject(object, name, mode, space) {
  * @returns {string?}
  */
 function Format(vector, sep=', ', align=undefined) {
-    // null, undefined
-    if (vector == null)
-        return null;
-    // [1, 2, 3]
-    if (IsArray(vector))
-        return vector.map(value => Format(IsArray(value)? value[0]: value, sep, align)).join(sep);
-    // Set()
-    else if (vector instanceof Set)
-        return vector.size + '';
-    // dict or quaternion, vector3, ...
-    else if (vector instanceof Object) {
-        let items = [];
-        Keys(vector).forEach(key => {
-            let value = vector[key];
-            if (Number.isFinite(value))
-                items.push(FormatFloat(value, align));
-        });
-        return items.join(sep);
-    }
+	// null, undefined
+	if (vector == null)
+		return null;
+	// [1, 2, 3]
+	if (IsArray(vector))
+		return vector.map(value => Format(IsArray(value)? value[0] : value, sep, align)).join(sep);
+	// Set()
+	else if (vector instanceof Set)
+		return vector.size + '';
+	// dict or quaternion, vector3, ...
+	else if (vector instanceof Object) {
+		const items = [];
+		Keys(vector).forEach(key => {
+			const value = vector[key];
+			if (Number.isFinite(value))
+				items.push(FormatFloat(value, align));
+		});
+		return items.join(sep);
+	}
 
-    // float, int, text ...
-    return FormatFloat(/** @type {number|string} */(vector), align);
+	// float, int, text ...
+	return FormatFloat(/** @type {number|string} */(vector), align);
 }
 
 /**
@@ -1425,17 +1215,17 @@ function Format(vector, sep=', ', align=undefined) {
  * @returns {string}
  */
 function FormatFloat(text, align) {
-    if (IsFloat(text))
-        text = /** @type {number} */(text).toFixed(3);
-    if (text === '-0.000' || text === '0.000')
-        text = '0';
+	if (IsFloat(text))
+		text = /** @type {number} */(text).toFixed(3);
+	if (text === '-0.000' || text === '0.000')
+		text = '0';
 
-    if (align) {
-        text = `${text}`;
-        if (text.length < align)
-            text = ('        ' + text).slice(-align);
-    }
-    return text + '';
+	if (align) {
+		text = text + '';
+		if (text.length < align)
+			text = ('        ' + text).slice(-align);
+	}
+	return text + '';
 }
 
 /**
@@ -1444,7 +1234,7 @@ function FormatFloat(text, align) {
  * @returns {string}
  */
 function FormatPercent(value) {
-    return isNaN(value)? '-': `${Round(value * 10000) / 100}%`;
+	return isNaN(value)? '-' : Round(value * 10000) / 100 + '%';
 }
 
 /**
@@ -1458,42 +1248,42 @@ function FormatPercent(value) {
  * @returns {string}
  */
 function FormatUnit(number, def, keep_decimal, is_si=true) {
-    let unit = '';
+	let unit = '';
 
-    if (isNaN(number)) {
-        if (def !== undefined)
-            return def;
+	if (isNaN(number)) {
+		if (def !== undefined)
+			return def;
 
-        // isNaN will return true for 'hello', but Number.isNaN won't
-        if (Number.isNaN(/** @type {number} */(number)))
-            number = 'N/A';
-        else
-            number = `${number}`;
-    }
-    else if (number == Infinity)
-        return `${number}`;
-    else {
-        if (number >= 1e9) {
-            number /= 1e8;
-            unit = is_si? 'G': 'B';
-        }
-        else if (number >= 1e6) {
-            number /= 1e5;
-            unit = 'M';
-        }
-        else if (number > 1000) {
-            number /= 100;
-            unit = 'k';
-        }
-        else
-            number *= 10;
+		// isNaN will return true for 'hello', but Number.isNaN won't
+		if (Number.isNaN(/** @type {number} */(number)))
+			number = 'N/A';
+		else
+			number = number + '';
+	}
+	else if (number == Infinity)
+		return number + '';
+	else {
+		if (number >= 1e9) {
+			number /= 1e8;
+			unit = is_si? 'G' : 'B';
+		}
+		else if (number >= 1e6) {
+			number /= 1e5;
+			unit = 'M';
+		}
+		else if (number > 1000) {
+			number /= 100;
+			unit = 'k';
+		}
+		else
+			number *= 10;
 
-        number = Floor(number) / 10;
-        if (keep_decimal)
-            number = number.toFixed(1);
-    }
+		number = Floor(number) / 10;
+		if (keep_decimal)
+			number = number.toFixed(1);
+	}
 
-    return `${number}${unit}`;
+	return number + unit;
 }
 
 /**
@@ -1502,19 +1292,17 @@ function FormatUnit(number, def, keep_decimal, is_si=true) {
  * @returns {!Array<number>} hours, mins, secs, cs
  */
 function FromSeconds(time) {
-    // otherwise 19.24 => '19.23' because of rounding errors
-    if (Number.isFinite(time))
-        time += 0.001;
+	// otherwise 19.24 => '19.23' because of rounding errors
+	if (Number.isFinite(time))
+		time += 0.001;
 
-    let secs = Floor(time),
-        // !!important not to do (time - secs) * 100
-        cs = Pad(Floor(time * 100 - secs * 100)),
-        mins = Floor(secs / 60),
-        hours = Floor(secs / 3600);
+	const secs = Floor(time),
+		// !!important not to do (time - secs) * 100
+		cs = Pad(Floor(time * 100 - secs * 100)),
+		mins = Floor(secs / 60),
+		hours = Floor(secs / 3600);
 
-    secs -= mins * 60;
-    mins -= hours * 60;
-    return [hours, mins, secs, cs];
+	return [hours, mins - hours * 60, secs - mins * 60, cs];
 }
 
 /**
@@ -1523,12 +1311,15 @@ function FromSeconds(time) {
  * @returns {!Array<string>} [date, time] string
  */
 function FromTimestamp(stamp) {
-    if (!stamp)
-        stamp = Now();
-    let date = new Date(stamp * 1000),
-        day = `${date.getFullYear()}-${Pad((date.getMonth() + 1))}-${Pad(date.getDate())}`,
-        time = `${Pad(date.getHours())}:${Pad(date.getMinutes())}:${Pad(date.getSeconds())}`;
-    return [day, time];
+	if (!stamp)
+		stamp = Now();
+	else if (!Number.isFinite(stamp))
+		return [];
+
+	const date = new Date(stamp * 1000),
+		day = `${date.getFullYear()}-${Pad((date.getMonth() + 1))}-${Pad(date.getDate())}`,
+		time = `${Pad(date.getHours())}:${Pad(date.getMinutes())}:${Pad(date.getSeconds())}`;
+	return [day, time];
 }
 
 /**
@@ -1536,12 +1327,26 @@ function FromTimestamp(stamp) {
  * @returns {number}
  */
 function GaussianRandom() {
-    let rand = -1;
-    while (rand < 0 || rand > 1) {
-        rand = Sqrt(-2 * Math.log(1 - Random())) * Math.cos(2 * PI * Random());
-        rand = rand / 10 + 0.5;
-    }
-    return rand;
+	let rand = -1;
+	while (rand < 0 || rand > 1) {
+		rand = Sqrt(-2 * Log(1 - Random())) * Cos(2 * PI * Random());
+		rand = rand / 10 + 0.5;
+	}
+	return rand;
+}
+
+/**
+ * Get a hex value with padding
+ * @param {number} number
+ * @param {number=} padding
+ * @param {string=} prefix
+ * @returns {string}
+ */
+function HexString(number, padding=2, prefix='') {
+	if (number < 0)
+		return '';
+	const text = number.toString(16).padStart(padding, '0');
+	return prefix + text;
 }
 
 /**
@@ -1550,7 +1355,7 @@ function GaussianRandom() {
  * @returns {boolean}
  */
 function IsDigit(char) {
-    return (char !== '' && '0123456789'.includes(char));
+	return (char !== '' && '0123456789'.includes(char));
 }
 
 /**
@@ -1562,10 +1367,10 @@ function IsDigit(char) {
  * LoadLibrary('./script/3d.js')
  */
 function LoadLibrary(url, callback, extra) {
-    let node = CreateNode('script', null, Assign({src: url}, extra || {}));
-    document.body.appendChild(node);
-    if (callback)
-        node.onload = callback;
+	const node = CreateNode('script', null, Assign({src: url}, extra || {}));
+	document.body.appendChild(node);
+	if (callback)
+		node.onload = callback;
 }
 
 /**
@@ -1576,37 +1381,37 @@ function LoadLibrary(url, callback, extra) {
  * @returns {!Object}
  */
 function Merge(dico, extras, flag=1) {
-    Keys(extras).forEach(key => {
-        let extra = extras[key];
-        if (extra == undefined) {
-            if (flag & 2)
-                delete dico[key];
-        }
-        else if (IsObject(extra)) {
-            let source = dico[key];
-            if (IsObject(source))
-                Merge(source, extra, flag);
-            else if ((flag & 1) || dico[key] == undefined)
-                dico[key] = (flag & 4)? {...extra}: extra;
-        }
-        else if ((flag & 1) || dico[key] == undefined)
-            dico[key] = extra;
-    });
-    return dico;
+	Keys(extras).forEach(key => {
+		const extra = extras[key];
+		if (extra == undefined) {
+			if (flag & 2)
+				delete dico[key];
+		}
+		else if (IsObject(extra)) {
+			const source = dico[key];
+			if (IsObject(source))
+				Merge(source, extra, flag);
+			else if ((flag & 1) || dico[key] == undefined)
+				dico[key] = (flag & 4)? {...extra}: extra;
+		}
+		else if ((flag & 1) || dico[key] == undefined)
+			dico[key] = extra;
+	});
+	return dico;
 }
 
 /**
  * Get the timestamp in seconds
- * @param {number=} mode &1: get seconds as float instead of int, &2: get ms instead of seconds
+ * @param {number=} mode &1: get seconds as float instead of int, &2: get ms instead of seconds, &4: performance in ms
  * @returns {number} seconds or ms
  */
 function Now(mode) {
-    let ms = Date.now();
-    if (mode & 2)
-        return ms;
+	const ms = ((mode & 4)? performance || Date : Date).now();
+	if (mode & 6)
+		return ms;
 
-    let seconds = ms / 1000;
-    return (mode & 1)? seconds: Floor(seconds);
+	const seconds = ms / 1000;
+	return (mode & 1)? seconds : Floor(seconds);
 }
 
 /**
@@ -1617,7 +1422,7 @@ function Now(mode) {
  * @returns {string}
  */
 function Pad(value, size=2, pad='00') {
-    return (pad + value).slice(-size);
+	return (pad + value).slice(-size);
 }
 
 /**
@@ -1627,14 +1432,14 @@ function Pad(value, size=2, pad='00') {
  * @returns {*}
  */
 function ParseJSON(text, def) {
-    let json;
-    try {
-        json = JSON.parse(text);
-    }
-    catch (e) {
-        json = def;
-    }
-    return json;
+	let json;
+	try {
+		json = JSON.parse(text);
+	}
+	catch (e) {
+		json = def;
+	}
+	return json;
 }
 
 /**
@@ -1649,38 +1454,38 @@ function ParseJSON(text, def) {
  * @returns {string|Object} result object or string
  */
 function QueryString({discard, keep, key='search', replace, query, string}={}) {
-    let dico = {},
-        items = query? query.split('&'): (key? location[key].slice(1).split('&'): []),
-        vector = [];
+	const dico = {},
+		items = query? query.split('&') : (key? location[key].slice(1).split('&') : []),
+		vector = [];
 
-    for (let item of items) {
-        let parts = item.split('=');
-        if (parts.length == 2) {
-            if ((!keep || keep[parts[0]]) && (!discard || !discard[parts[0]])) {
-                let value = decodeURIComponent(parts[1].replace(/\+/g," "));
-                dico[parts[0]] = (value == 'undefined')? undefined: value;
-            }
-        }
-    }
-    if (replace)
-        Assign(dico, replace);
+	for (const item of items) {
+		const parts = item.split('=');
+		if (parts.length == 2) {
+			if ((!keep || keep[parts[0]]) && (!discard || !discard[parts[0]])) {
+				const value = decodeURIComponent(parts[1].replace(/\+/g," "));
+				dico[parts[0]] = (value == 'undefined')? undefined : value;
+			}
+		}
+	}
+	if (replace)
+		Assign(dico, replace);
 
-    // language=eng&section=1
-    if (string) {
-        Keys(dico).forEach(key => {
-            if (dico[key] !== undefined)
-                vector.push(`${key}=${encodeURIComponent(dico[key])}`);
-        });
-        vector.sort();
-        return vector.join('&');
-    }
+	// language=eng&section=1
+	if (string) {
+		Keys(dico).forEach(key => {
+			if (dico[key] !== undefined)
+				vector.push(`${key}=${encodeURIComponent(dico[key])}`);
+		});
+		vector.sort();
+		return vector.join('&');
+	}
 
-    // {language: 'eng', section: '1'}
-    Keys(dico).forEach(key => {
-        vector.push([key, dico[key]]);
-    });
-    vector.sort();
-    return Assign({}, ...vector.map(([key, value]) => ({[key]: value})));
+	// {language: 'eng', section: '1'}
+	Keys(dico).forEach(key => {
+		vector.push([key, dico[key]]);
+	});
+	vector.sort();
+	return Assign({}, ...vector.map(([key, value]) => ({[key]: value})));
 }
 
 /**
@@ -1690,7 +1495,7 @@ function QueryString({discard, keep, key='search', replace, query, string}={}) {
  * @returns {number}
  */
 function RandomInt(high=1, low=0) {
-    return low + Floor(Random() * (high - low));
+	return low + Floor(Random() * (high - low));
 }
 
 /**
@@ -1708,29 +1513,29 @@ function RandomInt(high=1, low=0) {
  * Resource('./fragment.frag', (status, text) => {LS(text)}, {type: 'text'})
  */
 function Resource(url, callback, {content=null, form, headers={}, method='GET', type='json'}={}) {
-    let xhr = new XMLHttpRequest();
-    if (type)
-        xhr.responseType = type;
-    xhr.onreadystatechange = () => {
-        if (xhr.readyState != 4)
-            return;
-        callback(xhr.status, xhr.response, xhr);
-    };
-    xhr.open(method, url, true);
+	const xhr = new XMLHttpRequest();
+	if (type)
+		xhr.responseType = type;
+	xhr.onreadystatechange = () => {
+		if (xhr.readyState != 4)
+			return;
+		callback(xhr.status, xhr.response, xhr);
+	};
+	xhr.open(method, url, true);
 
-    // headers
-    headers = Assign({'content-type': 'application/json'}, headers);
-    Keys(headers).forEach(key => {
-        xhr.setRequestHeader(key, headers[key]);
-    });
+	// headers
+	headers = Assign({'content-type': 'application/json'}, headers);
+	Keys(headers).forEach(key => {
+		xhr.setRequestHeader(key, headers[key]);
+	});
 
-    if (form) {
-        let form_data = new FormData();
-        form_data.append(form, content);
-        xhr.send(form_data);
-    }
-    else
-        xhr.send(content);
+	if (form) {
+		const form_data = new FormData();
+		form_data.append(form, content);
+		xhr.send(form_data);
+	}
+	else
+		xhr.send(content);
 }
 
 /**
@@ -1740,12 +1545,12 @@ function Resource(url, callback, {content=null, form, headers={}, method='GET', 
  * @returns {!Array<string>}
  */
 function Split(text, char) {
-    if (!text)
-        return [];
-    if (char != undefined)
-        return text.split(char);
-    let splits = text.split('|');
-    return (splits.length > 1)? splits: text.split(' ');
+	if (!text)
+		return [];
+	if (char != undefined)
+		return text.split(char);
+	const splits = text.split('|');
+	return (splits.length > 1)? splits : text.split(' ');
 }
 
 /**
@@ -1756,8 +1561,8 @@ function Split(text, char) {
  * @returns {string}
  */
 function Title(text) {
-    text = text + '';
-    return Upper(text.slice(0, 1)) + text.slice(1);
+	text = text + '';
+	return Upper(text.slice(0, 1)) + text.slice(1);
 }
 
 /**
@@ -1767,7 +1572,7 @@ function Title(text) {
  * @returns {?}
  */
 function Undefined(value, def) {
-    return (value === undefined || Number.isNaN(value))? def: value;
+	return (value === undefined || Number.isNaN(value))? def : value;
 }
 
 /**
@@ -1776,9 +1581,9 @@ function Undefined(value, def) {
  * @returns {number}
  */
 function VisibleHeight() {
-    let screen_height = screen.height,
-        window_height = window.innerHeight;
-    return screen_height? Min(screen_height, window_height): window_height;
+	const screen_height = screen.height,
+		window_height = window.innerHeight;
+	return screen_height? Min(screen_height, window_height) : window_height;
 }
 
 /**
@@ -1787,105 +1592,107 @@ function VisibleHeight() {
  * @returns {number}
  */
 function VisibleWidth() {
-    let screen_width = screen.width,
-        window_width = window.innerWidth;
-    return screen_width? Min(screen_width, window_width): window_width;
+	const screen_width = screen.width,
+		window_width = window.innerWidth;
+	return screen_width? Min(screen_width, window_width) : window_width;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
 if (typeof exports != 'undefined') {
-    Object.assign(exports, {
-        _: _,
-        A: A,
-        Abs: Abs,
-        AddTimeout: AddTimeout,
-        AnimationFrame: AnimationFrame,
-        ArrayJS: ArrayJS,
-        Assign: Assign,
-        Atan: Atan,
-        Attrs: Attrs,
-        AttrsNS: AttrsNS,
-        C: C,
-        CACHE_IDS: CACHE_IDS,
-        CacheId: CacheId,
-        CancelAnimationFrame: CancelAnimationFrame,
-        Clamp: Clamp,
-        Class: Class,
-        Clear: Clear,
-        ClearTimeout: ClearTimeout,
-        Contain: Contain,
-        CopyClipboard: CopyClipboard,
-        CreateNode: CreateNode,
-        CreateSVG: CreateSVG,
-        DefaultArray: DefaultArray,
-        DefaultFloat: DefaultFloat,
-        DefaultInt: DefaultInt,
-        DefaultObject: DefaultObject,
-        E: E,
-        Events: Events,
-        Exp: Exp,
-        Floor: Floor,
-        Format: Format,
-        FormatFloat: FormatFloat,
-        FormatPercent: FormatPercent,
-        FormatUnit: FormatUnit,
-        From: From,
-        FromSeconds: FromSeconds,
-        FromTimestamp: FromTimestamp,
-        HAS_DOCUMENT: HAS_DOCUMENT,
-        HAS_GLOBAL: HAS_GLOBAL,
-        HasClass: HasClass,
-        HasClasses: HasClasses,
-        Hide: Hide,
-        HTML: HTML,
-        Id: Id,
-        Index: Index,
-        Input: Input,
-        InsertNodes: InsertNodes,
-        IsArray: IsArray,
-        IsDigit: IsDigit,
-        IsFloat: IsFloat,
-        IsFunction: IsFunction,
-        IsObject: IsObject,
-        IsString: IsString,
-        Keys: Keys,
-        Log: Log,
-        Lower: Lower,
-        LS: LS,
-        Max: Max,
-        Merge: Merge,
-        Min: Min,
-        NAMESPACE_SVG: NAMESPACE_SVG,
-        Now: Now,
-        Pad: Pad,
-        Parent: Parent,
-        ParseJSON: ParseJSON,
-        PI: PI,
-        Pow: Pow,
-        QueryString: QueryString,
-        RandomInt: RandomInt,
-        Round: Round,
-        S: S,
-        Safe: Safe,
-        SafeId: SafeId,
-        Show: Show,
-        Sign: Sign,
-        Split: Split,
-        Stringify: Stringify,
-        Style: Style,
-        TEXT: TEXT,
-        TextHTML: TextHTML,
-        timeouts: timeouts,
-        Title: Title,
-        Toggle: Toggle,
-        Uint8From: Uint8From,
-        Undefined: Undefined,
-        Upper: Upper,
-        Visible: Visible,
-        VisibleHeight: VisibleHeight,
-        VisibleWidth: VisibleWidth,
-    });
+	Object.assign(exports, {
+		_: _,
+		A: A,
+		Abs: Abs,
+		AddTimeout: AddTimeout,
+		AnimationFrame: AnimationFrame,
+		ArrayJS: ArrayJS,
+		Assign: Assign,
+		Atan: Atan,
+		Attrs: Attrs,
+		AttrsNS: AttrsNS,
+		C: C,
+		CACHE_IDS: CACHE_IDS,
+		CacheId: CacheId,
+		CancelAnimationFrame: CancelAnimationFrame,
+		Clamp: Clamp,
+		Class: Class,
+		Clear: Clear,
+		ClearTimeout: ClearTimeout,
+		Contain: Contain,
+		CopyClipboard: CopyClipboard,
+		CreateNode: CreateNode,
+		CreateSVG: CreateSVG,
+		DeepCopy: DeepCopy,
+		DefaultArray: DefaultArray,
+		DefaultFloat: DefaultFloat,
+		DefaultInt: DefaultInt,
+		DefaultObject: DefaultObject,
+		E: E,
+		Events: Events,
+		Exp: Exp,
+		Floor: Floor,
+		Format: Format,
+		FormatFloat: FormatFloat,
+		FormatPercent: FormatPercent,
+		FormatUnit: FormatUnit,
+		From: From,
+		FromSeconds: FromSeconds,
+		FromTimestamp: FromTimestamp,
+		HAS_DOCUMENT: HAS_DOCUMENT,
+		HAS_GLOBAL: HAS_GLOBAL,
+		HasClass: HasClass,
+		HasClasses: HasClasses,
+		HexString: HexString,
+		Hide: Hide,
+		HTML: HTML,
+		Id: Id,
+		Index: Index,
+		Input: Input,
+		InsertNodes: InsertNodes,
+		IsArray: IsArray,
+		IsDigit: IsDigit,
+		IsFloat: IsFloat,
+		IsFunction: IsFunction,
+		IsObject: IsObject,
+		IsString: IsString,
+		Keys: Keys,
+		Log: Log,
+		Lower: Lower,
+		LS: LS,
+		Max: Max,
+		Merge: Merge,
+		Min: Min,
+		NAMESPACE_SVG: NAMESPACE_SVG,
+		Now: Now,
+		Pad: Pad,
+		Parent: Parent,
+		ParseJSON: ParseJSON,
+		PI: PI,
+		Pow: Pow,
+		QueryString: QueryString,
+		RandomInt: RandomInt,
+		Round: Round,
+		S: S,
+		Safe: Safe,
+		SafeId: SafeId,
+		Show: Show,
+		Sign: Sign,
+		Split: Split,
+		Stringify: Stringify,
+		Style: Style,
+		TEXT: TEXT,
+		TextHTML: TextHTML,
+		timeouts: timeouts,
+		Title: Title,
+		Toggle: Toggle,
+		Uint8From: Uint8From,
+		Undefined: Undefined,
+		Upper: Upper,
+		Visible: Visible,
+		VisibleHeight: VisibleHeight,
+		VisibleWidth: VisibleWidth,
+	});
 }
 // >>

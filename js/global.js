@@ -1,6 +1,6 @@
 // global.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // global variables/functions shared across multiple js files
 //
@@ -39,7 +39,8 @@ let HOST_ARCHIVE,
  * @param {number} ply
  * @param {number|string} eval_
  */
-function addPlayerEval(player, ply, eval_) {
+function addPlayerEval(player, ply, eval_)
+{
 	if (eval_ == undefined)
 		return;
 	if (!player.evals)
@@ -53,7 +54,8 @@ function addPlayerEval(player, ply, eval_) {
  * @param {number} cp
  * @returns {number}
  */
-function allieCpToScore(cp) {
+function allieCpToScore(cp)
+{
 	if (Abs(cp) > 1000)
 		return (cp + (cp > 0 ? 127407 : -127407)) / 153007;
 	return Atan(cp / 111) / 1.74;
@@ -64,7 +66,8 @@ function allieCpToScore(cp) {
  * @param {Move} move
  * @param {!Object} dico
  */
-function assignMove(move, dico) {
+function assignMove(move, dico)
+{
 	Assign(move, ...Keys(dico).filter(key => {
 		let value = dico[key];
 		if (value == '' || (key == 'ply' && value < -1))
@@ -81,10 +84,12 @@ function assignMove(move, dico) {
  * @param {number} ply
  * @returns {number} q %
  */
-function calculateFeatureQ(feature, eval_, ply) {
+function calculateFeatureQ(feature, eval_, ply)
+{
 	let white_win;
 
-	if (feature & 1) {
+	if (feature & 1)
+	{
 		let cp = eval_ * 100;
 		if (feature & 2)
 			white_win = leelaCpToScore(cp);
@@ -98,7 +103,8 @@ function calculateFeatureQ(feature, eval_, ply) {
 		// this is the HALF white win %
 		white_win *= 50;
 	}
-	else if (ply >= 0) {
+	else if (ply >= 0)
+	{
 		let wdl = stockfishWdl(eval_ * 100, ply);
 		white_win = (wdl[0] - wdl[2]) / 20;
 	}
@@ -112,9 +118,10 @@ function calculateFeatureQ(feature, eval_, ply) {
  * Can close popups = first step in "close popups"
  * @returns {boolean}
  */
-function canClosePopups() {
+function canClosePopups()
+{
 	if (vi_closePopups)
-		vi_closePopups('popup-fen', 'fen', {type: 'mouseleave'});
+		vi_closePopups('popup-fen', 'fen', {type: 'pointerleave'});
 
 	// empty the content to prevent controls for still interacting with the popup (ex: SELECT)
 	HTML(node_modal, '');
@@ -129,16 +136,19 @@ function canClosePopups() {
  * @param {number} ply ply or id
  * @returns {string}
  */
-function convertCheckmate(value, ply) {
+function convertCheckmate(value, ply)
+{
 	let positive = 1,
 		want_ply = (Y['checkmate'] == 'plies');
 
 	// 1) already got M or M# => good sign
-	if (IsString(value)) {
+	if (IsString(value))
+	{
 		value = /** @type {string} */(value);
-		positive = (value[0] == '-')? 0: 1;
+		positive = (value[0] == '-')? 0 : 1;
 
-		if (value.includes('M#')) {
+		if (value.includes('M#'))
+		{
 			if (!want_ply)
 				return value;
 
@@ -146,7 +156,8 @@ function convertCheckmate(value, ply) {
 			if ((ply & 1) == positive)
 				--value;
 		}
-		else if (value.includes('M')) {
+		else if (value.includes('M'))
+		{
 			if (want_ply)
 				return value;
 
@@ -157,26 +168,29 @@ function convertCheckmate(value, ply) {
 		}
 	}
 	// 2) number => mate is in moves by default + invert sign if black
-	else {
+	else
+	{
 		if (ply & 1)
 			value = -value;
-		positive = (value < 0)? 0: 1;
+		positive = (value < 0)? 0 : 1;
 
-		if (want_ply) {
+		if (want_ply)
+		{
 			value <<= 1;
 			if ((ply & 1) == positive)
 				--value;
 		}
 	}
 
-	return `${positive? '': '-'}M${want_ply? '': '#'}${Abs(value)}`;
+	return `${positive? '' : '-'}M${want_ply? '' : '#'}${Abs(value)}`;
 }
 
 /**
  * Fix old move format from Season 1
  * @param {Move} move
  */
-function fixMoveFormat(move) {
+function fixMoveFormat(move)
+{
 	if (move._fixed || move['book'])
 		return;
 
@@ -193,7 +207,8 @@ function fixMoveFormat(move) {
 		move['tl'] = parseTime(move['tl']) * 1000;
 
 	// fix speed
-	if (isNaN(move['s']) && move['s']) {
+	if (isNaN(move['s']) && move['s'])
+	{
 		let items = move['s'].split(' ');
 		if (items.length >= 2)
 			move['s'] = parseFloat(items[0]) * ({k: 1000, M: 1e6}[items[1][0]] || 1);
@@ -205,17 +220,20 @@ function fixMoveFormat(move) {
 		move['n'] = Floor(move['s'] / move['mt'] * 1000 + 0.5);
 
 	// fix too fast speed: > 10Bnps
-	if (move['s'] > 1e10) {
+	if (move['s'] > 1e10)
+	{
 		move['n'] = '-';
 		move['s'] = '-';
 	}
-	else if (move['n']) {
+	else if (move['n'])
+	{
 		// fix missing speed
 		if (!move['s'])
-			move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000): '-';
+			move['s'] = (move['mt'] >= 2000)? Floor(move['n'] / move['mt'] * 1000) : '-';
 		// fix insta-moves speed
-		else if (move['mt'] && move['mt'] < 2000) {
-			let speed = move['n'] / (move['mt'] + (move['n'] > 500)? 5: 300) * 1000;
+		else if (move['mt'] && move['mt'] < 2000)
+		{
+			let speed = move['n'] / (move['mt'] + (move['n'] > 500)? 5 : 300) * 1000;
 			if (move['s'] > speed * 3)
 				move['s'] = '-';
 		}
@@ -232,12 +250,14 @@ function fixMoveFormat(move) {
  * @param {boolean=} process can make decimals smaller
  * @returns {string}
  */
-function formatEval(value, ply, process) {
+function formatEval(value, ply, process)
+{
 	if (value == undefined || Number.isNaN(value))
 		return '-';
 
 	let float = parseFloat(value);
-	if (isNaN(float)) {
+	if (isNaN(float))
+	{
 		// checkmate conversion?
 		value = value + '';
 		if (value.includes('M'))
@@ -253,7 +273,8 @@ function formatEval(value, ply, process) {
 
 	let items = text.split('.');
 
-	if (small_decimal != 1) {
+	if (small_decimal != 1)
+	{
 		let abs = Abs(float);
 		if (abs < 10 && small_decimal == 10)
 			return text;
@@ -270,7 +291,8 @@ function formatEval(value, ply, process) {
  * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
  * @returns {string}
  */
-function formatUnit(number, def, keep_decimal) {
+function formatUnit(number, def, keep_decimal)
+{
 	return FormatUnit(number, def, keep_decimal, Y['SI_units']);
 }
 
@@ -279,12 +301,13 @@ function formatUnit(number, def, keep_decimal) {
  * @param {string} fen
  * @returns {number}
  */
-function getFenPly(fen) {
+function getFenPly(fen)
+{
 	if (!fen)
 		return -2;
 	let items = fen.split(' '),
 		ply = ((items[5] || 1) - 1) * 2 - (items[1] == 'w') * 1;
-	return isNaN(ply)? -1: ply;
+	return isNaN(ply)? -1 : ply;
 }
 
 /**
@@ -293,7 +316,8 @@ function getFenPly(fen) {
  * @param {Move} move
  * @returns {number} ply -2 on error, -1 on the initial position, otherwise >= 0
  */
-function getMovePly(move) {
+function getMovePly(move)
+{
 	if (!move)
 		return -2;
 	let move_ply = move['ply'];
@@ -303,7 +327,8 @@ function getMovePly(move) {
 		return -2;
 
 	let ply = getFenPly(move['fen']);
-	if (ply >= -1) {
+	if (ply >= -1)
+	{
 		move['ply'] = ply;
 		return ply;
 	}
@@ -316,7 +341,8 @@ function getMovePly(move) {
  * @param {number} cp
  * @returns {number}
  */
-function leelaCpToScore(cp) {
+function leelaCpToScore(cp)
+{
 	return Atan(cp / 90) / 1.5637541897;
 }
 
@@ -325,7 +351,8 @@ function leelaCpToScore(cp) {
  * @param {string} time
  * @returns {number}
  */
-function parseTime(time) {
+function parseTime(time)
+{
 	if (!time)
 		return 0;
 	let [hour, min, sec] = time.split(':');
@@ -337,12 +364,14 @@ function parseTime(time) {
  * @param {string} version
  * @param {!Array<string>} keys
  */
-function resetOldSettingsSpecial(version, keys) {
+function resetOldSettingsSpecial(version, keys)
+{
 	if (version < '20200930')
 		keys.push('game_wasm');
 	if (version < '20201003b')
 		keys.push('game_threads');
-	if (version < '20210109') {
+	if (version < '20210109')
+	{
 		Keys(DEFAULTS).filter(key => key.slice(0, 6) == 'sound_').map(key => {
 			keys.push(key);
 		});
@@ -350,7 +379,8 @@ function resetOldSettingsSpecial(version, keys) {
 	}
 	if (version < '20210109e')
 		keys.push('boom_threshold');
-	if (version < '20210127b') {
+	if (version < '20210127b')
+	{
 		saveDefault('arrow_color_01', Y['arrow_combine_01']);
 		saveDefault('arrow_color_23', Y['arrow_combine_23']);
 	}
@@ -364,18 +394,19 @@ function resetOldSettingsSpecial(version, keys) {
  * @param {number=} def_ply default ply
  * @returns {!{items:Array<string>, ply:number}}
  */
-function splitMoveString(text, no_number, def_ply=-2) {
+function splitMoveString(text, no_number, def_ply=-2)
+{
 	if (!text)
 		return {items: [], ply: -2};
 
 	let items = text.replace(/[.]{2,}/, ' ... ').split(' '),
-		ply = (parseInt(items[0], 10) - 1) * 2 + (items[1] == '...'? 1: 0);
+		ply = (parseInt(items[0], 10) - 1) * 2 + (items[1] == '...'? 1 : 0);
 
 	if (no_number)
 		items = items.filter(item => !IsDigit(item[0]) && item != '...');
 	return {
 		items: items,
-		ply: isNaN(ply)? def_ply: ply,
+		ply: isNaN(ply)? def_ply : ply,
 	};
 }
 
@@ -386,7 +417,8 @@ function splitMoveString(text, no_number, def_ply=-2) {
  * @param {number} ply
  * @returns {!Array<number>} w,d,l
  */
-function stockfishWdl(cp, ply) {
+function stockfishWdl(cp, ply)
+{
 	let win = stockfishWinRateModel(cp, ply),
 		loss = stockfishWinRateModel(-cp, ply),
 		draw = Max(0, 1000 - win - loss);
@@ -403,7 +435,8 @@ function stockfishWdl(cp, ply) {
  * @param {number} ply
  * @returns {number}
  */
-function stockfishWinRateModel(cp, ply) {
+function stockfishWinRateModel(cp, ply)
+{
 	let as = SF_COEFF_AS,
 		bs = SF_COEFF_BS,
 		m = Min(240, ply) / 64,
@@ -420,7 +453,8 @@ function stockfishWinRateModel(cp, ply) {
  * @param {number} cp
  * @returns {number}
  */
-function stoofCpToScore(cp) {
+function stoofCpToScore(cp)
+{
 	return Atan(cp / 194) / 1.55564;
 }
 
@@ -430,7 +464,8 @@ function stoofCpToScore(cp) {
 /**
  * Initialise structures with global data
  */
-function startupGlobal() {
+function startupGlobal()
+{
 	vi_canClosePopups = canClosePopups;
 	vi_resetOldSettingsSpecial = resetOldSettingsSpecial;
 }

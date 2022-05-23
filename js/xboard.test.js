@@ -1,6 +1,6 @@
 // xboard.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 /*
 globals
@@ -110,9 +110,11 @@ live.id = 'null';
 	],
 ].forEach(([move_list, fen, answer, answer_pieces], id) => {
 	test(`analyseFen:${id}`, () => {
-		if (move_list) {
+		if (move_list)
+		{
 			live.setFen(START_FEN);
-			for (let move of move_list.split(' ')) {
+			for (let move of move_list.split(' '))
+			{
 				live.chessMove(move, false);
 				live.analyseFen(live.chessFen());
 			}
@@ -164,22 +166,24 @@ live.id = 'null';
 		live.arrowHtml(id_, dico, opacity);
 
 		let results = [];
-		for (let svg of live.svgs) {
+		for (let svg of live.svgs)
+		{
 			let node = svg.svg,
 				opacity = '',
 				text = '',
 				visible = '';
-			if (node) {
+			if (node)
+			{
 				let style = node.style;
 				opacity = style.opacity;
-				visible = (style.display == 'none')? 0: 1;
+				visible = (style.display == 'none')? 0 : 1;
 
 				node = node.firstChild;
 				let markers = From(A('marker', node)).map(child => child.getAttributeNS(null, 'fill')),
 					stroke = Safe('path[stroke]', node).getAttributeNS(null, 'stroke');
 				text = [...[svg.path], ...markers, ...[stroke]].join('|');
 			}
-			results.push(text? `${visible}|${opacity}|${text}`: 0);
+			results.push(text? `${visible}|${opacity}|${text}` : 0);
 		}
 		expect(results).toEqual(answer);
 	});

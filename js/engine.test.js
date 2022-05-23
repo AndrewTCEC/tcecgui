@@ -3,11 +3,11 @@
  */
 // engine.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 /*
 globals
-expect, require, test
+expect, global, require, test
 */
 'use strict';
 
@@ -74,6 +74,8 @@ Assign(Y, {
 	},
 });
 
+global.SP = () => {};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // addHistory
@@ -91,22 +93,27 @@ Assign(Y, {
 // addMove
 [
 	[null, {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
-	[[5, 5, 100], {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
+	[[5, 5, 1, 100], {x: 10, y: 8}, 150, 1, 1, [5, 3], [[5, 3, 50]]],
+	[[5, 5, 0, 100], {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
 ].forEach(([drag, change, stamp, ratio_x, ratio_y, answer, answer_array], id) => {
 	test(`addMove:${id}`, () => {
 		if (!drag)
 			stopDrag();
-		else {
+		else
+		{
 			touchHandle({
+				buttons: drag[2],
 				clientX: drag[0],
 				clientY: drag[1],
+				pointerType: 'mouse',
 				target: {},
-				timeStamp: drag[2],
-				type: 'mousedown',
+				timeStamp: drag[3],
+				type: 'pointerdown',
 			});
 		}
 		expect(addMove(change, stamp, ratio_x, ratio_y)).toEqual(answer);
 		expect(touch_moves).toEqual(answer_array);
+		touch_moves.length = 0;
 	});
 });
 
@@ -483,7 +490,8 @@ Assign(Y, {
 	[1627143822904, [24001, 29309], [59, 55, 5216]],
 ].forEach(([pong_time, data, answer], id) => {
 	test(`handlePing:${id}`, () => {
-		if (id == 0) {
+		if (id == 0)
+		{
 			pings.fill(0);
 			ping_values.fill(0);
 			server_diffs.fill(0);

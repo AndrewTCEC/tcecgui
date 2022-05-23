@@ -1,13 +1,13 @@
 // common.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // utility JS functions used in all the sites
 // jshint -W069
 /*
 globals
-cancelAnimationFrame, clearInterval, clearTimeout, console, document, exports, FormData, global,
-location, navigator, Node, performance, requestAnimationFrame, screen, setInterval, setTimeout, window, XMLHttpRequest
+cancelAnimationFrame, clearInterval, clearTimeout, console, document, exports, FormData, global, location, navigator,
+Node, NodeList, performance, requestAnimationFrame, screen, setInterval, setTimeout, window, XMLHttpRequest
 */
 'use strict';
 
@@ -97,7 +97,8 @@ const animation_frames = {},
  * @param {Node=} parent parent node, document by default
  * @returns {Node} found node
  */
-function _(sel, parent) {
+function _(sel, parent)
+{
 	if (!sel)
 		return null;
 	if (IsObject(sel))
@@ -111,24 +112,27 @@ function _(sel, parent) {
  * @param {Node|Object=} parent parent node, document by default
  * @returns {!Array<Node>} found nodes
  */
-function A(sel, parent) {
+function A(sel, parent)
+{
 	if (!sel)
 		return [];
-	if (IsArray(sel))
+	if (IsArray(sel) || sel instanceof NodeList)
 		return /** @type {!Array<Node>} */(sel);
 	return (parent || document).querySelectorAll(sel);
 }
 
 /**
  * Execute a function on multiple nodes
- * @param {Node|!Array<Node>|string} sel CSS selector OR list of nodes
+ * @param {Node|Array<Node>|string|Window} sel CSS selector OR list of nodes
  * @param {Function} callback (node, index=, array=)
  * @param {Node=} parent
  */
-function E(sel, callback, parent) {
+function E(sel, callback, parent)
+{
 	if (!sel)
 		return;
-	if (IsArray(sel)) {
+	if (IsArray(sel) || sel instanceof NodeList)
+	{
 		let id = 0;
 		sel.forEach(item => {
 			if (item) callback(item, id++);
@@ -137,7 +141,7 @@ function E(sel, callback, parent) {
 	else if (IsObject(sel))
 		callback(sel, 0);
 	else
-		A(sel, parent).forEach(callback);
+		A(/** @type {string} */(sel), parent).forEach(callback);
 }
 
 /**
@@ -146,7 +150,8 @@ function E(sel, callback, parent) {
  * @param {Node=} parent parent node, document by default
  * @returns {Node}
  */
-function Id(id, parent) {
+function Id(id, parent)
+{
 	if (!id)
 		return null;
 	if (IsObject(id))
@@ -161,11 +166,12 @@ function Id(id, parent) {
 
 /**
  * Change attributes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {!Object} attrs attribute to change
  * @param {Node=} parent
  */
-function Attrs(sel, attrs, parent) {
+function Attrs(sel, attrs, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -181,11 +187,12 @@ function Attrs(sel, attrs, parent) {
 
 /**
  * Change attributes
- * @param {Node|!Array<Node>|string} sel
+ * @param {Node|Array<Node>|string} sel
  * @param {!Object} attrs
  * @param {Node=} parent
  */
-function AttrsNS(sel, attrs, parent) {
+function AttrsNS(sel, attrs, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -201,13 +208,14 @@ function AttrsNS(sel, attrs, parent) {
 
 /**
  * Click event on nodes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * C('img', function() {LS(this.src)})  // print the URL of the image being clicked
  */
-function C(sel, callback, parent) {
+function C(sel, callback, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -221,7 +229,8 @@ function C(sel, callback, parent) {
  * @param {Node=} parent parent node, document by default
  * @returns {Node}
  */
-function CacheId(id, parent) {
+function CacheId(id, parent)
+{
 	// <<
 	CACHE_COUNTS[id] = (CACHE_COUNTS[id] || 0) + 1;
 	// >>
@@ -235,17 +244,19 @@ function CacheId(id, parent) {
 
 /**
  * Add / remove classes
- * @param {Node|!Array<Node>|string} sel CSS selector or node or array of nodes
+ * @param {Node|Array<Node>|string} sel CSS selector or node or array of nodes
  * @param {!Array<*>|string} classes [['dn', flag=]], flag:0=add, 1=remove, -1=toggle
  * @param {boolean|number=} add true for normal behavior (default), otherwise invert all - and +
  * @param {Node?=} parent
  */
-function Class(sel, classes, add=true, parent=null) {
+function Class(sel, classes, add=true, parent=null)
+{
 	if (!sel)
 		return;
 
 	// string
-	if (IsString(classes)) {
+	if (IsString(classes))
+	{
 		classes = /** @type {string} */(classes);
 		E(sel, node => {
 			const list = node.classList;
@@ -254,13 +265,15 @@ function Class(sel, classes, add=true, parent=null) {
 					return;
 				const first = item.substr(0, 1),
 					right = item.substr(1);
-				if (first == '-') {
+				if (first == '-')
+				{
 					if (add)
 						list.remove(right);
 					else
 						list.add(right);
 				}
-				else if (first == '+') {
+				else if (first == '+')
+				{
 					if (add)
 						list.add(right);
 					else
@@ -281,18 +294,21 @@ function Class(sel, classes, add=true, parent=null) {
 	classes = /** @type {!Array<!Array<string,number>>} */(classes);
 	E(sel, node => {
 		const list = node.classList;
-		for (const [name, flag] of classes) {
+		for (const [name, flag] of classes)
+		{
 			if (!name)
 				continue;
 			// add
-			if (!flag) {
+			if (!flag)
+			{
 				if (add)
 					list.add(name);
 				else
 					list.remove(name);
 			}
 			// remove
-			else if (flag > 0) {
+			else if (flag > 0)
+			{
 				if (add)
 					list.remove(name);
 				else
@@ -311,23 +327,29 @@ function Class(sel, classes, add=true, parent=null) {
  * @param {string} pattern
  * @returns {boolean}
  */
-function Contain(list, pattern) {
+function Contain(list, pattern)
+{
 	const first = pattern.slice(0, 1),
 		length = pattern.length - 1,
 		right = pattern.slice(1);
 
 	// starts with
-	if (first == '^') {
+	if (first == '^')
+	{
 		for (const item of list)
 			if (item.slice(0, length) == right)
 				return true;
+	}
 	// ends with
-	} else if (first == '$') {
+	else if (first == '$')
+	{
 		for (const item of list)
 			if (item.slice(-length) == right)
 				return true;
+	}
 	// includes
-	} else if (first == '*') {
+	else if (first == '*')
+	{
 		for (const item of list)
 			if (item.indexOf(right) >= 0)
 				return true;
@@ -351,7 +373,8 @@ function Contain(list, pattern) {
  * @param {Array<Node>=} children
  * @returns {Node} created node
  */
-function CreateNode(tag, html, attrs, children) {
+function CreateNode(tag, html, attrs, children)
+{
 	const node = document.createElement(tag);
 	if (html)
 		node.innerHTML = html;
@@ -374,7 +397,8 @@ function CreateNode(tag, html, attrs, children) {
  * @param {Array<Node>=} children
  * @returns {Node} created node
  */
-function CreateSVG(type, attrs, children) {
+function CreateSVG(type, attrs, children)
+{
 	const node = document.createElementNS(NAMESPACE_SVG, type);
 	if (attrs)
 		Keys(attrs).forEach(key => {
@@ -390,9 +414,9 @@ function CreateSVG(type, attrs, children) {
 
 /**
  * Handle any events on nodes
- * + mouseenter => will use node.addEventListener('mouseenter', callback)
- * + !mouseenter => will use node.onmouseenter = callback
- * @param {Node|!Array<Node>|string|Window} sel CSS selector or node
+ * + pointerenter => will use node.addEventListener('pointerenter', callback)
+ * + !pointerenter => will use node.onpointerenter = callback
+ * @param {Node|Array<Node>|string|Window} sel CSS selector or node
  * @param {string} events
  * @param {Function} callback
  * @param {!AddEventListenerOptions|boolean=} options
@@ -401,12 +425,14 @@ function CreateSVG(type, attrs, children) {
  * Events(window, 'resize', e => {LS(e)});      // window.addEventListener('resize', function ...)
  * Events(window, '!resize', e => {LS(e)});     // window.onresize = function ...
  */
-function Events(sel, events, callback, options, parent) {
+function Events(sel, events, callback, options, parent)
+{
 	if (!sel)
 		return;
 
 	let direct;
-	if (events.slice(0, 1) == '!') {
+	if (events.slice(0, 1) == '!')
+	{
 		events = events.slice(1);
 		direct = true;
 	}
@@ -429,7 +455,8 @@ function Events(sel, events, callback, options, parent) {
  * @param {string} class_ class name to match exactly
  * @returns {boolean}
  */
-function HasClass(node, class_) {
+function HasClass(node, class_)
+{
 	if (IsString(node))
 		node = _(node);
 	if (!node)
@@ -444,7 +471,8 @@ function HasClass(node, class_) {
  * @param {string} classes can be multiple classes separated by spaces, with +/- and ^$* patterns
  * @returns {boolean}
  */
-function HasClasses(node, classes) {
+function HasClasses(node, classes)
+{
 	if (IsString(node))
 		node = _(node);
 	if (!node)
@@ -455,14 +483,17 @@ function HasClasses(node, classes) {
 		return false;
 
 	// match all classes, ex: 'visible -shown'
-	for (const item of classes.split(' ')) {
+	for (const item of classes.split(' '))
+	{
 		const a = item.substr(0, 1),
 			b = item.substr(1);
-		if (a == '-') {
+		if (a == '-')
+		{
 			if (Contain(list, b))
 				return false;
 		}
-		else if (a == '+') {
+		else if (a == '+')
+		{
 			if (!Contain(list, b))
 				return false;
 		}
@@ -476,10 +507,11 @@ function HasClasses(node, classes) {
 /**
  * Hide nodes
  * + handle dn
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  */
-function Hide(sel, parent) {
+function Hide(sel, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -490,16 +522,19 @@ function Hide(sel, parent) {
 
 /**
  * Get / set HTML
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {string|number=} html
  * @param {Node=} parent
  * @returns {string} html of the first matched node
  */
-function HTML(sel, html, parent) {
+function HTML(sel, html, parent)
+{
 	if (!sel)
 		return '';
-	if (IsObject(sel)) {
-		if (html !== undefined) {
+	if (IsObject(sel))
+	{
+		if (html !== undefined)
+		{
 			html = html + '';
 			if (html != sel.innerHTML)
 				sel.innerHTML = html;
@@ -508,8 +543,9 @@ function HTML(sel, html, parent) {
 		return sel.innerHTML;
 	}
 	//
-	if (html === undefined) {
-		const node = _(sel, parent);
+	if (html === undefined)
+	{
+		const node = _(/** @type {Node|string} */(sel), parent);
 		return node? node.innerHTML : '';
 	}
 	html = html + '';
@@ -528,14 +564,16 @@ function HTML(sel, html, parent) {
  * @param {Node|string} node CSS selector or node
  * @returns {number} computed index
  */
-function Index(node) {
+function Index(node)
+{
 	if (IsString(node))
 		node = _(node);
 	if (!node)
 		return -1;
 
 	let index = 0;
-	while (node) {
+	while (node)
+	{
 		node = node.previousElementSibling;
 		++index;
 	}
@@ -544,13 +582,14 @@ function Index(node) {
 
 /**
  * Input event on nodes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {Function} callback (event)
  * @param {Node=} parent
  * @example
  * Input('input[sb-field=username]', e => {LS(e)})   // username is being modified
  */
-function Input(sel, callback, parent) {
+function Input(sel, callback, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -564,7 +603,8 @@ function Input(sel, callback, parent) {
  * @param {!Array<Node>} nodes
  * @param {boolean=} prepend should the nodes be preprended or appended?
  */
-function InsertNodes(parent, nodes, prepend) {
+function InsertNodes(parent, nodes, prepend)
+{
 	if (IsString(parent))
 		parent = _(parent);
 	if (!parent)
@@ -588,7 +628,8 @@ function InsertNodes(parent, nodes, prepend) {
  * @param {string=} obj.tag 'a div'
  * @returns {Node} parent node or null or undefined
  */
-function Parent(node, {tag, class_, attrs, self}={}) {
+function Parent(node, {tag, class_, attrs, self}={})
+{
 	if (IsString(node))
 		node = _(node);
 	if (!node)
@@ -599,8 +640,10 @@ function Parent(node, {tag, class_, attrs, self}={}) {
 		tags = tag? tag.split(' ') : null;
 	let parent = /** @type {Node} */(node);
 
-	for (let depth = 0; ; ++depth) {
-		if (depth || !self || parent.nodeType != 1) {
+	for (let depth = 0; ; ++depth)
+	{
+		if (depth || !self || parent.nodeType != 1)
+		{
 			parent = parent.parentNode;
 			if (!parent || !parent.tagName)
 				return null;
@@ -612,10 +655,12 @@ function Parent(node, {tag, class_, attrs, self}={}) {
 			continue;
 
 		// 2) match all attrs
-		for (const item of aitems) {
+		for (const item of aitems)
+		{
 			const [key, value] = item.split('='),
 				attr = parent.getAttribute(key);
-			if ((!attr && !parent.hasOwnProperty(key)) || (value && attr != value)) {
+			if ((!attr && !parent.hasOwnProperty(key)) || (value && attr != value))
+			{
 				ok = false;
 				break;
 			}
@@ -625,22 +670,28 @@ function Parent(node, {tag, class_, attrs, self}={}) {
 
 		// 3) match all classes, ex: 'visible -shown'
 		const list = parent.classList;
-		for (const item of citems) {
+		for (const item of citems)
+		{
 			const a = item.substr(0, 1),
 				b = item.substr(1);
-			if (a == '-') {
-				if (Contain(list, b)) {
+			if (a == '-')
+			{
+				if (Contain(list, b))
+				{
 					ok = false;
 					break;
 				}
 			}
-			else if (a == '+') {
-				if (!Contain(list, b)) {
+			else if (a == '+')
+			{
+				if (!Contain(list, b))
+				{
 					ok = false;
 					break;
 				}
 			}
-			else if (!item.split('|').some(key => Contain(list, key))) {
+			else if (!item.split('|').some(key => Contain(list, key)))
+			{
 				ok = false;
 				break;
 			}
@@ -655,12 +706,13 @@ function Parent(node, {tag, class_, attrs, self}={}) {
 /**
  * Show / hide nodes
  * + handle dn
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {*=} show true to show the node
  * @param {Node=} parent
  * @param {string=} mode to use for node.display, by default '' but could be block
  */
-function S(sel, show, parent, mode='') {
+function S(sel, show, parent, mode='')
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -675,7 +727,8 @@ function S(sel, show, parent, mode='') {
  * @param {Node=} parent parent node, document by default
  * @returns {Node|Object} found node or {}
  */
-function Safe(sel, parent) {
+function Safe(sel, parent)
+{
 	return _(sel, parent) || Assign({}, DUMMY_OBJECT);
 }
 
@@ -685,34 +738,51 @@ function Safe(sel, parent) {
  * @param {Node=} parent parent node, document by default
  * @returns {Node|Object} found node or {}
  */
-function SafeId(sel, parent) {
+function SafeId(sel, parent)
+{
 	return Id(sel, parent) || Assign({}, DUMMY_OBJECT);
 }
 
 /**
  * Scroll the document to the top
  * @param {Node|string|number=} top if undefined then returns the scrollTop value
- * @param {boolean=} smooth
- * @param {number=} offset
+ * @param {Object} obj
+ * @param {Node=} obj.element scrolling element
+ * @param {number=} obj.offset
+ * @param {boolean=} obj.outside only scroll if the element was outside the window
+ * @param {boolean=} obj.smooth
  * @returns {number|undefined}
  */
-function ScrollDocument(top, smooth, offset=0) {
-	const scroll = document.scrollingElement;
-	if (top != undefined) {
+function ScrollDocument(top, {element, offset=0, outside, smooth=true}={})
+{
+	const scroll = element? element : (document.scrollingElement || {});
+	if (top != undefined)
+	{
 		// top can be a selector too
-		if (isNaN(top)) {
-			top = _(/** @type {Node|string} */(top));
-			if (!top)
+		let node;
+		if (isNaN(top))
+		{
+			node = _(/** @type {Node|string} */(top));
+			if (!node)
 				return;
 			let value = 0;
-			while (top) {
-				value += top.offsetTop;
-				top = top.offsetParent;
-			}
+			for (let parent = node; parent; parent = parent.offsetParent)
+				value += parent.offsetTop;
 			top = value;
 		}
-		if (smooth) {
-			window.scrollTo({top: Max(0, top + offset), behavior: 'smooth'});
+
+		// only scroll if needed?
+		if (node && outside)
+		{
+			const node_top = node.offsetTop,
+				scroll_top = scroll.scrollTop;
+			if (node_top > scroll_top && node_top < scroll_top + window.innerHeight)
+				return scroll_top;
+		}
+
+		if (smooth)
+		{
+			(element || window).scrollTo({top: Max(0, top + offset), behavior: 'smooth'});
 			return top;
 		}
 		scroll.scrollTop = top;
@@ -723,11 +793,12 @@ function ScrollDocument(top, smooth, offset=0) {
 /**
  * Show nodes
  * + handle dn
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  * @param {string=} mode to use for node.display, by default '' but could be block
  */
-function Show(sel, parent, mode='') {
+function Show(sel, parent, mode='')
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -738,17 +809,19 @@ function Show(sel, parent, mode='') {
 
 /**
  * Change the style of nodes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {!Array<*>|string} styles [['font-size', 10, flag=]], flag:0=add, 1=remove, 2=toggle
  * @param {boolean=} add to set/add the style, otherwise remove it
  * @param {Node?=} parent
  */
-function Style(sel, styles, add=true, parent=null) {
+function Style(sel, styles, add=true, parent=null)
+{
 	if (!sel)
 		return;
 
 	// string
-	if (IsString(styles)) {
+	if (IsString(styles))
+	{
 		styles = /** @type {string} */(styles);
 		E(sel, node => {
 			let list = node.style;
@@ -757,25 +830,32 @@ function Style(sel, styles, add=true, parent=null) {
 					right = item.substr(1);
 				let split;
 
-				if (first == '-') {
+				if (first == '-')
+				{
 					split = right.split(':');
 					if (add)
 						list.removeProperty(split[0]);
 					else
 						list.setProperty(split[0], split[1]);
-				} else if (first == '+') {
+				}
+				else if (first == '+')
+				{
 					split = right.split(':');
 					if (add)
 						list.setProperty(split[0], split[1]);
 					else
 						list.removeProperty(split[0]);
-				} else if (first == '^') {
+				}
+				else if (first == '^')
+				{
 					split = right.split(':');
 					if (list.getPropertyValue(split[0]))
 						list.removeProperty(split[0]);
 					else
 						list.setProperty(split[0], split[1]);
-				} else {
+				}
+				else
+				{
 					split = item.split(':');
 					if (add)
 						list.setProperty(split[0], split[1]);
@@ -790,18 +870,21 @@ function Style(sel, styles, add=true, parent=null) {
 	styles = /** @type {!Array<!Array<string,*,number>>} */(styles);
 	E(sel, node => {
 		const list = node.style;
-		for (const [name, value, flag] of styles) {
+		for (const [name, value, flag] of styles)
+		{
 			if (!name)
 				continue;
 			// add
-			if (!flag) {
+			if (!flag)
+			{
 				if (add)
 					list.setProperty(name, value);
 				else
 					list.removeProperty(name);
 			}
 			// remove
-			else if (flag > 0) {
+			else if (flag > 0)
+			{
 				if (add)
 					list.removeProperty(name);
 				else
@@ -819,27 +902,31 @@ function Style(sel, styles, add=true, parent=null) {
 
 /**
  * Get / set the textContent of nodes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {string|number=} text
  * @param {Node=} parent
  * @returns {string}
  */
-function TEXT(sel, text, parent) {
+function TEXT(sel, text, parent)
+{
 	if (!sel)
 		return '';
-	if (text === undefined) {
-		const node = _(sel, parent);
+	if (text === undefined)
+	{
+		const node = _(/** @type {Node|string} */(sel), parent);
 		return node? node.textContent.trim() : '';
 	}
 	//
 	text = text + '';
 	let result;
 	E(sel, node => {
-		if (!node.childElementCount) {
+		if (!node.childElementCount)
+		{
 			const child = node.firstChild;
 			if (!child)
 				node.appendChild(document.createTextNode(/** @type {string} */(text)));
-			else if (child.nodeType == 3) {
+			else if (child.nodeType == 3)
+			{
 				if (child.nodeValue != text)
 					child.nodeValue = text;
 			}
@@ -856,27 +943,32 @@ function TEXT(sel, text, parent) {
 
 /**
  * Get / set TEXT/HTML of nodes
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {string|number=} text
  * @param {Node=} parent
  * @returns {string}
  */
-function TextHTML(sel, text, parent) {
+function TextHTML(sel, text, parent)
+{
 	if (!sel)
 		return '';
-	if (text === undefined) {
-		const node = _(sel, parent);
+	if (text === undefined)
+	{
+		const node = _(/** @type {Node|string} */(sel), parent);
 		return node? node.textContent.trim() : '';
 	}
+	//
 	text = text + '';
 	const is_html = (text.includes('<'));
 	let result;
 	E(sel, node => {
-		if (!is_html && !node.childElementCount) {
+		if (!is_html && !node.childElementCount)
+		{
 			const child = node.firstChild;
 			if (!child)
 				node.appendChild(document.createTextNode(/** @type {string} */(text)));
-			else if (child.nodeType == 3) {
+			else if (child.nodeType == 3)
+			{
 				if (child.nodeValue != text)
 					child.nodeValue = text;
 			}
@@ -894,10 +986,11 @@ function TextHTML(sel, text, parent) {
 /**
  * Toggle nodes
  * + handle dn
- * @param {Node|!Array<Node>|string} sel CSS selector or node
+ * @param {Node|Array<Node>|string} sel CSS selector or node
  * @param {Node=} parent
  */
-function Toggle(sel, parent) {
+function Toggle(sel, parent)
+{
 	if (!sel)
 		return;
 	E(sel, node => {
@@ -911,7 +1004,8 @@ function Toggle(sel, parent) {
  * @param {Node=} parent
  * @returns {boolean?} true if ALL nodes are visible
  */
-function Visible(sel, parent) {
+function Visible(sel, parent)
+{
 	if (!sel)
 		return null;
 	let visible;
@@ -938,7 +1032,8 @@ function Visible(sel, parent) {
  * @param {number} timeout milliseconds <0: does nothing, =0: executes directly, >0: timer
  * @param {boolean=} is_interval
  */
-function AddTimeout(name, func, timeout, is_interval) {
+function AddTimeout(name, func, timeout, is_interval)
+{
 	ClearTimeout(name);
 	if (timeout < 0)
 		return;
@@ -954,30 +1049,14 @@ function AddTimeout(name, func, timeout, is_interval) {
 }
 
 /**
- * Clear a timeout / interval
- * @param {string} name
- */
-function ClearTimeout(name) {
-	const timeout = timeouts[name];
-	if (!timeout)
-		return;
-
-	if (timeout[1])
-		clearInterval(timeout[0]);
-	else
-		clearTimeout(timeout[0]);
-
-	delete timeouts[name];
-}
-
-/**
  * Utility for requestAnimationFrame
  * @param {string} name
  * @param {Function} callback
  * @param {boolean=} direct
  * @returns {number|*}
  */
-function AnimationFrame(name, callback, direct) {
+function AnimationFrame(name, callback, direct)
+{
 	CancelAnimationFrame(name);
 	if (direct)
 		return callback();
@@ -992,7 +1071,8 @@ function AnimationFrame(name, callback, direct) {
  * @param {Object|Array<*>} vector
  * @returns {!Array<*>}
  */
-function ArrayJS(vector) {
+function ArrayJS(vector)
+{
 	if (vector.size)
 		vector = Array(vector.size()).fill(0).map((_, id) => vector.get(id));
 	return /** @type {!Array<*>} */(vector);
@@ -1002,7 +1082,8 @@ function ArrayJS(vector) {
  * Cancel an animation frame
  * @param {string} name
  */
-function CancelAnimationFrame(name) {
+function CancelAnimationFrame(name)
+{
 	const handle = animation_frames[name];
 	if (!handle)
 		return;
@@ -1021,7 +1102,8 @@ function CancelAnimationFrame(name) {
  * @param {number=} min_set number becomes that value when lower than min
  * @returns {number} clamped number
  */
-function Clamp(number, min, max, min_set) {
+function Clamp(number, min, max, min_set)
+{
 	return (number < min)?
 		(Number.isFinite(/** @type {number} */(min_set))? /** @type {number} */(min_set) : min)
 	: ((!isNaN(max) && number > max)? max : number);
@@ -1029,16 +1111,38 @@ function Clamp(number, min, max, min_set) {
 
 /**
  * Remove all properties of an object
- * @param {!Object} dico
- * @returns {!Object}
+ * @param {Object|Array} dico
+ * @returns {!Object|!Array}
  */
-function Clear(dico) {
+function Clear(dico)
+{
 	if (!dico)
-		return;
-	Keys(dico).forEach(key => {
-		delete dico[key];
-	});
+		return {};
+	if (IsArray(dico))
+		dico.length = 0;
+	else
+		Keys(dico).forEach(key => {
+			delete dico[key];
+		});
 	return dico;
+}
+
+/**
+ * Clear a timeout / interval
+ * @param {string} name
+ */
+function ClearTimeout(name)
+{
+	const timeout = timeouts[name];
+	if (!timeout)
+		return;
+
+	if (timeout[1])
+		clearInterval(timeout[0]);
+	else
+		clearTimeout(timeout[0]);
+
+	delete timeouts[name];
 }
 
 /**
@@ -1047,16 +1151,19 @@ function Clear(dico) {
  * @param {string} text
  * @param {Function=} callback
  */
-function CopyClipboard(text, callback) {
+function CopyClipboard(text, callback)
+{
 	const clipboard = navigator['clipboard'];
-	if (clipboard) {
+	if (clipboard)
+	{
 		clipboard.writeText(text).then(() => {
 			if (callback)
 				callback();
 		});
 	}
 	// support for old browsers
-	else {
+	else
+	{
 		const node = CreateNode('input');
 		node.value = text;
 		Style(node, [['left', '-9999px'], ['position', 'absolute']]);
@@ -1072,10 +1179,11 @@ function CopyClipboard(text, callback) {
 
 /**
  * Make a deep copy of an object
- * @param {Object} object
- * @returns {Object}
+ * @param {*} object
+ * @returns {*}
  */
-function DeepCopy(object) {
+function DeepCopy(object)
+{
 	return ParseJSON(Stringify(object));
 }
 
@@ -1086,9 +1194,11 @@ function DeepCopy(object) {
  * @param {!Array} def
  * @returns {!Array} dico[key]
  */
-function DefaultArray(dico, key, def) {
+function DefaultArray(dico, key, def)
+{
 	let child = dico[key];
-	if (child === undefined) {
+	if (child === undefined)
+	{
 		dico[key] = def;
 		child = dico[key];
 	}
@@ -1101,7 +1211,8 @@ function DefaultArray(dico, key, def) {
  * @param {number} def default value when the value is not a valid number
  * @returns {number}
  */
-function DefaultFloat(value, def) {
+function DefaultFloat(value, def)
+{
 	if (Number.isFinite(/** @type {number} */(value)))
 		return /** @type {number} */(value);
 	value = parseFloat(value);
@@ -1114,7 +1225,8 @@ function DefaultFloat(value, def) {
  * @param {number|string|boolean} def default value when the value is not a valid number
  * @returns {number|string|boolean}
  */
-function DefaultInt(value, def) {
+function DefaultInt(value, def)
+{
 	if (Number.isInteger(/** @type {number} */(value)))
 		return /** @type {number} */(value);
 	value = parseInt(value, 10);
@@ -1128,9 +1240,11 @@ function DefaultInt(value, def) {
  * @param {!Object} def
  * @returns {!Object} dico[key]
  */
-function DefaultObject(dico, key, def) {
+function DefaultObject(dico, key, def)
+{
 	let child = dico[key];
-	if (child === undefined) {
+	if (child === undefined)
+	{
 		dico[key] = def;
 		child = dico[key];
 	}
@@ -1144,21 +1258,25 @@ function DefaultObject(dico, key, def) {
  * @param {number=} mode 0:JSON, 1:binary, 2:text
  * @param {string=} space JSON space for pretty output
  */
-function DownloadObject(object, name, mode, space) {
+function DownloadObject(object, name, mode, space)
+{
 	const node = document.createElement('a');
 	let text;
 
 	if (mode == 1)
 		text = object;
-	else {
+	else
+	{
 		let json, type_;
-		if (mode == 2) {
+		if (mode == 2)
+		{
 			if (!IsString(object))
 				return;
 			json = object;
 			type_ = 'plain';
 		}
-		else {
+		else
+		{
 			json = Stringify(object, null, space);
 			type_ = 'json';
 		}
@@ -1177,121 +1295,12 @@ function DownloadObject(object, name, mode, space) {
 }
 
 /**
- * Format a vector or float ...
- * @param {*} vector
- * @param {string=} sep
- * @param {number=} align
- * @returns {string?}
- */
-function Format(vector, sep=', ', align=undefined) {
-	// null, undefined
-	if (vector == null)
-		return null;
-	// [1, 2, 3]
-	if (IsArray(vector))
-		return vector.map(value => Format(IsArray(value)? value[0] : value, sep, align)).join(sep);
-	// Set()
-	else if (vector instanceof Set)
-		return vector.size + '';
-	// dict or quaternion, vector3, ...
-	else if (vector instanceof Object) {
-		const items = [];
-		Keys(vector).forEach(key => {
-			const value = vector[key];
-			if (Number.isFinite(value))
-				items.push(FormatFloat(value, align));
-		});
-		return items.join(sep);
-	}
-
-	// float, int, text ...
-	return FormatFloat(/** @type {number|string} */(vector), align);
-}
-
-/**
- * Format a float
- * @param {number|string} text
- * @param {number=} align
- * @returns {string}
- */
-function FormatFloat(text, align) {
-	if (IsFloat(text))
-		text = /** @type {number} */(text).toFixed(3);
-	if (text === '-0.000' || text === '0.000')
-		text = '0';
-
-	if (align) {
-		text = text + '';
-		if (text.length < align)
-			text = ('        ' + text).slice(-align);
-	}
-	return text + '';
-}
-
-/**
- * Format a value to %
- * @param {number} value
- * @returns {string}
- */
-function FormatPercent(value) {
-	return isNaN(value)? '-' : Round(value * 10000) / 100 + '%';
-}
-
-/**
- * Format a number:
- * - B: billion, M: million, K: thousand
- * - NaN => n/a
- * @param {number|string} number
- * @param {string=} def default value used when number is not a number
- * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
- * @param {boolean=} is_si use SI units
- * @returns {string}
- */
-function FormatUnit(number, def, keep_decimal, is_si=true) {
-	let unit = '';
-
-	if (isNaN(number)) {
-		if (def !== undefined)
-			return def;
-
-		// isNaN will return true for 'hello', but Number.isNaN won't
-		if (Number.isNaN(/** @type {number} */(number)))
-			number = 'N/A';
-		else
-			number = number + '';
-	}
-	else if (number == Infinity)
-		return number + '';
-	else {
-		if (number >= 1e9) {
-			number /= 1e8;
-			unit = is_si? 'G' : 'B';
-		}
-		else if (number >= 1e6) {
-			number /= 1e5;
-			unit = 'M';
-		}
-		else if (number > 1000) {
-			number /= 100;
-			unit = 'k';
-		}
-		else
-			number *= 10;
-
-		number = Floor(number) / 10;
-		if (keep_decimal)
-			number = number.toFixed(1);
-	}
-
-	return number + unit;
-}
-
-/**
  * Extract the hours, minutes, seconds and 1/100th of seconds from a time in seconds
  * @param {number} time
  * @returns {!Array<number>} hours, mins, secs, cs
  */
-function FromSeconds(time) {
+function FromSeconds(time)
+{
 	// otherwise 19.24 => '19.23' because of rounding errors
 	if (Number.isFinite(time))
 		time += 0.001;
@@ -1310,7 +1319,8 @@ function FromSeconds(time) {
  * @param {number=} stamp timestamp in seconds
  * @returns {!Array<string>} [date, time] string
  */
-function FromTimestamp(stamp) {
+function FromTimestamp(stamp)
+{
 	if (!stamp)
 		stamp = Now();
 	else if (!Number.isFinite(stamp))
@@ -1326,36 +1336,15 @@ function FromTimestamp(stamp) {
  * Gaussian random between 0 and 1
  * @returns {number}
  */
-function GaussianRandom() {
+function GaussianRandom()
+{
 	let rand = -1;
-	while (rand < 0 || rand > 1) {
+	while (rand < 0 || rand > 1)
+	{
 		rand = Sqrt(-2 * Log(1 - Random())) * Cos(2 * PI * Random());
 		rand = rand / 10 + 0.5;
 	}
 	return rand;
-}
-
-/**
- * Get a hex value with padding
- * @param {number} number
- * @param {number=} padding
- * @param {string=} prefix
- * @returns {string}
- */
-function HexString(number, padding=2, prefix='') {
-	if (number < 0)
-		return '';
-	const text = number.toString(16).padStart(padding, '0');
-	return prefix + text;
-}
-
-/**
- * Check if a character is a digit
- * @param {string} char
- * @returns {boolean}
- */
-function IsDigit(char) {
-	return (char !== '' && '0123456789'.includes(char));
 }
 
 /**
@@ -1366,7 +1355,8 @@ function IsDigit(char) {
  * @example
  * LoadLibrary('./script/3d.js')
  */
-function LoadLibrary(url, callback, extra) {
+function LoadLibrary(url, callback, extra)
+{
 	const node = CreateNode('script', null, Assign({src: url}, extra || {}));
 	document.body.appendChild(node);
 	if (callback)
@@ -1380,19 +1370,22 @@ function LoadLibrary(url, callback, extra) {
  * @param {number=} flag &1:replace existing values, &2:remove a key with "undefined", &4:copy object
  * @returns {!Object}
  */
-function Merge(dico, extras, flag=1) {
+function Merge(dico, extras, flag=1)
+{
 	Keys(extras).forEach(key => {
 		const extra = extras[key];
-		if (extra == undefined) {
+		if (extra == undefined)
+		{
 			if (flag & 2)
 				delete dico[key];
 		}
-		else if (IsObject(extra)) {
+		else if (IsObject(extra))
+		{
 			const source = dico[key];
 			if (IsObject(source))
 				Merge(source, extra, flag);
 			else if ((flag & 1) || dico[key] == undefined)
-				dico[key] = (flag & 4)? {...extra}: extra;
+				dico[key] = (flag & 4)? {...extra} : extra;
 		}
 		else if ((flag & 1) || dico[key] == undefined)
 			dico[key] = extra;
@@ -1405,7 +1398,8 @@ function Merge(dico, extras, flag=1) {
  * @param {number=} mode &1: get seconds as float instead of int, &2: get ms instead of seconds, &4: performance in ms
  * @returns {number} seconds or ms
  */
-function Now(mode) {
+function Now(mode)
+{
 	const ms = ((mode & 4)? performance || Date : Date).now();
 	if (mode & 6)
 		return ms;
@@ -1415,28 +1409,20 @@ function Now(mode) {
 }
 
 /**
- * Left pad with zeroes or something else
- * @param {string|number} value
- * @param {number=} size
- * @param {string=} pad
- * @returns {string}
- */
-function Pad(value, size=2, pad='00') {
-	return (pad + value).slice(-size);
-}
-
-/**
  * Try to parse JSON data
  * @param {string} text
  * @param {*=} def
  * @returns {*}
  */
-function ParseJSON(text, def) {
+function ParseJSON(text, def)
+{
 	let json;
-	try {
+	try
+	{
 		json = JSON.parse(text);
 	}
-	catch (e) {
+	catch (e)
+	{
 		json = def;
 	}
 	return json;
@@ -1453,15 +1439,19 @@ function ParseJSON(text, def) {
  * @param {boolean=} obj.string true to have a sorted string, otherwise get a sorted object
  * @returns {string|Object} result object or string
  */
-function QueryString({discard, keep, key='search', replace, query, string}={}) {
+function QueryString({discard, keep, key='search', replace, query, string}={})
+{
 	const dico = {},
 		items = query? query.split('&') : (key? location[key].slice(1).split('&') : []),
 		vector = [];
 
-	for (const item of items) {
+	for (const item of items)
+	{
 		const parts = item.split('=');
-		if (parts.length == 2) {
-			if ((!keep || keep[parts[0]]) && (!discard || !discard[parts[0]])) {
+		if (parts.length == 2)
+		{
+			if ((!keep || keep[parts[0]]) && (!discard || !discard[parts[0]]))
+			{
 				const value = decodeURIComponent(parts[1].replace(/\+/g," "));
 				dico[parts[0]] = (value == 'undefined')? undefined : value;
 			}
@@ -1471,7 +1461,8 @@ function QueryString({discard, keep, key='search', replace, query, string}={}) {
 		Assign(dico, replace);
 
 	// language=eng&section=1
-	if (string) {
+	if (string)
+	{
 		Keys(dico).forEach(key => {
 			if (dico[key] !== undefined)
 				vector.push(`${key}=${encodeURIComponent(dico[key])}`);
@@ -1494,7 +1485,8 @@ function QueryString({discard, keep, key='search', replace, query, string}={}) {
  * @param {number=} low
  * @returns {number}
  */
-function RandomInt(high=1, low=0) {
+function RandomInt(high=1, low=0)
+{
 	return low + Floor(Random() * (high - low));
 }
 
@@ -1512,7 +1504,8 @@ function RandomInt(high=1, low=0) {
  * // get the context of the file
  * Resource('./fragment.frag', (status, text) => {LS(text)}, {type: 'text'})
  */
-function Resource(url, callback, {content=null, form, headers={}, method='GET', type='json'}={}) {
+function Resource(url, callback, {content=null, form, headers={}, method='GET', type='json'}={})
+{
 	const xhr = new XMLHttpRequest();
 	if (type)
 		xhr.responseType = type;
@@ -1529,7 +1522,8 @@ function Resource(url, callback, {content=null, form, headers={}, method='GET', 
 		xhr.setRequestHeader(key, headers[key]);
 	});
 
-	if (form) {
+	if (form)
+	{
 		const form_data = new FormData();
 		form_data.append(form, content);
 		xhr.send(form_data);
@@ -1539,12 +1533,209 @@ function Resource(url, callback, {content=null, form, headers={}, method='GET', 
 }
 
 /**
+ * This can be replaced by the ?? operator in the future
+ * @param {?} value
+ * @param {?} def
+ * @returns {?}
+ */
+function Undefined(value, def)
+{
+	return (value === undefined || Number.isNaN(value))? def : value;
+}
+
+/**
+ * Get the visible height
+ * - screen.height might be 0 on node.js
+ * @returns {number}
+ */
+function VisibleHeight()
+{
+	const screen_height = screen.height,
+		window_height = window.innerHeight;
+	return screen_height? Min(screen_height, window_height) : window_height;
+}
+
+/**
+ * Get the visible width
+ * - screen.width might be 0 on node.js
+ * @returns {number}
+ */
+function VisibleWidth()
+{
+	const screen_width = screen.width,
+		window_width = window.innerWidth;
+	return screen_width? Min(screen_width, window_width) : window_width;
+}
+
+// TEXT
+///////
+
+/**
+ * Format a vector or float ...
+ * @param {*} vector
+ * @param {string=} sep
+ * @param {number=} align
+ * @returns {string?}
+ */
+function Format(vector, sep=', ', align=undefined)
+{
+	// null, undefined
+	if (vector == null)
+		return null;
+	// [1, 2, 3]
+	if (IsArray(vector))
+		return vector.map(value => Format(IsArray(value)? value[0] : value, sep, align)).join(sep);
+	// Set()
+	else if (vector instanceof Set)
+		return vector.size + '';
+	// dict or quaternion, vector3, ...
+	else if (vector instanceof Object)
+	{
+		const items = [];
+		Keys(vector).forEach(key => {
+			const value = vector[key];
+			if (Number.isFinite(value))
+				items.push(FormatFloat(value, align));
+		});
+		return items.join(sep);
+	}
+
+	// float, int, text ...
+	return FormatFloat(/** @type {number|string} */(vector), align);
+}
+
+/**
+ * Format a float
+ * @param {number|string} text
+ * @param {number=} align
+ * @returns {string}
+ */
+function FormatFloat(text, align)
+{
+	if (IsFloat(text))
+		text = /** @type {number} */(text).toFixed(3);
+	if (text === '-0.000' || text === '0.000')
+		text = '0';
+
+	if (align)
+	{
+		text = text + '';
+		if (text.length < align)
+			text = ('        ' + text).slice(-align);
+	}
+	return text + '';
+}
+
+/**
+ * Format a value to %
+ * @param {number} value
+ * @returns {string}
+ */
+function FormatPercent(value)
+{
+	return isNaN(value)? '-' : Round(value * 10000) / 100 + '%';
+}
+
+/**
+ * Format a number:
+ * - B: billion, M: million, K: thousand
+ * - NaN => n/a
+ * @param {number|string} number
+ * @param {string=} def default value used when number is not a number
+ * @param {boolean=} keep_decimal keep 1 decimal even if it's .0
+ * @param {boolean=} is_si use SI units
+ * @returns {string}
+ */
+function FormatUnit(number, def, keep_decimal, is_si=true)
+{
+	let unit = '';
+
+	if (isNaN(number))
+	{
+		if (def !== undefined)
+			return def;
+
+		// isNaN will return true for 'hello', but Number.isNaN won't
+		if (Number.isNaN(/** @type {number} */(number)))
+			number = 'N/A';
+		else
+			number = number + '';
+	}
+	else if (number == Infinity)
+		return number + '';
+	else
+	{
+		if (number >= 1e9)
+		{
+			number /= 1e8;
+			unit = is_si? 'G' : 'B';
+		}
+		else if (number >= 1e6)
+		{
+			number /= 1e5;
+			unit = 'M';
+		}
+		else if (number > 1000)
+		{
+			number /= 100;
+			unit = 'k';
+		}
+		else
+			number *= 10;
+
+		number = Floor(number) / 10;
+		if (keep_decimal)
+			number = number.toFixed(1);
+	}
+
+	return number + unit;
+}
+
+/**
+ * Get a hex value with padding
+ * @param {number} number
+ * @param {number=} padding
+ * @param {string=} prefix
+ * @returns {string}
+ */
+function HexString(number, padding=2, prefix='')
+{
+	if (number < 0)
+		return '';
+	const text = number.toString(16).padStart(padding, '0');
+	return prefix + text;
+}
+
+/**
+ * Check if a character is a digit
+ * @param {string} char
+ * @returns {boolean}
+ */
+function IsDigit(char)
+{
+	return (char !== '' && '0123456789'.includes(char));
+}
+
+/**
+ * Left pad with zeroes or something else
+ * @param {string|number} value
+ * @param {number=} size
+ * @param {string=} pad
+ * @returns {string}
+ */
+function Pad(value, size=2, pad='00')
+{
+	return (pad + value).slice(-size);
+}
+
+/**
  * Smart split, tries with | and if not found, then with ' '
  * @param {string} text
  * @param {string=} char
  * @returns {!Array<string>}
  */
-function Split(text, char) {
+function Split(text, char)
+{
 	if (!text)
 		return [];
 	if (char != undefined)
@@ -1560,47 +1751,17 @@ function Split(text, char) {
  * @param {string|number} text
  * @returns {string}
  */
-function Title(text) {
+function Title(text)
+{
 	text = text + '';
 	return Upper(text.slice(0, 1)) + text.slice(1);
-}
-
-/**
- * This can be replaced by the ?? operator in the future
- * @param {?} value
- * @param {?} def
- * @returns {?}
- */
-function Undefined(value, def) {
-	return (value === undefined || Number.isNaN(value))? def : value;
-}
-
-/**
- * Get the visible height
- * - screen.height might be 0 on node.js
- * @returns {number}
- */
-function VisibleHeight() {
-	const screen_height = screen.height,
-		window_height = window.innerHeight;
-	return screen_height? Min(screen_height, window_height) : window_height;
-}
-
-/**
- * Get the visible width
- * - screen.width might be 0 on node.js
- * @returns {number}
- */
-function VisibleWidth() {
-	const screen_width = screen.width,
-		window_width = window.innerWidth;
-	return screen_width? Min(screen_width, window_width) : window_width;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
-if (typeof exports != 'undefined') {
+if (typeof exports != 'undefined')
+{
 	Object.assign(exports, {
 		_: _,
 		A: A,
@@ -1677,6 +1838,7 @@ if (typeof exports != 'undefined') {
 		S: S,
 		Safe: Safe,
 		SafeId: SafeId,
+		ScrollDocument: ScrollDocument,
 		Show: Show,
 		Sign: Sign,
 		Split: Split,

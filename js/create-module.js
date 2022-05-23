@@ -1,6 +1,6 @@
 // create-module.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // This module is useful for testing js files without them having any exports.
 // Look at common.test.js for an example.
@@ -21,7 +21,8 @@ let fs = require('fs'),
  * @param {string} output path without .js for the combined output
  * @param {string=} extra_exports ex: global variables that we want exported
  */
-function createModule(path, sources, output, extra_exports) {
+function createModule(path, sources, output, extra_exports)
+{
 	let all = '',
 		filenames = sources.map(source => `${path}/${source}.js`),
 		output_js = `${output}.js`;
@@ -30,12 +31,14 @@ function createModule(path, sources, output, extra_exports) {
 		extra_exports = extra_exports.split(' ');
 
 	// 1) check if the output exists and is more recent than every file
-	if (fs.existsSync(output_js)) {
+	if (fs.existsSync(output_js))
+	{
 		let output_time = fs.statSync(output_js).mtime,
 			times = filenames.filter(filename => fs.statSync(filename).mtime > output_time);
 
 		// it's more recent, but maybe it must be updated still
-		if (!times.length) {
+		if (!times.length)
+		{
 			// check if the file contains all extra_exports
 			let exports = '',
 				js_file = fs.readFileSync(output_js, 'utf-8');
@@ -43,7 +46,8 @@ function createModule(path, sources, output, extra_exports) {
 				exports += match[1];
 			});
 
-			if (extra_exports) {
+			if (extra_exports)
+			{
 				let misses = extra_exports.filter(name => !exports.includes(`${name}: ${name},`));
 				if (!misses.length)
 					return;
@@ -55,7 +59,8 @@ function createModule(path, sources, output, extra_exports) {
 	}
 
 	// 2) read all files
-	for (let filename of filenames) {
+	for (let filename of filenames)
+	{
 		let js_file = fs.readFileSync(filename, 'utf-8');
 		all += js_file;
 	}

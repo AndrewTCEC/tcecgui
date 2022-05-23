@@ -1,6 +1,6 @@
 // game.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 /*
 globals
 expect, global, require, test
@@ -31,8 +31,8 @@ let PGN_HEADERS = [
 	'[White "?"]',
 	'[Black "?"]',
 	'[Result "*"]',
-	'[FEN "{FEN}"]',                        // 7
-	'[SetUp "1"]',                          // 8
+	'[FEN "{FEN}"]',                                        // 7
+	'[SetUp "1"]',                                          // 8
 	'[Annotator "pv0"]',
 	'',
 	'',
@@ -46,7 +46,8 @@ createChartData();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function initPlayers(ply, players, evals) {
+function initPlayers(ply, players, evals)
+{
 	evals.forEach((eval_, id) => {
 		let player = players[id];
 		Assign(player, {
@@ -454,12 +455,15 @@ function initPlayers(ply, players, evals) {
 		main.moves.length = 0;
 		if (ply >= 0)
 			main.moves[ply] = {fen: fen, ply: ply};
-		if (players_) {
-			for (let player of players_) {
+		if (players_)
+		{
+			for (let player of players_)
+			{
 				let info = player.info;
 				if (!info)
 					continue;
-				if (!info.pvs) {
+				if (!info.pvs)
+				{
 					let pv = info.pv;
 					if (pv)
 						info.pvs = {[pv.split(' ')[0]]: pv};
@@ -481,7 +485,7 @@ function initPlayers(ply, players, evals) {
 			pvs = info.pvs,
 			moves = info.moves,
 			san_list =
-				moves? (IsArray(moves)? moves.map(move => `${move.fail? '| ': ''}${move.m}`).join(' '): moves): null;
+				moves? (IsArray(moves)? moves.map(move => `${move.fail? '| ' : ''}${move.m}`).join(' ') : moves) : null;
 		delete info.moves;
 
 		if (pvs)
@@ -634,7 +638,7 @@ function initPlayers(ply, players, evals) {
 	[6, {}, [{0: 'book', 2: 'book', 4: 'book', 6: "0.92"}], 2, 0, null],
 ].forEach(([ply, y, evals, answer, answer_boomed, answer_more], id) => {
 	test(`checkBoom:${id}`, () => {
-		DEV.boom = (id >= 31)? 3: 0;
+		DEV.boom = (id >= 31)? 3 : 0;
 		let main = xboards.live,
 			players = main.players;
 		initPlayers(ply, players, evals);
@@ -647,7 +651,8 @@ function initPlayers(ply, players, evals) {
 		expect(player.boomed).toBeCloseTo(answer_boomed, 3);
 		if (player.boomed)
 			expect(player.boom_ply).toEqual(ply);
-		if (answer_more) {
+		if (answer_more)
+		{
 			let text = result[2].slice(0, -1).map(x => x.toFixed(3)).join(', ');
 			expect(text).toEqual(answer_more.map(x => x.toFixed(3)).join(', '));
 		}
@@ -693,7 +698,7 @@ function initPlayers(ply, players, evals) {
 	[76, 0, {}, {exploded: 0}, ['10.01', '1.56', 10.92, 6.31], ['LCZero', 'Stoofvlees', 'LCZero', 'Crystal'], 0, 8.16],
 ].forEach(([ply, is_boom, y, states, evals, shorts, answer, answer_boomed], id) => {
 	test(`checkExplosion:${id}`, () => {
-		DEV.explode = (id >= 32)? 1: 0;
+		DEV.explode = (id >= 32)? 1 : 0;
 		let main = xboards.live,
 			players = main.players;
 		evals.forEach((eval_, id) => {
@@ -816,7 +821,8 @@ function initPlayers(ply, players, evals) {
 ].forEach(([start_fen, main_moves, board_moves, fen, answer], id) => {
 	test(`copyPgn:${id}`, () => {
 		setSection('live');
-		for (let [name, moves] of [['live', main_moves], ['pv0', board_moves]]) {
+		for (let [name, moves] of [['live', main_moves], ['pv0', board_moves]])
+		{
 			let board = xboards[name];
 			board.start_fen = start_fen;
 			board.reset(Y.x);
@@ -2220,7 +2226,8 @@ function initPlayers(ply, players, evals) {
 	],
 ].forEach(([data, obj, answer], id) => {
 	test(`parsePgn:${id}`, () => {
-		if (answer && answer.Moves) {
+		if (answer && answer.Moves)
+		{
 			let moves = [];
 			for (let move of answer.Moves)
 				moves[move.ply] = move;

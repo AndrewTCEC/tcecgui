@@ -1,6 +1,6 @@
 // config.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // Ideally, only this file needs modification from an administrator.
 // If other files need to be modified, then contact me, and I will reengineer the system a bit.
@@ -19,7 +19,8 @@ LINKS, THEMES, TWITCH_CHANNEL:true, TWITCH_CHAT:true
  * Override settings here
  * - first features are the ones that are changed the most frequently
  */
-function startupConfig() {
+function startupConfig()
+{
 	HOST = 'https://tcec-chess.com';
 	HOST_ARCHIVE = 'archive/json';
 

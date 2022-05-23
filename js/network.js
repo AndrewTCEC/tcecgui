@@ -1,6 +1,6 @@
 // network
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // all socket functions are here
 //
@@ -55,12 +55,15 @@ let log_time = 0,
 /**
  * Connect/disconnect the socket_io
  */
-function checkSocketIo() {
+function checkSocketIo()
+{
 	let is_websocket = (Y['network'] == 'websocket');
 
 	// 1) disconnect?
-	if (DEV['no_socket'] || is_websocket) {
-		if (socket_io && socket_io.connected) {
+	if (DEV['no_socket'] || is_websocket)
+	{
+		if (socket_io && socket_io.connected)
+		{
 			socket_io.close();
 			if (is_websocket)
 				startupNetwork();
@@ -69,7 +72,8 @@ function checkSocketIo() {
 	}
 
 	// 2) connect
-	if (!socket_io) {
+	if (!socket_io)
+	{
 		let io = window['io'];
 		if (io)
 			socket_io = io.connect(HOST);
@@ -85,7 +89,8 @@ function checkSocketIo() {
  * Initialise socket_io events
  * + handle all messages
  */
-function eventSockets() {
+function eventSockets()
+{
 	if (!socket_io)
 		return;
 
@@ -100,7 +105,8 @@ function eventSockets() {
 			text = lines.join('<br>');
 		insertLog(`<h5><b><i><u>${date}</u></i></b></h5><p align=left>${text}</p>`);
 		for (let line of lines)
-			if (line.includes(' pv ')) {
+			if (line.includes(' pv '))
+			{
 				analyseLog(line);
 				break;
 			}
@@ -175,7 +181,8 @@ function eventSockets() {
 	AddTimeout('check', () => {
 		if (!Y['log_auto_start'])
 			return;
-		if (Now() > log_time + TIMEOUT_check - 1) {
+		if (Now() > log_time + TIMEOUT_check - 1)
+		{
 			listenLog(0);
 			AddTimeout('log', () => listenLog('all'), TIMEOUT_log);
 		}
@@ -188,7 +195,8 @@ function eventSockets() {
  * Handle log from websocket
  * @param {Array} data
  */
-function handleLog(data) {
+function handleLog(data)
+{
 	log_time = Now();
 
 	// 1) insert text
@@ -206,7 +214,8 @@ function handleLog(data) {
 
 	// 3) analyse log
 	for (let line of lines)
-		if (line.includes(' pv ')) {
+		if (line.includes(' pv '))
+		{
 			analyseLog(line);
 			break;
 		}
@@ -216,7 +225,8 @@ function handleLog(data) {
  * Insert a log entry at the top of live_log
  * @param {string} html
  */
-function insertLog(html) {
+function insertLog(html)
+{
 	let live_log = CacheId('live-log'),
 		log_history = Y['log_history'],
 		node = CreateNode('div', html);
@@ -233,25 +243,29 @@ function insertLog(html) {
  * Listen to the log (or not)
  * @param {string|number=} new_room
  */
-function listenLog(new_room) {
+function listenLog(new_room)
+{
 	if (!socket_io)
 		return;
 	if (new_room == undefined)
 		new_room = Y['live_log'];
-	if (!num_listen && Y['log_auto_start'] && new_room == 0) {
+	if (!num_listen && Y['log_auto_start'] && new_room == 0)
+	{
 		new_room = 'all';
 		Y['live_log'] = 'all';
 	}
 	++num_listen;
 
 	// 1) leave the previous room
-	if (prev_room && prev_room != new_room) {
+	if (prev_room && prev_room != new_room)
+	{
 		socket_io.emit('noroom', `room${prev_room}`);
 		insertLog(`<div class="loss">left: ${prev_room}</div>`);
 		prev_room = 0;
 	}
 	// 2) enter the next room
-	if (new_room && prev_room != new_room) {
+	if (new_room && prev_room != new_room)
+	{
 		prev_room = new_room;
 		socket_io.emit('room', `room${new_room}`);
 		insertLog(`<div class="win">entered: ${new_room}</div>`);
@@ -265,8 +279,10 @@ function listenLog(new_room) {
  * @param {Object} data
  * @param {boolean=} cache
  */
-function logSocket(name, data, cache) {
-	if (DEV['socket_io']) {
+function logSocket(name, data, cache)
+{
+	if (DEV['socket_io'])
+	{
 		LS(`socket_io/${name}:`);
 		LS(data);
 	}
@@ -278,9 +294,11 @@ function logSocket(name, data, cache) {
  * Show the banner and hide it after a timeout
  * @param {string=} text if there's no text, then just hide it
  */
-function showBanner(text) {
+function showBanner(text)
+{
 	let node = CacheId('banner');
-	if (text) {
+	if (text)
+	{
 		HTML(node, text);
 		Show(node);
 	}
@@ -293,8 +311,9 @@ function showBanner(text) {
  * @param {Event} e
  * @returns {boolean}
  */
-function socketMessage(e) {
-	let datax = IsArray(e)? e: ParseJSON(e.data);
+function socketMessage(e)
+{
+	let datax = IsArray(e)? e : ParseJSON(e.data);
 	if (!datax || !IsArray(datax))
 		return false;
 
@@ -302,7 +321,8 @@ function socketMessage(e) {
 	if (error)
 		return false;
 
-	switch (method) {
+	switch (method)
+	{
 	// messages
 	case MSG_CUSTOM_LOG:
 		handleLog(data);
@@ -356,7 +376,8 @@ function socketMessage(e) {
  * @param {string?=} chat_url new chat URL
  * @param {boolean=} only_resize
  */
-function updateTwitch(dark, chat_url, only_resize) {
+function updateTwitch(dark, chat_url, only_resize)
+{
 	if (dark != undefined)
 		saveOption('twitch_dark', dark);
 
@@ -370,7 +391,7 @@ function updateTwitch(dark, chat_url, only_resize) {
 		return;
 
 	let current = node.src,
-		src = Y['twitch_chat']? `${TWITCH_CHAT}${dark? '&darkpopout': ''}`: '';
+		src = Y['twitch_chat']? `${TWITCH_CHAT}${dark? '&darkpopout' : ''}` : '';
 
 	if (!only_resize && current != src)
 		node.src = src;
@@ -387,7 +408,8 @@ function updateTwitch(dark, chat_url, only_resize) {
 		need_narrow = (active_name == 'chat' && !src),
 		need_wide = (active_name == 'winner');
 
-	if (need_narrow != has_narrow || need_wide != has_wide) {
+	if (need_narrow != has_narrow || need_wide != has_wide)
+	{
 		Class(right, 'narrow', need_narrow);
 		Class(right, 'wide', need_wide);
 		if (vi_resize)
@@ -396,11 +418,14 @@ function updateTwitch(dark, chat_url, only_resize) {
 
 	// 2) update twitch video IF there was a change
 	node = CacheId('twitch-vid');
-	let channel = Y['twitch_video']? TWITCH_CHANNEL: '';
+	let channel = Y['twitch_video']? TWITCH_CHANNEL : '';
 
-	if (!only_resize) {
-		if (!twitch_player) {
-			if (channel) {
+	if (!only_resize)
+	{
+		if (!twitch_player)
+		{
+			if (channel)
+			{
 				let width = Min(420, VisibleWidth() - 2),
 					height = Max(280, (width / 1.32) >> 0);
 
@@ -420,7 +445,8 @@ function updateTwitch(dark, chat_url, only_resize) {
 						let bitrate = Infinity,
 							group = 'auto';
 						for (let quality of twitch_player.getQualities())
-							if (quality.bitrate < bitrate) {
+							if (quality.bitrate < bitrate)
+							{
 								bitrate = quality.bitrate;
 								group = quality.group;
 							}
@@ -431,7 +457,8 @@ function updateTwitch(dark, chat_url, only_resize) {
 				});
 			}
 		}
-		else if (!channel) {
+		else if (!channel)
+		{
 			twitch_player.pause();
 			if (!twitch_player.isPaused())
 				AddTimeout('pause', twitch_player.pause, TIMEOUT_pause);
@@ -446,8 +473,10 @@ function updateTwitch(dark, chat_url, only_resize) {
 /**
  * Initialise structures with game specific data
  */
-function startupNetwork() {
-	if (Y['network'] == 'socket.io') {
+function startupNetwork()
+{
+	if (Y['network'] == 'socket.io')
+	{
 		ClearTimeout('ws');
 		return;
 	}

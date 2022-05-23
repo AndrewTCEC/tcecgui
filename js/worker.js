@@ -1,6 +1,6 @@
 // worker.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // jshint -W069
 /*
@@ -44,16 +44,19 @@ let SQUARES_INV = [
  * @param {string} engine
  * @returns {Object}
  */
-function createChess(engine) {
+function createChess(engine)
+{
 	// 1) use the desired engine
 	let engine_class = engine_classes[engine];
-	if (!engine_class) {
+	if (!engine_class)
+	{
 		engine = 'js';
 		engine_class = engine_classes[engine];
 	}
 
 	let chess = engines[engine];
-	if (!chess) {
+	if (!chess)
+	{
 		if (DEV['worker'])
 			LS(`creating "${engine}" engine`);
 		engines[engine] = new engine_class();
@@ -71,7 +74,8 @@ function createChess(engine) {
  * @param {boolean} scan_all
  * @returns {!Array<*>} best_move, score, depth, hash_stats
  */
-function think(engine, fen, moves, pv_string, scan_all) {
+function think(engine, fen, moves, pv_string, scan_all)
+{
 	// 1) generate all moves + analyse them
 	let chess = createChess(engine);
 	chess.load(fen, true);
@@ -82,12 +86,14 @@ function think(engine, fen, moves, pv_string, scan_all) {
 
 	// 2) results
 	let pawn_score = PIECE_SCORES[PAWN];
-	for (let move of objs) {
+	for (let move of objs)
+	{
 		move['m'] = `${SQUARES_INV[move['from']]}${SQUARES_INV[move['to']]}`;
 		let score = Undefined(move['score'], 0);
 		if (Abs(score) >= SCORE_MATING)
 			score /= 100;
-		else {
+		else
+		{
 			score /= pawn_score;
 			score +=GaussianRandom() * 0.2;
 		}
@@ -114,15 +120,18 @@ self.onmessage = e => {
 		chess.configure(data['frc'], data['options'], data['depth']);
 
 	// 2) handle the messages
-	if (func == 'config') {
+	if (func == 'config')
+	{
 		if (data['dev'])
 			DEV = data['dev'];
 	}
-	if (DEV['worker']) {
+	if (DEV['worker'])
+	{
 		LS('worker got message:');
 		LS(e);
 	}
-	if (func == 'think') {
+	if (func == 'think')
+	{
 		let [moves, elapsed, nodes, avg_depth, sel_depth, hash_stats] =
 			think(data['engine'], data['fen'], data['moves'], data['pv_string'], data['scan_all']);
 		self.postMessage({

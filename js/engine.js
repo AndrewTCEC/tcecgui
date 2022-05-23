@@ -1,6 +1,6 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
@@ -15,10 +15,10 @@ ClearTimeout, CreateNode,
 DeepCopy, DefaultFloat, DefaultInt, DefaultObject, document, DownloadObject, E, Events, exports, Floor, From, global,
 HAS_DOCUMENT, HAS_GLOBAL, HasClass, HexString, Hide, history, HTML, Id, Input, IsArray, IsDigit, IsFloat, IsFunction,
 IsObject, IsString, Keys,
-LoadLibrary, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Pad, Parent, ParseJSON, PD, Pow, QueryString,
+LoadLibrary, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Parent, ParseJSON, PD, Pow, QueryString,
 require, Resource, Round,
-S, Safe, ScrollDocument, Show, Sign, SP, Stringify, Style, TextHTML, timeouts, Title, Undefined, Upper, Visible,
-VisibleHeight, VisibleWidth, WebSocket, window
+S, Safe, ScrollDocument, Show, Sign, SP, Stringify, Style, timeouts, Title, Undefined, Upper, Visible, VisibleHeight,
+VisibleWidth, WebSocket, window
 */
 'use strict';
 
@@ -32,10 +32,11 @@ if (typeof global != 'undefined' && typeof require != 'undefined') {
 
 // global messages
 const MSG_IP_GET = 1,
-	MSG_USER_COUNT = 2,
-	MSG_USER_SESSION = 3,
-	MSG_USER_SUBSCRIBE = 4,
-	MSG_USER_UNSUBSCRIBE = 5,
+	MSG_SERVER_INFO = 2,
+	MSG_USER_COUNT = 3,
+	MSG_USER_SESSION = 4,
+	MSG_USER_SUBSCRIBE = 5,
+	MSG_USER_UNSUBSCRIBE = 6,
 	//
 	MSG_USER_EDIT = 10,
 	MSG_USER_FORGOT = 11,
@@ -46,6 +47,7 @@ const MSG_IP_GET = 1,
 
 const MESSAGES = {
 	'IpGet': MSG_IP_GET,
+	'ServerInfo': MSG_SERVER_INFO,
 	'UserCount': MSG_USER_COUNT,
 	'UserEdit': MSG_USER_EDIT,
 	'UserForgot': MSG_USER_FORGOT,
@@ -128,9 +130,9 @@ const _ALL = 'all',
 	},
 	ON_OFF = ['on', 'off'],
 	PANES = {},
-	ping_diff = [0, 0, 0],                              // last ping, average ping, average server clock diff
+	ping_diff = [0, 0, 0],                                  // last ping, average ping, average server clock diff
 	ping_values = new Uint32Array(16),
-	pings = [0, 0, 0, 0],                               // ping time, pong time, ping count, pings requested
+	pings = [0, 0, 0, 0],                                   // ping time, pong time, ping count, pings requested
 	POPUP_ADJUSTS = {},
 	popup_classes = new Set(),
 	POPUP_FULLS = {},
@@ -142,7 +144,7 @@ const _ALL = 'all',
 		'<': '&lt;',
 		'>': '&gt;',
 	},
-	server_diffs = new Int32Array(16),                  // estimations of the server clock diffs
+	server_diffs = new Int32Array(16),                      // estimations of the server clock diffs
 	SOCKET_OPTIONS = {
 		ajax: true,
 		direct: 100,
@@ -151,31 +153,19 @@ const _ALL = 'all',
 	STATE_KEYS = {},
 	TAB_NAMES = {},
 	THEMES = [''],
-	TIMEOUT_activate = 500,                             // activate tabs in populateAreas
+	TIMEOUT_activate = 500,                                 // activate tabs in populateAreas
 	TIMEOUT_adjust = 250,
 	TIMEOUT_ip = 600,
 	TIMEOUT_preset = LOCALHOST? 60 : 3600 * 2,
 	TIMEOUT_touch = 0.5,
-	TIMEOUT_translate = LOCALHOST? 60 : 3600 * 2,
 	TITLES = {},
-	TOUCH_ENDS = {
-		'mouseleave': 1,
-		'mouseup': 1,
-		'touchend': 1,
-	},
+	TOUCH_ENDS = new Set(['pointerleave', 'pointerup']),
 	touch_last = {x: 0, y: 0},
 	touch_moves = [],
-	TOUCH_MOVES = {
-		'mousemove': 1,
-		'touchmove': 2,
-	},
+	TOUCH_MOVES = new Set(['pointermove']),
 	touch_scroll = {x: 0, y: 0},
 	touch_speed = {x: 0, y: 0},
-	TOUCH_STARTS = {
-		'mousedown': 1,
-		'mouseenter': 1,
-		'touchstart': 2,
-	},
+	TOUCH_STARTS = new Set(['pointerdown', 'pointerenter']),
 	TRANSLATE_SPECIALS = {
 		'/S': '</span>',
 		'N': '&nbsp;',
@@ -184,6 +174,7 @@ const _ALL = 'all',
 	translates = {},
 	TRANSLATES = {},
 	TYPES = {},
+	VALIDATORS = {},
 	WS = (typeof WebSocket != 'undefined')? WebSocket : null,
 	X_SETTINGS = {},
 	// saved in localStorage
@@ -224,7 +215,8 @@ let __PREFIX = '_',
 	scroll_target,
 	socket,
 	socket_fail = 0,
-	touch_done = 0,                                     // time when the touch was released
+	TIMEOUT_translate = LOCALHOST? 60 : 3600 * 2,
+	touch_done = 0,                                         // time when the touch was released
 	touch_now,
 	touch_start,
 	// virtual functions, can be assigned
@@ -273,7 +265,8 @@ let Vector2;
  * @param {string} text
  * @returns {!Array<string>} field, value
  */
-function createFieldValue(text) {
+function createFieldValue(text)
+{
 	let field = text,
 		pos = field.indexOf('=');
 	const indices = [field.indexOf(' ['), field.indexOf(' <')].filter(pos => pos > 0).sort();
@@ -297,7 +290,8 @@ function createFieldValue(text) {
  * @param {number} mix how much of color2 to use, 0..1
  * @returns {string} #808080
  */
-function mixHexColors(color1, color2, mix) {
+function mixHexColors(color1, color2, mix)
+{
 	if (mix <= 0)
 		return color1;
 	else if (mix >= 1)
@@ -319,8 +313,10 @@ function mixHexColors(color1, color2, mix) {
  * @param {string} section null to skip
  * @param {string=} subsection null/undefined to skip
  */
-function setSection(section, subsection) {
-	if (section != null) {
+function setSection(section, subsection)
+{
+	if (section != null)
+	{
 		Y['x'] = section;
 		y_x = section;
 	}
@@ -339,14 +335,16 @@ function setSection(section, subsection) {
  * @param {string|number} foot_set
  * @param {string} foot
  */
-function addFoot(lines, foot_set, foot) {
+function addFoot(lines, foot_set, foot)
+{
 	lines.push(`<a class="item item-title span" data-set="${foot_set}" data-t="${foot}"></a>`);
 }
 
 /**
  * Remember the setting state
  */
-function addHistory() {
+function addHistory()
+{
 	const text = Stringify(Y);
 	if (text == y_states[y_index])
 		return;
@@ -361,7 +359,8 @@ function addHistory() {
  * Animate the theme elements
  * @param {string=} theme
  */
-function animateTheme(theme) {
+function animateTheme(theme)
+{
 	Class('.theme', [['theme-on', (theme || Y['theme']) == THEMES[1]]]);
 }
 
@@ -371,16 +370,19 @@ function animateTheme(theme) {
  * @param {string|number=} value
  * @param {boolean=} close close the popup
  */
-function changeSetting(name, value, close) {
+function changeSetting(name, value, close)
+{
 	let old_value = Y[name];
 
-	if (value != undefined) {
+	if (value != undefined)
+	{
 		// TODO: clamp the value if min/max are defined
 		if ('fi'.includes(TYPES[name]) && !isNaN(value))
 			value *= 1;
 
 		const no_import = NO_IMPORTS[name] || 0;
-		if (!(no_import & 2)) {
+		if (!(no_import & 2))
+		{
 			if (no_import & 4)
 				Y[name] = value;
 			else
@@ -389,7 +391,8 @@ function changeSetting(name, value, close) {
 	}
 
 	// holding down a key => skip
-	if (KEYS[38] || KEYS[40]) {
+	if (KEYS[38] || KEYS[40])
+	{
 		change_queue = [name, value, close];
 		return;
 	}
@@ -398,10 +401,12 @@ function changeSetting(name, value, close) {
 	if (vi_changeSettingSpecial && vi_changeSettingSpecial(name, value, close))
 		return;
 
-	switch (name) {
+	switch (name)
+	{
 	case 'language':
 		// load a language file?
-		if (value == 'zzz') {
+		if (value == 'zzz')
+		{
 			if (old_value == 'eng')
 				old_value = 'fra';
 			_('select[name="language"]').value = old_value;
@@ -428,18 +433,18 @@ function changeSetting(name, value, close) {
  * @param {Node} node
  * @param {number} &1:html, &2:style
  */
-function destroyPopup(node, flag) {
-	if (flag & 1)
-		HTML(node, '');
-	if (flag & 2)
-		Style(node, [['height', 'unset'], ['transform', 'unset'], ['width', 'unset']]);
+function destroyPopup(node, flag)
+{
+	if (flag & 1) HTML(node, '');
+	if (flag & 2) Style(node, [['height', 'unset'], ['transform', 'unset'], ['width', 'unset']]);
 }
 
 /**
  * Export settings
  * @param {string} name
  */
-function exportSettings(name) {
+function exportSettings(name)
+{
 	Assign(Y, {
 		'_dpr': Floor(window.devicePixelRatio * 1000 + 0.5) / 1000,
 		'_height': window.innerHeight,
@@ -457,7 +462,8 @@ function exportSettings(name) {
  * @param {number} def
  * @returns {number}
  */
-function getFloat(name, def) {
+function getFloat(name, def)
+{
 	return DefaultFloat(getString(name), def);
 }
 
@@ -469,7 +475,8 @@ function getFloat(name, def) {
  * @param {boolean=} force force int, otherwise keep the string
  * @returns {number|boolean|string}
  */
-function getInt(name, def, force) {
+function getInt(name, def, force)
+{
 	const text = getString(name),
 		value = DefaultInt(text, force? def : (text || def));
 	return (typeof(def) == 'boolean')? !!value : value;
@@ -481,7 +488,8 @@ function getInt(name, def, force) {
  * @param {*=} def
  * @returns {*}
  */
-function getObject(name, def) {
+function getObject(name, def)
+{
 	const text = getString(name);
 	if (!text)
 		return DeepCopy(def);
@@ -494,7 +502,8 @@ function getObject(name, def) {
  * @param {string=} def
  * @returns {string}
  */
-function getString(name, def) {
+function getString(name, def)
+{
 	const value = localStorage.getItem(`${__PREFIX}${name}`);
 	return (value == 'undefined')? def : (value || def);
 }
@@ -504,7 +513,8 @@ function getString(name, def) {
  * @param {!Object} settings
  * @param {Array<string>=} keys
  */
-function guessTypes(settings, keys) {
+function guessTypes(settings, keys)
+{
 	if (!keys)
 		keys = Keys(settings);
 
@@ -518,10 +528,12 @@ function guessTypes(settings, keys) {
 			type = 'b';
 		else if (def_type == 'object' && def != undefined)
 			type = 'o';
-		else if (def_type == 'string') {
+		else if (def_type == 'string')
+		{
 			type = 's';
 			// auto, on, off => i
-			if (IsArray(setting)) {
+			if (IsArray(setting))
+			{
 				const first = setting[0],
 					is_array = IsArray(first);
 				if (is_array && first.length && first.includes(ON_OFF[1]))
@@ -531,27 +543,23 @@ function guessTypes(settings, keys) {
 		else if (IsFloat(def))
 			type = 'f';
 		// integer default could still be a float type
-		else {
+		else
+		{
 			const obj_type = typeof(setting);
 
-			if (IsArray(setting)) {
+			if (IsArray(setting))
+			{
 				const first = setting[0],
 					is_array = IsArray(first);
 
-				if (!is_array) {
-					switch (first.type) {
-					case 'number':
-						type = IsFloat(first.step || 1)? 'f' : 'i';
-						break;
-					case 'color':
-						type = (def_type == 'number')? 'i' : 's';
-						break;
-					case 'text':
-						type = 's';
-						break;
-					case 'list':
-						type = 'u';
-						break;
+				if (!is_array)
+				{
+					switch (first.type)
+					{
+					case 'number': type = IsFloat(first.step || 1)? 'f' : 'i'; break;
+					case 'color': type = (def_type == 'number')? 'i' : 's'; break;
+					case 'text': type = 's'; break;
+					case 'list': type = 'u'; break;
 					default:
 						// dico but all keys are int => i
 						if (IsObject(first) && Keys(first).every(sub => !isNaN(sub)))
@@ -564,14 +572,18 @@ function guessTypes(settings, keys) {
 				else if (first.length && first.includes(ON_OFF[1]))
 					type = 'i';
 
-				if (!type && is_array) {
+				if (!type && is_array)
+				{
 					type = 'i';
-					for (const item of first) {
-						if (IsString(item)) {
+					for (const item of first)
+					{
+						if (IsString(item))
+						{
 							type = 's';
 							break;
 						}
-						if (IsFloat(item)) {
+						if (IsFloat(item))
+						{
 							type = 'f';
 							break;
 						}
@@ -598,7 +610,8 @@ function guessTypes(settings, keys) {
  * @param {*} data
  * @param {boolean=} reset
  */
-function importSettings(data, reset) {
+function importSettings(data, reset)
+{
 	if (!IsObject(data))
 		return;
 
@@ -616,28 +629,21 @@ function importSettings(data, reset) {
 /**
  * Load default settings
  */
-function loadDefaults() {
+function loadDefaults()
+{
 	Keys(DEFAULTS).forEach(key => {
 		const def = DEFAULTS[key],
 			type = TYPES[key];
 		let value;
 
-		switch (type) {
-		case 'f':
-			value = getFloat(key, def);
-			break;
+		switch (type)
+		{
+		case 'f': value = getFloat(key, def); break;
 		case 'b':
-		case 'i':
-			value = getInt(key, def);
-			break;
-		case 'o':
-			value = getObject(key, def);
-			break;
-		case 's':
-			value = getString(key, def);
-			break;
-		case 'u':
-			return;
+		case 'i': value = getInt(key, def); break;
+		case 'o': value = getObject(key, def); break;
+		case 's': value = getString(key, def); break;
+		case 'u': return;
 		default:
 			LS(`unknown type: ${key} : ${def}`);
 		}
@@ -653,12 +659,14 @@ function loadDefaults() {
  * Load a preset
  * @param {string} name
  */
-function loadPreset(name) {
+function loadPreset(name)
+{
 	if (name == 'custom')
 		return;
 	if (name == 'default settings')
 		resetSettings(true);
-	else {
+	else
+	{
 		Resource(`preset/${name}.json?v=${Ceil(Now() / TIMEOUT_preset)}`, (code, data) => {
 			if (code != 200)
 				return;
@@ -672,12 +680,14 @@ function loadPreset(name) {
  * + updates DEFAULTS and TYPES
  * @param {!Object} x_settings
  */
-function mergeSettings(x_settings) {
+function mergeSettings(x_settings)
+{
 	Keys(x_settings).forEach(name => {
 		const value = x_settings[name];
 
 		// audio: { ... }
-		if (IsObject(value)) {
+		if (IsObject(value))
+		{
 			const exists = DefaultObject(X_SETTINGS, name, {});
 			Assign(exists, value);
 			X_SETTINGS[name] = Assign({}, ...Keys(exists).map(key => ({[key]: exists[key]})));
@@ -705,14 +715,16 @@ function mergeSettings(x_settings) {
 				return;
 
 			// support {_value: [...]}
-			if (setting['_value']) {
+			if (setting['_value'])
+			{
 				setting = setting['_value'];
 				if (IsFunction(setting))
 					setting = setting();
 			}
 
 			// support {_multi: 2, a: [...], b: [...]}
-			if (setting['_multi'] && !setting['_main']) {
+			if (setting['_multi'] && !setting['_main'])
+			{
 				Keys(setting).forEach(sub_key => {
 					if (sub_key[0] == '_')
 						return;
@@ -722,7 +734,8 @@ function mergeSettings(x_settings) {
 					sub_settings[sub_key] = sub;
 				});
 			}
-			else {
+			else
+			{
 				if (setting[1] != undefined)
 					dico[key] = setting[1];
 				sub_settings[key] = setting;
@@ -736,7 +749,7 @@ function mergeSettings(x_settings) {
 }
 
 /**
- * Utility for creating settings
+ * Number setting
  * @param {number|string} def
  * @param {number} min
  * @param {number} max
@@ -745,20 +758,24 @@ function mergeSettings(x_settings) {
  * @param {string=} help
  * @returns {!Array<*>}
  */
-function optionNumber(def, min, max, step=1, options={}, help='') {
+function optionNumber(def, min, max, step=1, options={}, help='')
+{
 	return [Assign({max: max, min: min, step: step, type: 'number'}, options), def, help];
 }
 
 /**
  * Parse DEV
  */
-function parseDev() {
+function parseDev()
+{
 	const text = Y['dev'] || '';
 	Clear(DEV);
 
-	for (let i = 0, length = text.length; i < length; ++i) {
+	for (let i = 0, length = text.length; i < length; ++i)
+	{
 		const letter = text[i];
-		if (letter == 'Z') {
+		if (letter == 'Z')
+		{
 			Clear(DEV);
 			continue;
 		}
@@ -777,7 +794,8 @@ function parseDev() {
 
 		if (!value)
 			DEV[name] = 0;
-		else {
+		else
+		{
 			From(value.toString(2)).reverse().forEach((bit, id) => {
 				if (bit == '1')
 					DEV[`${name}${id? (1 << id) : ''}`] = value;
@@ -793,7 +811,8 @@ function parseDev() {
  * Local Storage - remove a key
  * @param {string} name
  */
-function removeStorage(name) {
+function removeStorage(name)
+{
 	localStorage.removeItem(`${__PREFIX}${name}`);
 }
 
@@ -803,7 +822,8 @@ function removeStorage(name) {
  * @param {string} name
  * @returns {*} default value
  */
-function resetDefault(name) {
+function resetDefault(name)
+{
 	const value = DEFAULTS[name];
 	Y[name] = value;
 	removeStorage(name);
@@ -814,7 +834,8 @@ function resetDefault(name) {
  * Reset default settings matching the pattern
  * @param {RegExp} pattern
  */
-function resetDefaults(pattern) {
+function resetDefaults(pattern)
+{
 	Keys(DEFAULTS).forEach(key => {
 		if (pattern.test(key))
 			resetDefault(key);
@@ -827,7 +848,8 @@ function resetDefaults(pattern) {
  * - possibly multiple inputs
  * @param {Node} node
  */
-function resetItemSetting(node) {
+function resetItemSetting(node)
+{
 	const next = node.nextElementSibling;
 	if (!next)
 		return;
@@ -838,12 +860,14 @@ function resetItemSetting(node) {
 			type = node.type;
 		if (def == undefined)
 			return;
-		if (type == 'checkbox') {
+		if (type == 'checkbox')
+		{
 			if (node.checked == (def? true : false))
 				return;
 			node.checked = def? true : false;
 		}
-		else {
+		else
+		{
 			let value = def;
 			if (type == 'color' && !IsString(value))
 				value = HexString(value, 6, '#');
@@ -861,9 +885,11 @@ function resetItemSetting(node) {
  * Reset some settings if the version is too old
  * @param {string} new_version
  */
-function resetOldSettings(new_version) {
+function resetOldSettings(new_version)
+{
 	const version = Undefined(Y['version'], '');
-	if (version == new_version) {
+	if (version == new_version)
+	{
 		saveOption('version', new_version);
 		return;
 	}
@@ -875,7 +901,8 @@ function resetOldSettings(new_version) {
 	const changes = [];
 	for (const key of keys)
 		for (const item of key.split(' '))
-			if (Y[item] != DEFAULTS[item]) {
+			if (Y[item] != DEFAULTS[item])
+			{
 				changes.push(item);
 				resetDefault(item);
 			}
@@ -889,8 +916,10 @@ function resetOldSettings(new_version) {
  * Reset to the default/other settings
  * @param {boolean=} is_default
  */
-function resetSettings(is_default) {
-	if (is_default) {
+function resetSettings(is_default)
+{
+	if (is_default)
+	{
 		localStorage.clear();
 		Assign(Y, DEFAULTS);
 	}
@@ -903,7 +932,8 @@ function resetSettings(is_default) {
  * Restore history
  * @param {number} dir -1 (undo), 0, 1 (redo)
  */
-function restoreHistory(dir) {
+function restoreHistory(dir)
+{
 	const y_copy = y_states[y_index + dir];
 	if (!y_copy)
 		return;
@@ -919,7 +949,8 @@ function restoreHistory(dir) {
 /**
  * Make sure there is no garbage data
  */
-function sanitiseData() {
+function sanitiseData()
+{
 	// convert string to number
 	Keys(DEFAULTS).forEach(key => {
 		const value = Y[key];
@@ -945,10 +976,13 @@ function sanitiseData() {
  * @param {string} name
  * @param {*=} value value for the name, undefined to save Y[name]
  */
-function saveDefault(name, value) {
-	if (value === undefined) {
+function saveDefault(name, value)
+{
+	if (value === undefined)
+	{
 		value = Y[name];
-		if (value === undefined) {
+		if (value === undefined)
+		{
 			value = DEFAULTS[name];
 			Y[name] = value;
 		}
@@ -966,7 +1000,8 @@ function saveDefault(name, value) {
  * @param {string} name
  * @param {*=} value value for the name, undefined to save Y[name]
  */
-function saveOption(name, value) {
+function saveOption(name, value)
+{
 	if (Z.default)
 		return saveDefault(name, value);
 	if (value === undefined)
@@ -983,7 +1018,8 @@ function saveOption(name, value) {
  * @param {string} name
  * @param {*} value value for the name
  */
-function saveStorage(name, value) {
+function saveStorage(name, value)
+{
 	if (IsObject(value))
 		value = Stringify(value);
 	else if (value === true)
@@ -1017,9 +1053,8 @@ function saveStorage(name, value) {
  * @param {Node=} obj.target element that was clicked
  * @param {Array<number>=} obj.xy
  */
-function showPopup(name, show, {
-		adjust, bar_x=20, center, class_, event=1, html='', id, instant=true, margin_y=0, node_id, offset=[0, 0],
-		overlay, parent, setting, shadow=1, target, xy}={}) {
+function showPopup(name, show, {adjust, bar_x=20, center, class_, event=1, html='', id, instant=true, margin_y=0, node_id, offset=[0, 0], overlay, parent, setting, shadow=1, target, xy}={})
+{
 	// remove the red rectangle
 	if (!adjust)
 		setDraggable();
@@ -1059,18 +1094,20 @@ function showPopup(name, show, {
 	if (!adjust && overlay != undefined)
 		S(node_overlay, show && overlay);
 
-	if (!adjust) {
-		dataset['id'] = show? (id || '') : '';
+	if (!adjust)
+	{
+		dataset['id'] = show? (id || data_id || '') : '';
 		dataset['name'] = show? name : '';
-		dataset['x'] = show? (id_setting || ''): '';
+		dataset['x'] = show? (id_setting || '') : '';
 	}
 
 	// full window?
-	const remove_full = ((show || adjust) && popup_full && (win_x < popup_full[0] || win_y < popup_full[1]))? 0: 1;
+	const remove_full = ((show || adjust) && popup_full && (win_x < popup_full[0] || win_y < popup_full[1]))? 0 : 1;
 	Class(node, [['popup-full', remove_full]]);
 	Class([node_body, node_html], [['noscroll', remove_full]]);
 
-	if (show || adjust) {
+	if (show || adjust)
+	{
 		let px = 0,
 			py = 0,
 			x = 0,
@@ -1082,7 +1119,8 @@ function showPopup(name, show, {
 			click_target = Parent(target, {class_: 'popup', self: true});
 
 		// create the html
-		switch (name) {
+		switch (name)
+		{
 		case 'options':
 			if (!xy)
 				context_target = null;
@@ -1095,7 +1133,8 @@ function showPopup(name, show, {
 			break;
 		}
 
-		if (show) {
+		if (show)
+		{
 			destroyPopup(node, 2);
 			if (html !== 0)
 				HTML(node, html);
@@ -1104,7 +1143,8 @@ function showPopup(name, show, {
 			if (focus)
 				focus.focus();
 		}
-		else {
+		else
+		{
 			id = data_id;
 			name = data_name;
 		}
@@ -1113,24 +1153,29 @@ function showPopup(name, show, {
 		translateNodes(node);
 		updateSvg();
 
-		if (is_modal) {
+		if (is_modal)
+		{
 			// make sure the popup remains inside the window
 			const height = node.clientHeight,
 				width = node.clientWidth;
 
 			// center?
-			if (center || popup_adjust == -1) {
+			if (center || popup_adjust == -1)
+			{
 				x = win_x / 2 - width / 2;
 				y = win_y / 2 - height / 2;
 			}
-			else {
+			else
+			{
 				const target = CacheId(id),
 					rect = target? target.getBoundingClientRect() : null;
 
 				// align the popup with the target, if any
-				if (adjust) {
+				if (adjust)
+				{
 					// &1:adjust &2:top &4:right &8:bottom &16:left & 32:vcenter &64:hcenter
-					if (rect && popup_adjust > 1) {
+					if (rect && popup_adjust > 1)
+					{
 						if (popup_adjust & 2) y = rect.top;
 						if (popup_adjust & 4) x = rect.right;
 						if (popup_adjust & 8) y = rect.bottom;
@@ -1139,7 +1184,8 @@ function showPopup(name, show, {
 						if (popup_adjust & 64) x = (rect.left + rect.right) / 2;
 						xy = [x, y];
 					}
-					else if (!xy) {
+					else if (!xy)
+					{
 						const item = dataset['xy'];
 						if (item)
 							xy = item.split(',').map(item => item * 1);
@@ -1151,7 +1197,8 @@ function showPopup(name, show, {
 				}
 
 				// xy[2] => can align to the rect.right
-				if (xy) {
+				if (xy)
+				{
 					x = xy[0];
 					y = xy[1];
 					x2 = xy[2] || x;
@@ -1165,29 +1212,35 @@ function showPopup(name, show, {
 			y += offset[1];
 
 			// align left doesn't work => try align right, and if not then center
-			if (x + width > win_x - bar_x) {
+			if (x + width > win_x - bar_x)
+			{
 				if (x2 >= win_x - bar_x)
 					x2 = win_x - bar_x;
 
-				if (x2 - width > 0) {
+				if (x2 - width > 0)
+				{
 					px = -100;
 					x = Max(0, x2 - offset[0]);
 				}
-				else {
+				else
+				{
 					px = -50;
 					x = Max(0, win_x / 2 - offset[0]);
 				}
 			}
 			// same for y
-			if (y + height + margin_y > win_y) {
+			if (y + height + margin_y > win_y)
+			{
 				if (y2 >= win_y - 1)
 					y2 = win_y - 1;
 
-				if (y2 < win_y && y2 - height > 0) {
+				if (y2 < win_y && y2 - height > 0)
+				{
 					py = -100;
 					y = Max(0, y2 - offset[1]);
 				}
-				else {
+				else
+				{
 					py = -50;
 					y = Max(0, win_y / 2 - offset[1]);
 				}
@@ -1202,14 +1255,16 @@ function showPopup(name, show, {
 		}
 	}
 
-	if (!adjust) {
-		if (is_modal) {
+	if (!adjust)
+	{
+		if (is_modal)
+		{
 			if (instant != undefined)
 				Class(node, 'instant', instant);
 
 			// update classes
 			const removes = [...popup_classes].filter(item => item != class_).map(item => ` -${item}`).join(''),
-				sclass = class_? ` ${class_}`: '';
+				sclass = class_? ` ${class_}` : '';
 			Class(node, `popup-show popup-enable${sclass}${removes}`, !!show);
 			if (class_)
 				popup_classes.add(class_);
@@ -1218,11 +1273,13 @@ function showPopup(name, show, {
 			if (!show)
 				destroyPopup(node, 3);
 		}
-		if (show) {
+		if (show)
+		{
 			dataset['ev'] = event;
 			let height = 'unset',
 				width = 'unset';
-			if (popup_adjust > 0) {
+			if (popup_adjust > 0)
+			{
 				if (popup_adjust & 128) height = '100%';
 				if (popup_adjust & 256) width = '100%';
 			}
@@ -1231,7 +1288,8 @@ function showPopup(name, show, {
 			// shadow
 			Class(node, `${shadow == 0? '' : '-'}shadow0 ${shadow == 2? '' : '-'}shadow2`);
 		}
-		else {
+		else
+		{
 			dataset['center'] = '';
 			dataset['my'] = '';
 			dataset['x'] = '';
@@ -1257,29 +1315,34 @@ function showPopup(name, show, {
  * @param {boolean=} obj.xy
  * @returns {string} html
  */
-function showSettings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={}) {
+function showSettings(name, {flag, grid_class='options', item_class='item', title, unique, xy}={})
+{
 	const settings = name? (X_SETTINGS[name] || []) : X_SETTINGS,
-		class_ = settings['_class'] || '',                      // grid class
-        merge = settings['_merge'],                             // merge item and input together
-		prefix = settings['_prefix'],                           // remove prefix in item
-		split = settings['_split'],                             // multiple columns
-		suffix = settings['_suffix'],                           // remove suffix in item
-		title_add = Undefined(settings['_add'], Z.title_add);   // add " options" after the title
+		gclass = settings['_gclass'] || '',                 // grid class
+		merge = settings['_merge'],                         // merge item and input together
+		prefix = settings['_prefix'],                       // remove prefix in item
+		split = settings['_split'],                         // multiple columns
+		suffix = settings['_suffix'],                       // remove suffix in item
+		title_add =
+			Undefined(settings['_add'], Z.title_add);       // add " options" after the title
 	let keys = Keys(settings);
 
 	flag = /** @type {number} */(Undefined(flag, settings['_flag']) || 0);
 
 	// set multiple columns
-	if (split) {
+	if (split)
+	{
 		const new_keys = [];
 		let offset = split;
 		keys = keys.filter(key => (key != '_split' && !settings[key]['_pop']));
 
-		for (let i = 0; i < split; ++i) {
+		for (let i = 0; i < split; ++i)
+		{
 			new_keys.push(keys[i]);
 			if (keys[i][0] == '_')
 				new_keys.push('');
-			else {
+			else
+			{
 				new_keys.push(keys[offset] || '');
 				++offset;
 			}
@@ -1287,32 +1350,37 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 		keys = new_keys;
 	}
 
-	const grid_tag = merge? 'hs': 'grid',
-		lines = [createCloser(), `<${grid_tag} class="${grid_class}${class_? ' ' : ''}${class_}">`],
+	const grid_tag = merge? 'hs' : 'grid',
+		lines = [createCloser(), `<${grid_tag} class="${grid_class}${gclass? ' ' : ''}${gclass}">`],
 		parent_id = getDropId(context_target).id;
 
-	if (!(flag & 1)) {
+	if (!(flag & 1))
+	{
 		if (parent_id)
-			lines.push(`<div class="item2 span"${(flag & 8)? '': ' data-set="-1"'}>${parent_id}</div>`);
-		else if (name) {
-			if (!title) {
+			lines.push(`<div class="item2 span"${(flag & 8)? '' : ' data-set="-1"'}>${parent_id}</div>`);
+		else if (name)
+		{
+			if (!title)
+			{
 				title = settings['_title'] || settings['_label'];
 				if (IsFunction(title))
 					title = title();
-				if (!title) {
+				if (!title)
+				{
 					title = Title(name).replace(/_/g, ' ');
 					if (title_add && title.slice(-title_add.length) != title_add)
 						title = `${title}${title_add}`;
 				}
 			}
-			const sset = (flag & 8)? '': ` data-set="${unique? -1 : ''}"`;
+			const sset = (flag & 8)? '' : ` data-set="${unique? -1 : ''}"`;
 			lines.push(
-				`<div class="item-title span"${sset} data-n="${name}" data-t="${title}"></div>`);
+				`<div class="item-title span${sset? '' : ' text'}"${sset} data-n="${name}" data-t="${title}"></div>`);
 		}
 	}
 
 	keys.forEach(key => {
-		if (!key && split) {
+		if (!key && split)
+		{
 			lines.push('<div></div>');
 			return;
 		}
@@ -1322,49 +1390,62 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 		if (setting['_pop'])
 			return;
 
-        // extra _keys: class, color, flag, on, span, value
-        const sclass = setting['_class'],               // classes for item
-            sflag = setting['_flag'],                   // &1:title, &2:OK
-            siclass = setting['_iclass'],               // replace `item` class with this
-            sid = setting['_id'],                       // data-id
-			sid2 = setting['_id2'],                     // #id
-            slabel = setting['_label'],                 // rename item to this
-            slan = setting['_lan'],                     // use language icon
-            slower = setting['_lower'],
-            smain = setting['_main'],                   // use the main key
-            smulti = setting['_multi'],                 // multiple inputs on the same line
-            son = setting['_on'],                       // callback => false = skip
-            sset = setting['_set'],                     // data-set
-            sspan = setting['_span'],                   // make it 'item-title span'
-            ssvg = setting['_svg'],                     // svg icon to add before item
-            ssyn = setting['_syn'] || '',               // ~2
+		// extra _keys: class, color, flag, on, span, value
+		const sclass = setting['_class'],                   // classes for item
+			sflag = setting['_flag'],                       // &1:title, &2:OK
+			siclass = setting['_iclass'],                   // replace `item` class with this
+			sid = setting['_id'],                           // data-id
+			sid2 = setting['_id2'],                         // #id
+			sjclass = setting['_jclass'],                   // children class
+			slabel = setting['_label'],                     // rename item to this
+			slan = setting['_lan'],                         // use language icon
+			slower = setting['_lower'],
+			smain = setting['_main'],                       // use the main key
+			smulti = setting['_multi'],                     // multiple inputs on the same line
+			son = setting['_on'],                           // callback => false = skip
+			sset = setting['_set'],                         // data-set
+			sspan = setting['_span'],                       // make it 'item-title span'
+			ssvg = setting['_svg'],                         // svg icon to add before item
+			ssyn = setting['_syn'] || '',                   // ~2
 			stag = setting['_tag'],
-            stitle = setting['_title'];                 // title when mouse over
+			stitle = setting['_title'];                     // title when mouse over
 
-        let scolor = setting['_color'],                 // item text color
-            sextra = setting['_extra'],                 // extra label, ex: [min, max]
-            svalue = setting['_value'];                 // value or callback
+		let scolor = setting['_color'],                     // item text color
+			sextra = setting['_extra'],                     // extra label, ex: [min, max]
+			svalue = setting['_value'];                     // value or callback
 
 		if (sflag && sflag & flag)
 			return;
 		if (IsFunction(son) && !son())
 			return;
-		if (svalue != undefined) {
+		if (svalue != undefined)
+		{
 			if (IsFunction(svalue))
 				svalue = svalue();
 			setting = svalue;
 		}
 
 		// separator
-		if (key[0] == '_') {
+		if (key[0] == '_')
+		{
 			if (parseInt(key[1], 10))
-				lines.push((setting == 1)? '<div class="w100"></div>': `<hr${split? '' : ' class="span"'}>`);
+			{
+				let line;
+				switch (setting)
+				{
+				case 0:
+				case 1:
+				case 2: line = `<div class="w100${(setting == 0)? '' : ' top' + setting}"></div>`; break;
+				default: line = `<hr${split? '' : ' class="span"'}>`;
+				}
+				lines.push(line);
+			}
 			return;
 		}
 
 		// link or list
 		const data = setting[0],
-			is_string = IsString(data)? ` name="${key}"`: '',
+			is_string = IsString(data)? ` name="${key}"` : '',
 			more_data = (data || sset === 0)? '' : ` data-set="${sset || key}"`,
 			string_digit = is_string? data * 1 : 0;
 
@@ -1381,7 +1462,7 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 			return;
 
 		if (sclass != undefined)
-			more_class = sclass? ` ${sclass}`: '';
+			more_class = sclass? ` ${sclass}` : '';
 		else if (sspan)
 			more_class = ' item-title span';
 		if (ssvg)
@@ -1396,7 +1477,8 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 			y_key = fourth();
 
 		// only contextual actions?
-		if (title && title[0] == '!') {
+		if (title && title[0] == '!')
+		{
 			if (!parent_id)
 				return;
 			title = title.slice(1);
@@ -1405,7 +1487,8 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 		// remove prefix and suffix
 		if (clean.length == 2 && IsDigit(clean[1]))
 			clean = '';
-		else {
+		else
+		{
 			if (suffix && clean.slice(-suffix.length) == suffix)
 				clean = clean.slice(0, -suffix.length);
 			if (prefix && clean.slice(0, prefix.length) == prefix)
@@ -1415,31 +1498,34 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 		// TODO: improve that part, it can be customised better
 		if (string_digit & 2)
 			scolor = '#f00';
-		const style = scolor? `${(Y['theme'] == 'dark')? ' class="tshadow"' : ''} style="color:${scolor}"`: '',
-			title2 = title? `data-t="${title.replace(/"/g, '&quot;')}" data-t2="title"`: '';
+		const style = scolor? `${(Y['theme'] == 'dark')? ' class="tshadow"' : ''} style="color:${scolor}"` : '',
+			title2 = title? `data-t="${title.replace(/"/g, '&quot;')}" data-t2="title"` : '';
 		let label = (slabel != undefined)? slabel : `${Title(clean).replace(/_/g, ' ')}${ssyn}`;
 
 		// price [min/max]
-		if (sextra) {
+		if (sextra)
+		{
 			if (!sextra.includes('{'))
 				sextra = `{${sextra}}`;
 			label = `{${label}} [<i class='nowrap'>${sextra}</i>]`;
 		}
 
 		if (label != '' && (!merge || !IsArray(setting)))
-			if (!smulti || !sclass || !sclass.includes('span')) {
-				const iid = sid2? ` id="${sid2}"`: (sid? ` data-id="${sid}"`: ''),
-					tag = stag? stag: ((sset === 0)? 'div': 'a'),
-					itag = stag? 'div': 'i';
+			if (!smulti || !sclass || !sclass.includes('span'))
+			{
+				const iid = sid2? ` id="${sid2}"` : (sid? ` data-id="${sid}"` : ''),
+					tag = stag? stag : ((sset === 0)? 'div' : 'a'),
+					itag = stag? 'div' : 'i',
+					jclass = sjclass? ` class="${sjclass}"` : '';
 
 				lines.push(
 					`<${tag}${is_string} class="${item_class2}${more_class}${title === 0? ' off' : ''}"${more_data}${title2}>`,
-						(slan? '<h>': ''),
-						(slan? '<h class="language-icon"><div class="kanji">文</div><div>A</div></h>': ''),
-						(ssvg? `<i class="icon" data-svg="${ssvg}"></i>`: ''),
-						`<${itag}${iid} data-t="${label}"${style}></${itag}>`,
+						(slan? '<h>' : ''),
+						(slan? '<h class="lan-icon"><div class="kanji">文</div><div>A</div></h>' : ''),
+						(ssvg? `<i class="icon" data-svg="${ssvg}"></i>` : ''),
+						`<${itag}${iid}${jclass} data-t="${label}"${style}></${itag}>`,
 						((setting == '')? ' ...' : ''),
-						(slan? '</h>': ''),
+						(slan? '</h>' : ''),
 					`</${tag}>`,
 				);
 			}
@@ -1460,7 +1546,8 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 			++id;
 
 			// multi
-			if (smulti) {
+			if (smulti)
+			{
 				title = data[2];
 				third = data[3];
 				fourth = data[4];
@@ -1475,17 +1562,20 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 			}
 
 			// b) create element
-			const iclass = sclass? ` ${sclass}`: '';
+			const iclass = sclass? ` ${sclass}` : '';
 
-			if (IsArray(data)) {
-				if (data == ON_OFF) {
+			if (IsArray(data))
+			{
+				if (data == ON_OFF)
+				{
 					lines.push(
 						`<v class="fcenter fastart${iclass}">`,
 							`<input name="${key}" type="checkbox" ${y_key? 'checked' : ''}>`,
 						'</v>',
 					);
 				}
-				else {
+				else
+				{
 					const dico = {on_off: true};
 					if (slower != undefined)
 						dico.lower = slower;
@@ -1502,8 +1592,9 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 				class_ = data['class'] || '',
 				focus = data.focus || '',
 				holder = data.text || '';
-			const type = data.type || '';
-			class_ = ` class="setting${class_? ' ' : ''}${class_}"`;
+			const class_on = (merge && y_key)? ' on' : '',
+				type = data.type || '';
+			class_ = ` class="setting${class_? ' ' : ''}${class_}${class_on}"`;
 			if (focus)
 				focus = ` data-f="${focus}"`;
 
@@ -1513,10 +1604,13 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 				title = ` title="${translateExpression(title)}"`;
 
 			if (id == 0)
-				lines.push(smulti? `<h class="${merge? (sclass || ''): 'faround' + iclass}">`: `<v class="${merge? 'ibox': 'fcenter'}${iclass}${(merge && y_key)? ' on': ''}">`);
+				lines.push(
+					smulti? `<${stag || 'h'} class="${merge? (sclass || '') : 'faround' + iclass}">`
+					: `<v class="${merge? 'ibox' : 'fcenter'}${iclass}">`
+				);
 
 			if (merge && !smulti)
-				lines.push(`<div class="ilabel">${label}</div>`);
+				lines.push(`<div class="ilabel${class_on}" data-t="${label}"></div>`);
 
 			// c) placeholder + autocomplete
 			if (holder)
@@ -1525,7 +1619,8 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 				auto = ` autocomplete="${auto}"`;
 
 			let found = true;
-			switch (type) {
+			switch (type)
+			{
 			case 'area':
 				lines.push(`<textarea name="${key}"${class_}${holder}${auto}${focus}${title}>${y_key}</textarea>`);
 				break;
@@ -1545,7 +1640,7 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 					data.list.map(item => {
 						const parts = item.split('='),
 							name = parts[0],
-							title = parts[1]? ` title="${name}"`: '';
+							title = parts[1]? ` title="${name}"` : '';
 						return `<a class="item item3" name="${key}_${name}"${title} data-t="${parts[1] || name}"></a>`;
 					}).join(''),
 					'</h>',
@@ -1559,44 +1654,64 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 				found = false;
 			}
 
-			if (found) {
+			if (found)
+			{
 			}
-			else if (type) {
+			else if (type)
+			{
+				let type2 = type;
 				// accept number colors
-				if (type == 'color') {
+				switch (type)
+				{
+				case 'color':
 					if (!IsString(y_key))
 						y_key = HexString(y_key, 6, '#');
+					break;
+				// chrome allows spaces before/after with email => text
+				case 'email':
+					if (!device.mobile)
+						type2 = 'text';
+					break;
 				}
 				lines.push(
-					`<input name="${key}" type="${type}"${class_}${holder}${auto} value="${y_key}"${focus}${title}>`);
+					`<input name="${key}" type="${type2}"${class_}${holder}${auto} value="${y_key || ''}"${focus}${title}>`);
 			}
 			// dictionary / string
-			else {
+			else
+			{
 				const keys = Keys(data).filter(item => item[0] != '_' && item != 'class');
 				if (keys.length)
 					lines.push(`<select name="${key}"${focus}>${fillCombo(null, data, y_key)}</select>`);
 				// string
-				else {
+				else
+				{
+					const dclass = data['_class'],
+						dtext = (dclass == 'text'),
+						dtag = dtext? 'div' : 'a';
+
 					let class_ = item_class2,
 						iname = key,
 						iset = data['_set'];
-					if (data['_class'])
-						class_ = `${class_} ${data['_class']}`;
+					if (dclass)
+						class_ = dtext? dclass : `${class_}${class_? ' ' : ''}${dclass}`;
 					if (smain)
 						iname = `${main_key}_${iname}`;
+
 					iset = (iset === 0)? '' : ` data-set="${iset || key}"`;
-					lines.push(`<a class="${class_}" name="${iname}"${iset} data-t="${Title(data['_label'] || key).replace(/_/g, ' ')}"></a>`);
+					lines.push(`<${dtag} class="${class_}" name="${iname}"${iset} data-t="${Title(data['_label'] || key).replace(/_/g, ' ')}"></${dtag}>`);
 				}
 			}
 
 			if (!smulti || id == smulti - 1)
-				lines.push(smulti? '</h>' : '</v>');
+				lines.push(smulti? `</${stag || 'h'}>` : '</v>');
 		});
 	});
 
 	// -1 to close the popup
-	if (!(flag & 2)) {
-		if (parent_id && !(flag & 4) && (Y['join_next'] || Y['drag_and_drop'])) {
+	if (!(flag & 2))
+	{
+		if (parent_id && !(flag & 4) && (Y['join_next'] || Y['drag_and_drop']))
+		{
 			const context_area = context_areas[parent_id] || {};
 			lines.push(
 				'<h class="span">',
@@ -1606,7 +1721,8 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
 				'</h>',
 			);
 		}
-		else if (name) {
+		else if (name)
+		{
 			const foot = Undefined(settings['_foot'], Z.foot),
 				foot_set = (foot == 'OK')? -1 : '';
 			addFoot(lines, foot_set, foot);
@@ -1627,19 +1743,22 @@ function showSettings(name, {flag, grid_class='options', item_class='item', titl
  * @param {string=} class_ class to use
  * @returns {string} the resized text
  */
-function resizeText(text, resize, class_='resize') {
+function resizeText(text, resize, class_='resize')
+{
 	if (!text || resize < 1)
 		return text;
 
 	let len;
-	if (IsString(text)) {
+	if (IsString(text))
+	{
 		len = text.length;
 		if (Upper(text) == text)
 			len *= 4/3;
 		else if (text.includes('='))
 			len += 0.5;
 	}
-	else {
+	else
+	{
 		text = text + '';
 		len = text.length;
 	}
@@ -1654,9 +1773,9 @@ function resizeText(text, resize, class_='resize') {
  * @param {string} text
  * @returns {string|null} translated text
  */
-function translate(text) {
-	if (!text)
-		return text;
+function translate(text)
+{
+	if (!text) return text;
 	if (DEV['translate'])
 		TRANSLATES[text] = '';
 
@@ -1664,19 +1783,15 @@ function translate(text) {
 		return text.includes('{')? null : text.split('~')[0];
 
 	// mode
-	if (!translates)
-		return text;
+	if (!translates) return text;
 	const direct = translates[text];
-	if (direct)
-		return direct;
+	if (direct) return direct;
 
 	const lower = Lower(text);
-	if (lower == text)
-		return null;
+	if (lower == text) return null;
 
 	const result = translates[lower];
-	if (!result)
-		return null;
+	if (!result) return null;
 
 	// MODE
 	if (text == Upper(text))
@@ -1693,7 +1808,8 @@ function translate(text) {
  * @param {string} text
  * @returns {string|null} translated text
  */
-function translateDefault(text) {
+function translateDefault(text)
+{
 	return translate(text) || text;
 }
 
@@ -1702,7 +1818,8 @@ function translateDefault(text) {
  * @param {string} text
  * @returns {string} translated text
  */
-function translateExpression(text) {
+function translateExpression(text)
+{
 	if (!text)
 		return '';
 
@@ -1719,7 +1836,8 @@ function translateExpression(text) {
 		text = text.replace(/\[(.*?)\]/g, (_match, p1) => TRANSLATE_SPECIALS[p1] || `[${p1}]`);
 
 	// 4) Animations|geschwindigkeit
-	if (text.includes('|')) {
+	if (text.includes('|'))
+	{
 		const middle = text.split('|').map(part => `<i class="nowrap">${part}</i>`).join('');
 		text = `<i class="breakall">${middle}</i>`;
 	}
@@ -1731,7 +1849,8 @@ function translateExpression(text) {
  * - resolve all data-t, data-t2=target, data-tr=resize
  * @param {Node=} node
  */
-function translateNode(node) {
+function translateNode(node)
+{
 	// 1) skip?
 	if (!node)
 		return;
@@ -1750,20 +1869,23 @@ function translateNode(node) {
 		else if (tag == 'IMG')
 			target = 'title';
 
-	if (target) {
+	if (target)
+	{
 		// placeholder: \n
 		if (tag == 'TEXTAREA')
 			translated = translated.replace(/\\n/g, '\n');
 
 		node.setAttribute(target, translated);
 		// update value?
-		if (tag == 'INPUT') {
+		if (tag == 'INPUT')
+		{
 			const value = node.dataset['value'];
 			if (value != undefined)
 				node.value = translateExpression(value);
 		}
 	}
-	else {
+	else
+	{
 		const resize = node.dataset['tr'];
 		if (resize)
 			translated = resizeText(translated, parseInt(resize, 10));
@@ -1776,7 +1898,8 @@ function translateNode(node) {
  * - resolve all data-t, data-t2=target, data-tr=resize
  * @param {string|Node?} parent CSS selector or node
  */
-function translateNodes(parent) {
+function translateNodes(parent)
+{
 	parent = _(parent);
 	if (!parent)
 		return;
@@ -1791,7 +1914,8 @@ function translateNodes(parent) {
  * Get a closer X
  * @returns {string}
  */
-function createCloser() {
+function createCloser()
+{
 	return [
 		'<h class="w100 fend">',
 			'<div class="closer pad" data-svg="X"></div>',
@@ -1804,7 +1928,8 @@ function createCloser() {
  * @param {string} name
  * @returns {string}
  */
-function createSvgIcon(name) {
+function createSvgIcon(name)
+{
 	let image = ICONS[name.split(' ')[0]];
 	if (!image)
 		return '';
@@ -1830,21 +1955,22 @@ function createSvgIcon(name) {
  * @param {Object=} obj.skips keys to skip
  * @returns {string} the selected value, or the HTML
  */
-function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_off, parent, skips}={}) {
+function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_off, parent, skips}={})
+{
 	if (!HAS_DOCUMENT)
 		return '';
 	dico = Undefined(dico, {});
 
-	if (IsString(letter)) {
+	if (IsString(letter))
+	{
 		letter = /** @type {string} */(letter);
-		if (values == null)
-			values = [DEFAULTS[letter]];
-		if (select == null)
-			select = Y[letter];
+		if (values == null) values = [DEFAULTS[letter]];
+		if (select == null) select = Y[letter];
 	}
 
 	// {be: 'Belgium', fr: 'France'}
-	if (!IsArray(values) && IsObject(values)) {
+	if (!IsArray(values) && IsObject(values))
+	{
 		dico = /** @type {!Object} */(values);
 		values = Keys(dico);
 	}
@@ -1853,7 +1979,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		group = false;
 	const lines = [];
 
-	for (const option of /** @type {!Array<string|number>} */(values)) {
+	for (const option of /** @type {!Array<string|number>} */(values))
+	{
 		if (skips && skips[option])
 			continue;
 
@@ -1864,7 +1991,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		if (lower)
 			value = Lower(value);
 
-		if (value.slice(0, 2) == '* ') {
+		if (value.slice(0, 2) == '* ')
+		{
 			if (group)
 				lines.push('</optgroup>');
 			group = true;
@@ -1875,7 +2003,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		if (on_off)
 			value = Undefined({'off': 0, 'on': 1}[value], value);
 
-		if (select == value || (IsString(value) && select == value.split('|')[0])) {
+		if (select == value || (IsString(value) && select == value.split('|')[0]))
+		{
 			selected = ' selected="selected"';
 			found = value;
 		}
@@ -1885,7 +2014,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		// 'name of event|extra|info' => 'name of event'
 		text = text.split('|')[0];
 		// rename using dico or custom function
-		if (items.length < 2) {
+		if (items.length < 2)
+		{
 			text = dico[text] || text;
 			if (vi_renameOption)
 				text = vi_renameOption(value, text);
@@ -1896,7 +2026,7 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		if (splits.length > 1)
 			text = `{${splits[0]}}: {${splits[1]}}`;
 
-		const data = no_translate? `>${text}`: ` data-t="${text}">`;
+		const data = no_translate? `>${text}` : ` data-t="${text}">`;
 		lines.push(`<option value="${value}"${selected}${data}</option>`);
 	}
 	if (group)
@@ -1906,7 +2036,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 		return lines.join('');
 
 	// set the HTML: 1 letter => #co+letter, otherwise letter is a selector
-	if (letter) {
+	if (letter)
+	{
 		const sel = IsString(letter)? _(letterSelector(/** @type {string} */(letter)), parent) : letter;
 		HTML(sel, lines.join(''));
 		translateNodes(sel);
@@ -1920,7 +2051,8 @@ function fillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
  * @param {string} letter
  * @returns {string} CSS selector
  */
-function letterSelector(letter) {
+function letterSelector(letter)
+{
 	if (letter.length == 1)
 		letter = `#co${letter}`;
 	return letter;
@@ -1933,7 +2065,8 @@ function letterSelector(letter) {
  * @param {number=} version CSS version, use Now() to force reload
  * @returns {number} number of changes
  */
-function updateStyle(parent, themes, version=1) {
+function updateStyle(parent, themes, version=1)
+{
 	const node = CacheId(parent);
 	if (!node)
 		return 0;
@@ -1944,9 +2077,10 @@ function updateStyle(parent, themes, version=1) {
 	// 1) toggle styles (can be embedded)
 	E('style', child => {
 		let name = child.id.split('-').slice(-1)[0],
-			type = (themes.includes(name))? '': 'text';
+			type = (themes.includes(name))? '' : 'text';
 
-		if (child.type != type) {
+		if (child.type != type)
+		{
 			child.type = type;
 			++changes;
 		}
@@ -1954,7 +2088,8 @@ function updateStyle(parent, themes, version=1) {
 	}, node);
 
 	// 2) add missing styles
-	for (let theme of themes) {
+	for (let theme of themes)
+	{
 		if (seens.has(theme))
 			continue;
 		const child = CreateNode('style', null, {'id': `style-${theme}`});
@@ -1973,11 +2108,13 @@ function updateStyle(parent, themes, version=1) {
  * Resolve the SVG
  * @param {Node=} parent parent node, document by default
  */
-function updateSvg(parent) {
+function updateSvg(parent)
+{
 	E('[data-svg]', node => {
 		const name = node.dataset['svg'],
 			image = createSvgIcon(name);
-		if (image) {
+		if (image)
+		{
 			HTML(node, image);
 			delete node.dataset['svg'];
 		}
@@ -1991,7 +2128,8 @@ function updateSvg(parent) {
  * @param {number=} version CSS version, use Now() to force reload
  * @returns {boolean} true if the theme was changed
  */
-function updateTheme(themes, callback, version=1) {
+function updateTheme(themes, callback, version=1)
+{
 	if (!themes)
 		themes = [Y['theme']];
 
@@ -2018,7 +2156,8 @@ function updateTheme(themes, callback, version=1) {
  * Check the query hash/string
  * @param {boolean=} no_special
  */
-function checkHash(no_special) {
+function checkHash(no_special)
+{
 	const string = /** @type {!Object} */(QueryString({key: 'hash'})),
 		dico = Assign({}, ...Keys(string).map(key => ({[key]: (string[key] == 'undefined')? undefined : string[key]})));
 	Assign(Y, dico);
@@ -2037,7 +2176,8 @@ function checkHash(no_special) {
  * Detect the device
  * @returns {!Object}
  */
-function detectDevice() {
+function detectDevice()
+{
 	const agent = navigator.userAgent || navigator.vendor || window.opera;
 	let mobile = false,
 		os = '?';
@@ -2061,7 +2201,8 @@ function detectDevice() {
 /**
  * Guess the browser language
  */
-function guessBrowserLanguage() {
+function guessBrowserLanguage()
+{
 	const indices = Assign({}, ...Keys(LANGUAGES).map(lan => {
 			const key = LANGUAGES_32[lan] || lan.slice(0, 2);
 			return {[key]: lan};
@@ -2070,10 +2211,12 @@ function guessBrowserLanguage() {
 		languages = [...[navigator.language], ...(navigator.languages || [])];
 
 	let want = 'eng';
-	for (const language of languages) {
+	for (const language of languages)
+	{
 		const lan = language.split('-')[0],
 			index = indices[lan];
-		if (index) {
+		if (index)
+		{
 			want = index;
 			break;
 		}
@@ -2088,7 +2231,8 @@ function guessBrowserLanguage() {
  * Check if the browser is in full screen mode
  * @returns {Node}
  */
-function isFullscreen() {
+function isFullscreen()
+{
 	const full = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
 	full_target = full? CacheId('body') : null;
 	return full;
@@ -2100,7 +2244,8 @@ function isFullscreen() {
  * @param {Function=} callback
  * @param {Object=} extra
  */
-function loadLibrary(url, callback, extra) {
+function loadLibrary(url, callback, extra)
+{
 	if (!libraries[url])
 		LoadLibrary(url, () => {
 			if (DEV['load'])
@@ -2123,7 +2268,8 @@ function loadLibrary(url, callback, extra) {
  * @param {boolean=} obj.replace replace the state instead of pushing it
  * @returns {Object} dictionary of changes, or null if empty
  */
-function pushState(query, {check, go, key='hash', replace}={}) {
+function pushState(query, {check, go, key='hash', replace}={})
+{
 	query = query || {};
 	const state_keys = STATE_KEYS[Z.s] || STATE_KEYS[y_x] || STATE_KEYS['_'] || [],
 		new_state = Assign({}, ...state_keys.filter(x => query[x] || Y[x]).map(x =>
@@ -2135,7 +2281,8 @@ function pushState(query, {check, go, key='hash', replace}={}) {
 		url = QueryString({key: null, replace: new_state, string: true});
 
 	// state didn't change => return
-	if (state) {
+	if (state)
+	{
 		changes = state_keys.filter(key => (new_state[key] !== state[key]));
 		if (!changes.length)
 			return null;
@@ -2143,7 +2290,8 @@ function pushState(query, {check, go, key='hash', replace}={}) {
 
 	if (go)
 		location[go] = url;
-	else {
+	else
+	{
 		url = QUERY_KEYS[key] + url;
 		const exist = location[key];
 		if (exist == url)
@@ -2163,14 +2311,17 @@ function pushState(query, {check, go, key='hash', replace}={}) {
  * Toggle full screen mode
  * @param {Function=} callback
  */
-function toggleFullscreen(callback) {
+function toggleFullscreen(callback)
+{
 	const full = isFullscreen();
-	if (full) {
+	if (full)
+	{
 		const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
 		if (exit)
 			exit.call(document);
 	}
-	else {
+	else
+	{
 		const body = document.body,
 			enter = body.requestFullscreen || body.webkitRequestFullScreen || body.mozRequestFullScreen;
 		if (enter)
@@ -2186,18 +2337,20 @@ function toggleFullscreen(callback) {
 
 /**
  * Add session info
- * @param {!Array|!Object|string} data
+ * @param {Array|Object|string} data
  * @param {number=} flag &1:session, &2:email+login
  * @returns {boolean}
  */
-function addSession(data, flag) {
+function addSession(data, flag)
+{
 	return true;
 }
 
 /**
  * Check sockets: ping + reconnection
  */
-function checkSockets() {
+function checkSockets()
+{
 	AddTimeout('ws', () => {
 	// 	const ms = Now(2);
 	// 	if (ms < pings[1] + 12000 && ms < pings[0] + 24000)
@@ -2216,7 +2369,8 @@ function checkSockets() {
  * https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4821719/
  * @param {ArrayBuffer} data
  */
-function handlePing(data) {
+function handlePing(data)
+{
 	// 0: client sent, 1: server received
 	const count = pings[2] & 15,
 		items = new Uint16Array(data),
@@ -2236,11 +2390,13 @@ function handlePing(data) {
 	server_diffs[count & 15] = diff;
 	++pings[2];
 
-	if (pings[2] < 16) {
+	if (pings[2] < 16)
+	{
 		ping_diff[1] = ping;
 		ping_diff[2] = diff;
 	}
-	else {
+	else
+	{
 		ping_diff[1] = [...ping_values].sort().slice(4, 12).reduce((a, b) => a + b) >> 3;
 		ping_diff[2] = [...server_diffs].sort().slice(4, 12).reduce((a, b) => a + b) >> 3;
 	}
@@ -2256,7 +2412,8 @@ function handlePing(data) {
  * @param {Function=} obj.message
  * @param {Function=} obj.open
  */
-function initWebsockets({close, message, open}={}) {
+function initWebsockets({close, message, open}={})
+{
 	if (socket && socket.readyState <= WS.OPEN)
 		return;
 	if (DEV['socket'])
@@ -2266,12 +2423,9 @@ function initWebsockets({close, message, open}={}) {
 	socket.binaryType = 'arraybuffer';
 
 	// set virtuals
-	if (close)
-		vi_socketClose = close;
-	if (message)
-		vi_socketMessage = message;
-	if (open)
-		vi_socketOpen = open;
+	if (close) vi_socketClose = close;
+	if (message) vi_socketMessage = message;
+	if (open) vi_socketOpen = open;
 
 	// reconnect when closed
 	socket.onclose = () => {
@@ -2308,11 +2462,13 @@ function initWebsockets({close, message, open}={}) {
  * Socket error
  * @param {string} text error text
  */
-function socketError(text) {
+function socketError(text)
+{
 	if (!socket_fail)
 		LS(text);
 	++socket_fail;
-	if (socket_fail > 3) {
+	if (socket_fail > 3)
+	{
 		if (me['session'] && vi_logout)
 			vi_logout();
 	}
@@ -2324,7 +2480,8 @@ function socketError(text) {
  * Send a ping
  * @returns {boolean}
  */
-function socketPing() {
+function socketPing()
+{
 	if (!socket || socket.readyState != WS.OPEN)
 		return false;
 	// pings[0] = Now(2);
@@ -2337,7 +2494,8 @@ function socketPing() {
  * Send 16 pings
  * @returns {boolean}
  */
-function socketPings() {
+function socketPings()
+{
 	if (!socket || socket.readyState != WS.OPEN)
 		return false;
 	for (let i = 0; i < 16; ++i)
@@ -2351,9 +2509,11 @@ function socketPings() {
  * @param {number=} ajax_session &1:session, &2:email+login
  * @returns {boolean?}
  */
-function socketSend(data, ajax_session) {
+function socketSend(data, ajax_session)
+{
 	// no socket => use ajax
-	if (!socket || socket.readyState != WS.OPEN) {
+	if (!socket || socket.readyState != WS.OPEN)
+	{
 		AddTimeout('socket', initWebsockets, SOCKET_OPTIONS.direct);
 
 		if (!SOCKET_OPTIONS.ajax || data instanceof ArrayBuffer)
@@ -2375,7 +2535,8 @@ function socketSend(data, ajax_session) {
 
 	// send socket
 	let success = null;
-	try {
+	try
+	{
 		if (data instanceof ArrayBuffer)
 			socket.send(data);
 		else if (IsString(data))
@@ -2384,7 +2545,8 @@ function socketSend(data, ajax_session) {
 			socket.send(Stringify(data));
 		success = true;
 	}
-	catch(error) {
+	catch (error)
+	{
 		socketError(`socketSend: ${Now()} : ${error}`);
 	}
 	return success;
@@ -2401,7 +2563,8 @@ function socketSend(data, ajax_session) {
  * @param {number=} ratio_y
  * @returns {!Array<number>} deltas
  */
-function addMove(change, stamp, ratio_x=1, ratio_y=1) {
+function addMove(change, stamp, ratio_x=1, ratio_y=1)
+{
 	if (!drag)
 		return [0, 0];
 	const dx = (change.x - drag[0].x) * ratio_x,
@@ -2414,7 +2577,8 @@ function addMove(change, stamp, ratio_x=1, ratio_y=1) {
  * We cannot click just after a touch drop, as that would cause misclick events
  * @returns {boolean|Node}
  */
-function cannotClick() {
+function cannotClick()
+{
 	if (Now(1) < touch_done + TIMEOUT_touch)
 		return true;
 	const active = document.activeElement;
@@ -2427,7 +2591,8 @@ function cannotClick() {
  * Check if we can't right click to popup
  * @returns {boolean}
  */
-function cannotPopup() {
+function cannotPopup()
+{
 	const is_control = KEYS[17],
 		cannot = !Undefined(Y['popup_right_click'], 1) || is_control;
 	if (cannot && is_control)
@@ -2439,7 +2604,8 @@ function cannotPopup() {
  * Finished touching which means we cannot click for a bit
  * @param {number=} delta
  */
-function doneTouch(delta=0) {
+function doneTouch(delta=0)
+{
 	touch_done = Now(1) + delta;
 }
 
@@ -2448,7 +2614,8 @@ function doneTouch(delta=0) {
  * @param {Node} node
  * @returns {Node}
  */
-function getArea(node) {
+function getArea(node)
+{
 	return Parent(node, {class_: 'area'});
 }
 
@@ -2457,7 +2624,8 @@ function getArea(node) {
  * @param {Event} e
  * @returns {!Array<Vector2>}
  */
-function getChangedTouches(e) {
+function getChangedTouches(e)
+{
 	const touches = e.changedTouches || e.touches;
 	return touches?
 		[...touches].map(touch => ({x: touch.clientX, y: touch.clientY}))
@@ -2468,7 +2636,8 @@ function getChangedTouches(e) {
 /**
  * Render the inertial scrolling
  */
-function renderScroll() {
+function renderScroll()
+{
 	const ratio = Y['scroll_inertia'];
 	if (!ratio)
 		return;
@@ -2478,13 +2647,15 @@ function renderScroll() {
 
 	touch_scroll.x -= touch_speed.x * delta;
 	touch_scroll.y -= touch_speed.y * delta;
-	if (full_target) {
+	if (full_target)
+	{
 		full_scroll.x -= touch_speed.x * delta;
 		full_scroll.y -= touch_speed.y * delta;
 	}
 	setScroll();
 
-	if (Abs(touch_speed.x) > 0.03 || Abs(touch_speed.y) > 0.03) {
+	if (Abs(touch_speed.x) > 0.03 || Abs(touch_speed.y) > 0.03)
+	{
 		touch_speed.x *= ratio;
 		touch_speed.y *= ratio;
 		AnimationFrame('scroll', renderScroll);
@@ -2500,7 +2671,8 @@ function renderScroll() {
  * @param {number=} max_delta
  * @param {number=} depth
  */
-function scrollAdjust(target, max_delta, depth=0) {
+function scrollAdjust(target, max_delta, depth=0)
+{
 	if (max_delta == undefined)
 		max_delta = Y['wheel_adjust'];
 
@@ -2525,12 +2697,14 @@ function scrollAdjust(target, max_delta, depth=0) {
 			top = rect.top + y - gap;
 
 		let delta1, delta2;
-		if (flag & 1) {
+		if (flag & 1)
+		{
 			delta1 = top - y;
 			if (Abs(delta1) > max_allowed)
 				return;
 		}
-		if (flag & 2) {
+		if (flag & 2)
+		{
 			delta2 = bottom - y;
 			if (Abs(delta2) > max_allowed)
 				return;
@@ -2544,10 +2718,12 @@ function scrollAdjust(target, max_delta, depth=0) {
 	});
 
 	// 2) no anchors found => scroll to the target if any
-	if (!deltas.length) {
-		if (target) {
+	if (!deltas.length)
+	{
+		if (target)
+		{
 			y = Safe(target).getBoundingClientRect().top + y;
-			ScrollDocument(y, true);
+			ScrollDocument(y);
 		}
 		return;
 	}
@@ -2556,25 +2732,32 @@ function scrollAdjust(target, max_delta, depth=0) {
 	let offset, y1, y2, y3,
 		diff = max_delta,
 		diff3 = diff;
-	for (let [priority, key, delta1, delta2, top, bottom] of deltas) {
+	for (let [priority, key, delta1, delta2, top, bottom] of deltas)
+	{
 		if (DEV['ui'])
 			LS(`${priority} : ${key} : ${delta1} : ${delta2} : ${top} : ${bottom}`);
-		if (delta2 != undefined && Abs(delta2) < max_delta) {
+		if (delta2 != undefined && Abs(delta2) < max_delta)
+		{
 			y2 = bottom;
 			offset = -delta2;
 		}
-		if (delta1 != undefined) {
-			if (offset) {
+		if (delta1 != undefined)
+		{
+			if (offset)
+			{
 				delta1 += offset;
-				if (delta1 < 0) {
-					if (delta1 > -max_delta && Abs(delta1) < Abs(diff3)) {
+				if (delta1 < 0)
+				{
+					if (delta1 > -max_delta && Abs(delta1) < Abs(diff3))
+					{
 						diff3 = delta1;
 						y3 = top;
 					}
 					continue;
 				}
 			}
-			if (Abs(delta1) < Abs(diff)) {
+			if (Abs(delta1) < Abs(diff))
+			{
 				diff = delta1;
 				y1 = top;
 			}
@@ -2585,17 +2768,19 @@ function scrollAdjust(target, max_delta, depth=0) {
 	let combined = 0;
 	if (y1 == undefined && y3 != undefined)
 		y = y3;
-	else {
+	else
+	{
 		const ys = [y1, y2].filter(value => value != undefined);
 		combined = ys.length;
 		if (!combined)
 			return;
 		y = ys.reduce((a, b) => a + b) / ys.length;
 	}
-	ScrollDocument(y, true);
+	ScrollDocument(y);
 
 	// 5) adjust again?
-	if (!target && depth < 1 && combined < 2) {
+	if (!target && depth < 1 && combined < 2)
+	{
 		const new_delta = max_delta - Abs(y - y_old);
 		if (new_delta > 0)
 			AddTimeout('adjust', () => scrollAdjust(target, new_delta, depth + 1), TIMEOUT_adjust);
@@ -2605,23 +2790,28 @@ function scrollAdjust(target, max_delta, depth=0) {
 /**
  * Set the scroll
  */
-function setScroll() {
+function setScroll()
+{
 	const node = drag_target || scroll_target;
 
-	if (node) {
+	if (node)
+	{
 		// horizontal
-		if (drag_scroll & 1) {
+		if (drag_scroll & 1)
+		{
 			node.scrollLeft = touch_scroll.x;
 			touch_scroll.x = node.scrollLeft;
 		}
 		// vertical
-		if (drag_scroll & 2) {
-			ScrollDocument(touch_scroll.y);
+		if (drag_scroll & 2)
+		{
+			ScrollDocument(touch_scroll.y, {smooth: false});
 			touch_scroll.y = ScrollDocument();
 		}
 	}
 
-	if (full_target) {
+	if (full_target)
+	{
 		full_scroll.x = Clamp(full_scroll.x, 0, full_target.clientWidth - window.innerWidth);
 		full_scroll.y = Clamp(full_scroll.y, 0, full_target.clientHeight - window.innerHeight);
 		Style(full_target, [['transform', `translate(${-full_scroll.x}px,${-full_scroll.y}px)`]]);
@@ -2631,7 +2821,8 @@ function setScroll() {
 /**
  * Stop dragging
  */
-function stopDrag() {
+function stopDrag()
+{
 	drag = null;
 	drag_moved = false;
 	drag_scroll = 3;
@@ -2643,7 +2834,8 @@ function stopDrag() {
  * @param {Event} e
  * @returns {{change:Vector2, error:number, stamp:number}}
  */
-function touchEvent(e) {
+function touchEvent(e)
+{
 	const changes = getChangedTouches(e),
 		change = changes[0],
 		length = changes.length,
@@ -2651,29 +2843,36 @@ function touchEvent(e) {
 	let error = -1;
 
 	// multiple inputs => keep the one closer to the previous input
-	if (length > 1) {
-		if (drag) {
+	if (length > 1)
+	{
+		if (drag)
+		{
 			let best_x = 0,
 				best_y = 0;
-			for (const touch of changes) {
+			for (const touch of changes)
+			{
 				const dx = (touch.x - touch_last.x),
 					dy = (touch.y - touch_last.y),
 					delta = dx * dx + dy * dy;
 
-				if (error < 0 || delta < error) {
+				if (error < 0 || delta < error)
+				{
 					error = delta;
 					best_x = touch.x;
 					best_y = touch.y;
 				}
 			}
-			if (error >= 0) {
+			if (error >= 0)
+			{
 				change.x = best_x;
 				change.y = best_y;
 			}
 		}
-		else {
+		else
+		{
 			const total = [0, 0];
-			for (const touch of changes) {
+			for (const touch of changes)
+			{
 				total[0] += touch.x;
 				total[1] += touch.y;
 			}
@@ -2681,7 +2880,8 @@ function touchEvent(e) {
 			change.y = total[1] / length;
 		}
 	}
-	else if (drag) {
+	else if (drag)
+	{
 		const dx = (change.x - touch_last.x),
 			dy = (change.y - touch_last.y);
 		error = dx * dx + dy * dy;
@@ -2701,7 +2901,8 @@ function touchEvent(e) {
  * @param {boolean=} full full screen scrolling
  * @param {boolean=} prevent_default
  */
-function touchHandle(e, full, prevent_default) {
+function touchHandle(e, full, prevent_default)
+{
 	if (full == undefined)
 		full = !!isFullscreen();
 
@@ -2711,10 +2912,11 @@ function touchHandle(e, full, prevent_default) {
 		stamp = event.stamp,
 		target = e.target,
 		type = e.type,
-		type5 = type.slice(0, 5),
-		is_start = TOUCH_STARTS[type];
+		type5 = e.pointerType,
+		is_start = TOUCH_STARTS.has(type);
 
-	if (is_start) {
+	if (is_start)
+	{
 		const old_target = drag_target;
 		stopDrag();
 		if (type5 == 'mouse' && buttons != 1)
@@ -2723,17 +2925,19 @@ function touchHandle(e, full, prevent_default) {
 		if (['INPUT', 'SELECT'].includes(target.tagName))
 			return;
 		// can only acquire a new target with a click
-		if (type == 'mouseenter' && !old_target)
+		if (type == 'pointerenter' && !old_target)
 			return;
 
 		ClearTimeout('touch_end');
 
 		drag_target = Parent(/** @type {Node} */(target), {class_: 'scroller', self: true, tag: 'div'});
-		if (drag_target && !full_target) {
+		if (drag_target && !full_target)
+		{
 			// maybe the object is already fully visible?
 			// TODO: limit x and y directions individually
 			const child = drag_target.firstElementChild;
-			if (child) {
+			if (child)
+			{
 				const child_height = child.clientHeight,
 					child_width = child.clientWidth;
 				if (child_height <= drag_target.clientHeight && child_width <= drag_target.clientWidth)
@@ -2754,11 +2958,13 @@ function touchHandle(e, full, prevent_default) {
 		touch_scroll.x = drag_target? drag_target.scrollLeft : 0;
 		touch_scroll.y = ScrollDocument();
 	}
-	else if (TOUCH_MOVES[type]) {
+	else if (TOUCH_MOVES.has(type))
+	{
 		if (!drag)
 			return;
 		// reset needed when we move the mouse outside the window, then come back
-		if (type == 'mousemove' && !buttons) {
+		if (type == 'pointermove' && !buttons)
+		{
 			stopDrag();
 			return;
 		}
@@ -2770,7 +2976,8 @@ function touchHandle(e, full, prevent_default) {
 
 		touch_scroll.x -= dx;
 		touch_scroll.y -= dy;
-		if (full_target) {
+		if (full_target)
+		{
 			full_scroll.x -= dx;
 			full_scroll.y -= dy;
 		}
@@ -2780,7 +2987,8 @@ function touchHandle(e, full, prevent_default) {
 		if (prevent_default && (e.cancelable != false || type5 != 'touch'))
 			PD(e);
 	}
-	else if (TOUCH_ENDS[type]) {
+	else if (TOUCH_ENDS.has(type))
+	{
 		if (!drag || !drag_moved)
 			return;
 
@@ -2790,7 +2998,8 @@ function touchHandle(e, full, prevent_default) {
 		let sumx = 0,
 			sumy = 0,
 			time = 0;
-		for (const [dx, dy, ms] of touch_moves.reverse()) {
+		for (const [dx, dy, ms] of touch_moves.reverse())
+		{
 			sumx += dx;
 			sumy += dy;
 			time += ms;
@@ -2805,7 +3014,8 @@ function touchHandle(e, full, prevent_default) {
 			elapsed = touch_now - touch_start;
 
 		// some movement => scroll
-		if (absx > 1 || absy > 1) {
+		if (absx > 1 || absy > 1)
+		{
 			scroll_target = drag_target;
 			touch_speed.x = sumx / time;
 			touch_speed.y = sumy / time;
@@ -2819,7 +3029,8 @@ function touchHandle(e, full, prevent_default) {
 				CancelAnimationFrame('scroll');
 		}
 		// big movement or average duration => prevent click
-		if (type != 'mouseleave') {
+		if (type != 'pointerleave')
+		{
 			drag = null;
 			if (absx > 2 || absy > 2 || (elapsed > 0.3 && elapsed < 1))
 				AddTimeout('touch_end', stopDrag, 10);
@@ -2836,12 +3047,15 @@ function touchHandle(e, full, prevent_default) {
  * @param {Event} e
  * @param {boolean=} full full screen scrolling
  */
-function wheelEvent(e, full) {
-	if (full_target) {
+function wheelEvent(e, full)
+{
+	if (full_target)
+	{
 		full_scroll.x -= e.wheelDeltaX / 3;
 		full_scroll.y -= e.wheelDeltaY / 3;
 	}
-	if (!full) {
+	if (!full)
+	{
 		scroll_target = window;
 		touch_scroll.y -= e.wheelDeltaY / 3;
 	}
@@ -2856,14 +3070,16 @@ function wheelEvent(e, full) {
 /**
  * Activate tabs after populating the areas
  */
-function activateTabs() {
+function activateTabs()
+{
 	E('.tabs', (node, id) => {
 		const tabs = From(A('.tab', node)),
 			actives = tabs.filter(node => HasClass(node, 'active'));
 
 		// few tabs => show full label
 		if (tabs.length < 4)
-			for (const tab of tabs) {
+			for (const tab of tabs)
+			{
 				const dataset = tab.dataset;
 				dataset['t'] = dataset['label'] || dataset['abbr'];
 			}
@@ -2877,7 +3093,8 @@ function activateTabs() {
 /**
  * Adjust popup position
  */
-function adjustPopups() {
+function adjustPopups()
+{
 	showPopup('', null, {adjust: true});
 }
 
@@ -2885,13 +3102,15 @@ function adjustPopups() {
  * Close the input box and possibly rename the tab
  * @param {boolean=} cancel don't rename the tab
  */
-function closeInput(cancel) {
+function closeInput(cancel)
+{
 }
 
 /**
  * Close all popups
  */
-function closePopups() {
+function closePopups()
+{
 	if (vi_canClosePopups && !vi_canClosePopups())
 		return;
 
@@ -2909,7 +3128,8 @@ function closePopups() {
  * @param {number} extra
  * @returns {!Array<number>}
  */
-function createPageArray(num_page, page, extra) {
+function createPageArray(num_page, page, extra)
+{
 	if (num_page < 2)
 		return [2];
 
@@ -2924,9 +3144,11 @@ function createPageArray(num_page, page, extra) {
 	let left = extra + (page <= 1 || page >= num_page - 2) * 1,
 		off = 1;
 
-	for (let i = 0; i < num_page && left > 0; ++i) {
+	for (let i = 0; i < num_page && left > 0; ++i)
+	{
 		const id = page + off;
-		if (id >= 0 && id < num_page && !array[id]) {
+		if (id >= 0 && id < num_page && !array[id])
+		{
 			array[id] = 2;
 			--left;
 		}
@@ -2950,7 +3172,8 @@ function createPageArray(num_page, page, extra) {
  * - otherwise insert separator
  * @returns {string}
  */
-function createUrlList(dico) {
+function createUrlList(dico)
+{
 	if (!dico)
 		return '';
 
@@ -2961,8 +3184,10 @@ function createUrlList(dico) {
 				value = dico[key];
 
 			// grid?
-			if (key[0] == '_') {
-				if (key == '_ext') {
+			if (key[0] == '_')
+			{
+				if (key == '_ext')
+				{
 					ext = value;
 					return '';
 				}
@@ -3007,9 +3232,11 @@ function createUrlList(dico) {
  * @param {number=} mx mouse x
  * @param {number=} my mouse y
  */
-function drawRectangle(node, orient, mx, my) {
+function drawRectangle(node, orient, mx, my)
+{
 	const rect_node = CacheId('rect');
-	if (!node) {
+	if (!node)
+	{
 		Hide(rect_node);
 		return;
 	}
@@ -3019,17 +3246,20 @@ function drawRectangle(node, orient, mx, my) {
 		y1 = Max(rect.top - 1, 0),
 		y2 = Min(rect.top + rect.height, window.innerHeight);
 
-	if (orient & 1) {
+	if (orient & 1)
+	{
 		if (mx > x + w / 2)
 			x += w - 6;
 		else
 			x -= 6;
 		w = 6;
 	}
-	if (orient & 2) {
+	if (orient & 2)
+	{
 		if (my > (y1 + y2) / 2)
 			y1 = y2 - 6;
-		else {
+		else
+		{
 			y1 -= 6;
 			y2 = y1 + 6;
 		}
@@ -3044,9 +3274,11 @@ function drawRectangle(node, orient, mx, my) {
  * @param {string} name
  * @returns {{area: (Array<string|number>|undefined), id: number, key: (string|undefined)}}
  */
-function findArea(name) {
+function findArea(name)
+{
 	const areas = Y['areas'];
-	for (const key of Keys(areas)) {
+	for (const key of Keys(areas))
+	{
 		const vector = areas[key];
 		for (let i = 0, length = vector.length; i < length; ++i)
 			if (vector[i][0] == name)
@@ -3060,7 +3292,8 @@ function findArea(name) {
  * @param {Node|EventTarget} target
  * @returns {{id:string, node:Node?}}
  */
-function getDropId(target) {
+function getDropId(target)
+{
 	const parent = Parent(/** @type {Node} */(target), {class_: 'drag|drop', self: true});
 	return {
 		id: parent? (parent.id || parent.dataset['x']) : null,
@@ -3072,7 +3305,8 @@ function getDropId(target) {
  * Hide a drag element
  * @param {Node} target
  */
-function hideElement(target) {
+function hideElement(target)
+{
 	const drop = getDropId(target),
 		areas = Y['areas'];
 	if (!drop.node)
@@ -3080,7 +3314,8 @@ function hideElement(target) {
 
 	Keys(areas).forEach(key => {
 		for (const vector of areas[key])
-			if (vector[0] == drop.id) {
+			if (vector[0] == drop.id)
+			{
 				vector[2] &= ~1;
 				break;
 			}
@@ -3095,7 +3330,8 @@ function hideElement(target) {
  * @param {Node} node
  * @param {number} dir <<[-3] <[-1] >[1] >>[3]
  */
-function movePane(node, dir) {
+function movePane(node, dir)
+{
 	// 1) gather pane info
 	let index = -1;
 	const areas = Y['areas'],
@@ -3127,7 +3363,8 @@ function movePane(node, dir) {
 		dico[`min_${order}`] = Y[`min_${pane[0]}`];
 	});
 	Assign(Y, dico);
-	for (const order of orders) {
+	for (const order of orders)
+	{
 		saveOption(`max_${order}`);
 		saveOption(`min_${order}`);
 	}
@@ -3142,7 +3379,8 @@ function movePane(node, dir) {
  * Populate areas
  * @param {boolean=} activate activate the tabs
  */
-function populateAreas(activate) {
+function populateAreas(activate)
+{
 	const areas = Y['areas'] || {},
 		default_areas = DEFAULTS['areas'],
 		section = y_x,
@@ -3176,18 +3414,23 @@ function populateAreas(activate) {
 			child_id = 0,
 			error = '';
 
-		for (let [id, tab, show] of areas[key]) {
+		for (let [id, tab, show] of areas[key])
+		{
 			let node = CacheId(id);
 			if (!node)
 				continue;
 
 			let is_tab;
-			if (tab || prev_tab) {
-				if (show & 1) {
-					if (!prev_tab || !tabs) {
+			if (tab || prev_tab)
+			{
+				if (show & 1)
+				{
+					if (!prev_tab || !tabs)
+					{
 						tabs = child;
 						// check if in the tabs and in the right order
-						if (!HasClass(child, 'tabs')) {
+						if (!HasClass(child, 'tabs'))
+						{
 							error = 'tabs';
 							break;
 						}
@@ -3207,15 +3450,18 @@ function populateAreas(activate) {
 			else
 				tabs = null;
 
-			if (!child || child.id != id) {
+			if (!child || child.id != id)
+			{
 				error = `id=${id}`;
 				break;
 			}
-			else if (!is_tab) {
+			else if (!is_tab)
+			{
 				const is_show = ((show & 1) && !hides[id])? true : false,
 					visible = Visible(child);
 
-				if (is_show != visible) {
+				if (is_show != visible)
+				{
 					error = `vis=${id}`;
 					break;
 				}
@@ -3225,7 +3471,8 @@ function populateAreas(activate) {
 			child = children[child_id];
 		}
 
-		if (!error) {
+		if (!error)
+		{
 			if (child)
 				error = `last=${child.id}`;
 			else
@@ -3244,16 +3491,20 @@ function populateAreas(activate) {
 		let exist = 0;
 		prev_tab = 0;
 		tabs = null;
-		for (const vector of areas[key]) {
+		for (const vector of areas[key])
+		{
 			let no_tab,
 				[id, tab, show] = vector;
 			const node = CacheId(id);
 			if (!node)
 				continue;
 
-			if (tab || prev_tab) {
-				if (show & 1) {
-					if (!prev_tab || !tabs) {
+			if (tab || prev_tab)
+			{
+				if (show & 1)
+				{
+					if (!prev_tab || !tabs)
+					{
 						tabs = CreateNode('hs', '', {'class': 'tabs', 'style': exist? 'margin-top:1em' : ''});
 						parent.appendChild(tabs);
 						++exist;
@@ -3286,7 +3537,8 @@ function populateAreas(activate) {
 			else
 				no_tab = true;
 
-			if (!tab) {
+			if (!tab)
+			{
 				prev_tab = 0;
 				tabs = null;
 			}
@@ -3316,7 +3568,8 @@ function populateAreas(activate) {
 /**
  * Set some elements to be draggable or not
  */
-function setDraggable() {
+function setDraggable()
+{
 	const drag = !!Y['drag_and_drop'];
 	Attrs('.drag, .drop', {'draggable': drag});
 	Hide(CacheId('rect'));
@@ -3327,7 +3580,8 @@ function setDraggable() {
  * Handle a general window click
  * @param {Event} e
  */
-function windowClick(e) {
+function windowClick(e)
+{
 	has_clicked = true;
 	Clear(KEYS);
 	const cannot = cannotClick();
@@ -3337,7 +3591,7 @@ function windowClick(e) {
 	let target = e.target;
 	const dataset = target.dataset,
 		type = e.type,
-		is_click = (type == 'click');
+		is_click = (type == 'pointerup');
 	last_click = target;
 
 	// special 1
@@ -3345,16 +3599,19 @@ function windowClick(e) {
 		if (vi_windowClickDataset(dataset))
 			return;
 
-	while (target) {
+	while (target)
+	{
 		const id = target.id;
-		if (id) {
+		if (id)
+		{
 			if (MODAL_IDS[id] || id.includes('modal') || id.includes('popup'))
 				return;
 		}
 		if (HasClass(target, 'no-close') || HasClass(target, 'nav'))
 			return;
 		// special 2
-		if (vi_windowClickParent) {
+		if (vi_windowClickParent)
+		{
 			const result = vi_windowClickParent(target, is_click);
 			if (result == 1)
 				return;
@@ -3362,15 +3619,19 @@ function windowClick(e) {
 				break;
 		}
 
-		if (is_click) {
+		if (is_click)
+		{
 			// sub settings
 			const dataset = target.dataset;
-			if (dataset) {
+			if (dataset)
+			{
 				const set = target.dataset['set'];
-				if (set != undefined) {
+				if (set != undefined)
+				{
 					const parent = Parent(target, {class_: 'popup'});
 					let xy = '';
-					if (parent && parent.dataset) {
+					if (parent && parent.dataset)
+					{
 						const item = parent.dataset['xy'];
 						if (item)
 							xy = item.split(',').map(item => item * 1);
@@ -3378,12 +3639,13 @@ function windowClick(e) {
 					if (set == -1)
 						closePopups();
 					else
-						showPopup('options', true, {id: 'options', setting: set, target: parent, xy: xy});
+						showPopup('options', true, {setting: set, target: parent, xy: xy});
 					return;
 				}
 
 				// special 3
-				if (vi_windowClickParentDataset) {
+				if (vi_windowClickParentDataset)
+				{
 					const result = vi_windowClickParentDataset(dataset);
 					if (result == 1)
 						return;
@@ -3405,12 +3667,15 @@ function windowClick(e) {
 
 /**
  * Send an API message
- * @param {!Array|!Object|string} data format=[code, message]
+ * @param {Array|Object|string} data format=[code, message]
  * @param {Function=} callback
  * @param {number=} ajax_session &1:session, &2:email+login
  */
-function apiMessage(data, callback, ajax_session) {
+function apiMessage(data, callback, ajax_session)
+{
 	// add session info?
+	if (!data)
+		return;
 	if (ajax_session)
 		addSession(data, ajax_session);
 
@@ -3426,14 +3691,17 @@ function apiMessage(data, callback, ajax_session) {
  * @param {Function=} callback
  * @param {Object=} custom_data provide translations directly
  */
-function apiTranslateGet(force, callback, custom_data) {
+function apiTranslateGet(force, callback, custom_data)
+{
 	/**
 	 * @param {Object=} data
 	 */
-	function _done(data) {
-		if (data) {
+	function _done(data)
+	{
+		if (data)
+		{
 			// sanitize data
-			translates = Assign({}, ...Keys(data).map(key => (
+			Assign(Clear(translates), ...Keys(data).map(key => (
 				{[key]: data[key].replace(/([<>])/g, (_match, p1) => SANITIES[p1])})));
 
 			api_times.translate = Now(1);
@@ -3446,7 +3714,8 @@ function apiTranslateGet(force, callback, custom_data) {
 	}
 
 	// 0) custom data
-	if (custom_data) {
+	if (custom_data)
+	{
 		_done(custom_data);
 		return;
 	}
@@ -3455,7 +3724,8 @@ function apiTranslateGet(force, callback, custom_data) {
 	const language = Y['language'],
 		now = Now();
 	if (!force)
-		if (language == 'eng' || (translates['_lan'] == language && now < (api_times.translate || 0) + TIMEOUT_translate)) {
+		if (language == 'eng' || (translates['_lan'] == language && now < (api_times.translate || 0) + TIMEOUT_translate))
+		{
 			_done();
 			return;
 		}
@@ -3474,18 +3744,17 @@ function apiTranslateGet(force, callback, custom_data) {
 /**
  * Check if the session is valid
  */
-function checkSession() {
+function checkSession()
+{
 	if (!me['session'])
 		return;
 
-	getIp('session', ip => {
-		socketSend([MSG_USER_SESSION, {
-			'email': me['email'],
-			'ip': ip,
-			'login': me['login'],
-			'session': me['session'],
-		}]);
-	});
+	socketSend([MSG_USER_SESSION, {
+		'email': me['email'],
+		'ip': me['ip'],
+		'login': me['login'],
+		'session': me['session'],
+	}]);
 }
 
 /**
@@ -3493,9 +3762,11 @@ function checkSession() {
  * @param {string=} name
  * @param {Function=} callback
  */
-function getIp(name, callback) {
+function getIp(name, callback)
+{
 	// 1) use cached IP
-	if (Z.ip && Now() < Z.ip_time + TIMEOUT_ip) {
+	if (Z.ip && Now() < Z.ip_time + TIMEOUT_ip)
+	{
 		if (callback)
 			callback(Z.ip);
 		return;
@@ -3534,7 +3805,8 @@ function getIp(name, callback) {
  * @param {Function=} handleDrop
  * @param {number=} force_orient 1:v, 2:h
  */
-function setDragEvents(handleDrop, force_orient=0) {
+function setDragEvents(handleDrop, force_orient=0)
+{
 	Events(window, 'dragstart', e => {
 		if (!Y['drag_and_drop'])
 			return;
@@ -3547,7 +3819,8 @@ function setDragEvents(handleDrop, force_orient=0) {
 			return;
 
 		for (const class_ of DRAG_CLASSES)
-			if (HasClass(parent, class_)) {
+			if (HasClass(parent, class_))
+			{
 				drag_class = class_;
 				break;
 			}
@@ -3583,7 +3856,8 @@ function setDragEvents(handleDrop, force_orient=0) {
 	Events(window, 'dragexit dragleave', e => {
 		if (!Y['drag_and_drop'])
 			return;
-		if (e.target.tagName == 'HTML') {
+		if (e.target.tagName == 'HTML')
+		{
 			Class('.area', '-dragging');
 			Hide(CacheId('rect'));
 		}
@@ -3596,9 +3870,17 @@ function setDragEvents(handleDrop, force_orient=0) {
 /**
  * Global engine events
  */
-function setEngineEvents() {
-	Events(window, 'mousedown touchstart', () => {
+function setEngineEvents()
+{
+	// click somewhere => close the popups
+	let window_last;
+	Events(window, 'pointerdown', e => {
+		window_last = e.target;
 		CancelAnimationFrame('scroll');
+	});
+	Events(window, 'pointerup', e => {
+		if (e.target == window_last)
+			windowClick(e);
 	});
 
 	// iframe support: scroll going to opposite expected way => stop the animation
@@ -3608,7 +3890,8 @@ function setEngineEvents() {
 			return;
 		const y = ScrollDocument(),
 			sign = Sign(y - touch_scroll.y);
-		if (sign && sign != -Sign(touch_speed.y)) {
+		if (sign && sign != -Sign(touch_speed.y))
+		{
 			CancelAnimationFrame('scroll');
 			stopDrag();
 		}
@@ -3621,8 +3904,9 @@ function setEngineEvents() {
  * @param {Function=} obj.move mouse move event
  * @param {Function=} obj.wheel mouse wheel event
  */
-function setFullscreenEvents({move, wheel}={}) {
-	Events(window, 'mousedown mouseenter mouseleave mousemove mouseup touchstart touchmove touchend', e => {
+function setFullscreenEvents({move, wheel}={})
+{
+	Events(window, 'pointerdown pointerenter pointerleave pointermove pointerup', e => {
 		if (move)
 			move(e);
 		if (!isFullscreen())
@@ -3632,7 +3916,8 @@ function setFullscreenEvents({move, wheel}={}) {
 	Events(window, 'wheel', e => {
 		if (wheel)
 			wheel(e);
-		if (!isFullscreen()) {
+		if (!isFullscreen())
+		{
 			if (Y['wheel_adjust'])
 				AddTimeout('adjust', scrollAdjust, TIMEOUT_adjust);
 			return;
@@ -3645,7 +3930,8 @@ function setFullscreenEvents({move, wheel}={}) {
  * Used when showing a modal
  * @param {Node=} parent parent node, document by default
  */
-function setModalEvents(parent) {
+function setModalEvents(parent)
+{
 	// settings events
 	parent = parent || node_modal;
 	if (parent.dataset['ev'] == 0)
@@ -3660,7 +3946,8 @@ function setModalEvents(parent) {
 	C('.item', function() {
 		// button
 		const name = this.name;
-		if (name || HasClass(this, 'item-title')) {
+		if (name || HasClass(this, 'item-title'))
+		{
 			click_target = Parent(this, {class_: 'popup', self: true});
 			const close = !HasClass(this, 'no-close') && (this.dataset['set'] == '-1' || HasClass(this, 'span'));
 			changeSetting(name, undefined, close);
@@ -3669,7 +3956,8 @@ function setModalEvents(parent) {
 
 		// input + select
 		let next = this.nextElementSibling;
-		if (!next) {
+		if (!next)
+		{
 			// link
 			if (this.href)
 				checkHash();
@@ -3678,15 +3966,18 @@ function setModalEvents(parent) {
 		next = _('input, select', next);
 		if (!next)
 			return;
-		switch (next.tagName) {
+		switch (next.tagName)
+		{
 		case 'INPUT':
-			if (next.type == 'checkbox') {
+			if (next.type == 'checkbox')
+			{
 				next.checked = !next.checked;
 				changeSetting(next.name, next.checked * 1);
 			}
 			break;
 		case 'SELECT':
-			if (!NO_CYCLES[next.name]) {
+			if (!NO_CYCLES[next.name])
+			{
 				next.selectedIndex = (next.selectedIndex + 1) % next.options.length;
 				changeSetting(next.name, next.value);
 			}
@@ -3747,7 +4038,8 @@ function setModalEvents(parent) {
 /**
  * Theme events
  */
-function setThemeEvents() {
+function setThemeEvents()
+{
 	C('.theme', function() {
 		const theme = THEMES[(Y['theme'] == THEMES[0]) ? 1 : 0];
 		animateTheme(theme);
@@ -3762,7 +4054,8 @@ function setThemeEvents() {
 /**
  * Initialise structures
  */
-function startupEngine() {
+function startupEngine()
+{
 	node_body = Id('body');
 	node_html = document.documentElement;
 	node_modal = Id('modal');
@@ -3772,7 +4065,8 @@ function startupEngine() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
-if (typeof exports != 'undefined') {
+if (typeof exports != 'undefined')
+{
 	Object.assign(exports, {
 		_ALL: _ALL,
 		activateTabs: activateTabs,

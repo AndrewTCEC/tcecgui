@@ -3,7 +3,7 @@
  */
 // common.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 /*
 globals
@@ -27,7 +27,8 @@ const real_now = Date.now.bind(global.Date);
  * Override Date.now
  * @param {number} now
  */
-function beginDateNow(now) {
+function beginDateNow(now)
+{
 	if (now == null)
 		return;
 	global.Date.now = jest.fn(() => now);
@@ -36,7 +37,8 @@ function beginDateNow(now) {
 /**
  * Reset the Date.now
  */
-function endDateNow() {
+function endDateNow()
+{
 	global.Date.now = real_now;
 }
 
@@ -223,7 +225,7 @@ function endDateNow() {
 		const copy = DeepCopy(dico),
 			length = path.length;
 		let x = dico;
-		for (let i = 0; i < length - 2; i ++)
+		for (let i = 0; i < length - 2; ++i)
 			x = x[path[i]];
 		x[path[length - 2]] = path[length - 1];
 		expect(dico).toEqual(answer_dico);
@@ -405,11 +407,13 @@ function endDateNow() {
 		beginDateNow(now);
 		const [date, time] = FromTimestamp(stamp);
 		endDateNow();
-		if (!answer.length) {
+		if (!answer.length)
+		{
 			expect(date).toBe(undefined);
 			expect(time).toBe(undefined);
 		}
-		else {
+		else
+		{
 			expect(answer[0]).toContain(date);
 			expect(answer[1]).toContain(time);
 		}

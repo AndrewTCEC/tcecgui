@@ -1,6 +1,6 @@
 // chat_server.js
 // @authors octopoulo <polluxyz@gmail.com>, Aloril <aloril@iki.fi>
-// @version 2021-08-02
+// @version 2022-05-21
 /*
 globals
 console, exports, require
@@ -32,7 +32,8 @@ async function loadWasm() {
     LS('chess library loaded');
 }
 
-function vote(data) {
+function vote(data)
+{
     LS('vote, data=' + Stringify(data));
     if (typeof data.fen == "string") { //needed because fen string here don't match fen strings in Python
 	let lst = data.fen.split(" ");
@@ -53,7 +54,8 @@ function vote(data) {
 	entry.votes[move] = 0;
     }
     if (data.ip in entry.byIP) {
-	if (entry.byIP[data.ip] == move) {
+	if (entry.byIP[data.ip] == move)
+	{
 	    LS("Same move as earlier: " + move);
 	    return;
 	}
@@ -72,55 +74,62 @@ function vote(data) {
 }
 
 server.on('connection', async socket => {
-    let ip = socket.remoteAddress;
-    LS(`A new connection has been established: ${ip}.`);
-    if (ip != '::ffff:127.0.0.1') {
-        LS('Not local connection, closing');
-        socket.destroy();
-        return;
-    }
+	let ip = socket.remoteAddress;
+	LS(`A new connection has been established: ${ip}.`);
+	if (ip != '::ffff:127.0.0.1')
+	{
+		LS('Not local connection, closing');
+		socket.destroy();
+		return;
+	}
 
-    if (!chess)
-        await loadWasm();
+	if (!chess)
+		await loadWasm();
 
-    socket.on('data', chunk => {
-        // CHECK THIS: FIX: handle 2 messages in one packet or incomplete packets:
-        // Error can triggered by "go movetime 100" for example. Could use same method as chat_engine.read_votes does.
-        LS('data');
-        let data, text;
-        try {
-            text = chunk.toString();
-            data = JSON.parse(text);
-        }
-        catch (e) {
-            LS(`bad data: ${data}, text: ${text}`);
-            LS(e);
-            return;
-        }
+	socket.on('data', chunk => {
+		// CHECK THIS: FIX: handle 2 messages in one packet or incomplete packets:
+		// Error can triggered by "go movetime 100" for example. Could use same method as chat_engine.read_votes does.
+		LS('data');
+		let data, text;
+		try
+		{
+			text = chunk.toString();
+			data = JSON.parse(text);
+		}
+		catch (e)
+		{
+			LS(`bad data: ${data}, text: ${text}`);
+			LS(e);
+			return;
+		}
 
-        if (data.voting != undefined) {
-	    if (data.voting) {
-		voting[data.fen] = {
-		    votes:  {},
-		    byIP: {},
-		    socket: socket
-		};
-		LS("created empty voting");
-	    } else if ( data.fen in voting ) {
-		delete voting[data.fen];
-		LS("deleted voting");
-	    }
-        }
-	LS(`Data received from client: ${text}`);
-    });
+		if (data.voting != undefined)
+		{
+			if (data.voting)
+			{
+				voting[data.fen] = {
+					votes: {},
+					byIP: {},
+					socket: socket
+				};
+				LS("created empty voting");
+			}
+			else if (data.fen in voting)
+			{
+				delete voting[data.fen];
+				LS("deleted voting");
+			}
+		}
+		LS(`Data received from client: ${text}`);
+	});
 
-    socket.on('end', () => {
-        LS('Closing connection with the client');
-    });
+	socket.on('end', () => {
+		LS('Closing connection with the client');
+	});
 
-    socket.on('error', err => {
-        LS(`Error: ${err}`);
-    });
+	socket.on('error', err => {
+		LS(`Error: ${err}`);
+	});
 });
 
 exports.vote = vote;

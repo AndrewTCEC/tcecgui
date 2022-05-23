@@ -1,6 +1,6 @@
 // global.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 /*
 globals
@@ -30,7 +30,7 @@ let {Assign, Keys} = require('./common.js'),
 		Keys(answer).forEach(key => {
 			vector[key] = answer[key];
 		});
-		expect(player.evals).toEqual(vector.length? vector: undefined);
+		expect(player.evals).toEqual(vector.length? vector : undefined);
 	});
 });
 
@@ -107,16 +107,16 @@ let {Assign, Keys} = require('./common.js'),
 	[1, 'M1', 1, 'M1'],
 	[1, '-M1', 0, '-M1'],
 	[1, '-M1', 1, '-M1'],
-	[1, 'M#0', 0, 'M0'],            // white says #M0 => white just mated => M0
-	[1, 'M#0', 1, 'M1'],            // black says #M0 => impossible => make it M1
-	[1, '-M#0', 0, '-M1'],          // white says -#M0 => black mates next move => -M1
-	[1, '-M#0', 1, '-M0'],          // black says -#M0 => black just mated => -M0
+	[1, 'M#0', 0, 'M0'],                                    // white says #M0 => white just mated => M0
+	[1, 'M#0', 1, 'M1'],                                    // black says #M0 => impossible => make it M1
+	[1, '-M#0', 0, '-M1'],                                  // white says -#M0 => black mates next move => -M1
+	[1, '-M#0', 1, '-M0'],                                  // black says -#M0 => black just mated => -M0
 	[1, 0, 0, 'M0'],
 	[1, 0, 1, 'M1'],
-	[1, 'M#1', 0, 'M2'],            // white says M#1 => white mates next move => M2
-	[1, 'M#1', 1, 'M1'],            // black says M#1 => white mates next move => M1
-	[1, '-M#1', 0, '-M3'],          // white says -M#1 => black mates next move => -M3
-	[1, '-M#1', 1, '-M2'],          // black says -M#1 => black mates next move => -M2
+	[1, 'M#1', 0, 'M2'],                                    // white says M#1 => white mates next move => M2
+	[1, 'M#1', 1, 'M1'],                                    // black says M#1 => white mates next move => M1
+	[1, '-M#1', 0, '-M3'],                                  // white says -M#1 => black mates next move => -M3
+	[1, '-M#1', 1, '-M2'],                                  // black says -M#1 => black mates next move => -M2
 	[1, 1, 0, 'M2'],
 	[1, -1, 1, 'M1'],
 	[1, -1, 0, '-M3'],
@@ -130,31 +130,31 @@ let {Assign, Keys} = require('./common.js'),
 	[1, -2, 0, '-M5'],
 	[1, 2, 1, '-M4'],
 	// moves
-	[0, 'M1', 0, 'M#0'],            // approx: white says M1 => probably means it just mated => M#0
-	[0, 'M1', 1, 'M#1'],            //         black says M1 => white mates next move => M#1
-	[0, '-M1', 0, '-M#0'],          //         white says -M1 => black mates SAME move => -M#0
-	[0, '-M1', 1, '-M#0'],          // approx: black says -M1 => probably means it just mated => -M#0
+	[0, 'M1', 0, 'M#0'],                                    // approx: white says M1 => prob it just mated => M#0
+	[0, 'M1', 1, 'M#1'],                                    //         black says M1 => white mates next move => M#1
+	[0, '-M1', 0, '-M#0'],                                  //         white says -M1 => black mates SAME move => -M#0
+	[0, '-M1', 1, '-M#0'],                                  // approx: black says -M1 => prob it just mated => -M#0
 	[0, 0, 0, 'M#0'],
 	[0, 0, 1, 'M#0'],
-	[0, 'M2', 0, 'M#1'],            //         white says M2 => white mates next move = M#1
-	[0, 'M2', 1, 'M#1'],            // approx: black says M2 => impossible => make it M#1
-	[0, '-M2', 0, '-M#0'],          // approx: white says -M2 => impossible => make it -M#0
-	[0, '-M2', 1, '-M#1'],          //         black says -M2 => black wins next move = -M#1
+	[0, 'M2', 0, 'M#1'],                                    //         white says M2 => white mates next move = M#1
+	[0, 'M2', 1, 'M#1'],                                    // approx: black says M2 => impossible => make it M#1
+	[0, '-M2', 0, '-M#0'],                                  // approx: white says -M2 => impossible => make it -M#0
+	[0, '-M2', 1, '-M#1'],                                  //         black says -M2 => black wins next move = -M#1
 	[0, 1, 0, 'M#1'],
 	[0, -1, 1, 'M#1'],
 	[0, -1, 0, '-M#1'],
 	[0, 1, 1, '-M#1'],
-	[0, 'M3', 0, 'M#1'],            // approx
+	[0, 'M3', 0, 'M#1'],                                    // approx
 	[0, 'M3', 1, 'M#2'],
 	[0, '-M3', 0, '-M#1'],
-	[0, '-M3', 1, '-M#1'],          // approx
+	[0, '-M3', 1, '-M#1'],                                  // approx
 	[0, 2, 0, 'M#2'],
 	[0, -2, 1, 'M#2'],
 	[0, -2, 0, '-M#2'],
 	[0, 2, 1, '-M#2'],
 	[0, 'M4', 0, 'M#2'],
-	[0, 'M4', 1, 'M#2'],            // approx
-	[0, '-M4', 0, '-M#1'],          // approx
+	[0, 'M4', 1, 'M#2'],                                    // approx
+	[0, '-M4', 0, '-M#1'],                                  // approx
 	[0, '-M4', 1, '-M#2'],
 	// check consistency
 	[1, 'M#3', 0, 'M6'],
@@ -176,7 +176,7 @@ let {Assign, Keys} = require('./common.js'),
 	[0, '-M16', 1, '-M#8'],
 ].forEach(([want_ply, value, ply, answer], id) => {
 	test(`convertCheckmate:${id}`, () => {
-		Y.checkmate = want_ply? 'plies': 'moves';
+		Y.checkmate = want_ply? 'plies' : 'moves';
 		expect(convertCheckmate(value, ply)).toEqual(answer);
 	});
 });

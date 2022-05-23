@@ -1,6 +1,6 @@
 // chess.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-05-21
 //
 /*
 globals
@@ -348,10 +348,12 @@ beforeEach(() => {
 		let moves = ArrayJS(chess.moves());
 		chess.search(moves.join(' '), '', false);
 		let stats = ArrayJS(chess.hashStats());
-		for (let i = 0; i < 2; ++i) {
+		for (let i = 0; i < 2; ++i)
+		{
 			let item = answer[i],
 				stat = stats[i];
-			if (IsArray(item)) {
+			if (IsArray(item))
+			{
 				expect(stat).toBeGreaterThanOrEqual(item[0]);
 				expect(stat).toBeLessThanOrEqual(item[1]);
 			}
@@ -441,7 +443,8 @@ beforeEach(() => {
 ].forEach(([fen, must_hash, moves, answer, new_fen, new_hash], id) => {
 	test(`load:${id}`, () => {
 		expect(chess.load(fen, must_hash)).toEqual(Undefined(answer, fen));
-		if (IsString(moves)) {
+		if (IsString(moves))
+		{
 			for (let move of moves.split(' '))
 				chess.moveSan(move, false, false);
 		}
@@ -600,7 +603,8 @@ beforeEach(() => {
 		chess.load(fen, false);
 		let moves = ArrayJS(chess.moves());
 		expect(moves.length).toEqual(number);
-		if (answer) {
+		if (answer)
+		{
 			let text = moves.map(move => chess.ucifyMove(move)).sort().join(' ');
 			expect(text).toEqual(answer);
 		}
@@ -829,7 +833,8 @@ beforeEach(() => {
 	test(`multiSan:${id}`, () => {
 		chess.load(fen, false);
 		let moves = ArrayJS(chess.multiSan(multi, sloppy, create_fen));
-		if (answer) {
+		if (answer)
+		{
 			for (let move of moves)
 				if (move.fen)
 					expect(getMovePly({fen: move.fen})).toEqual(move.ply);
@@ -882,11 +887,12 @@ beforeEach(() => {
 	test(`multiUci:${id}`, () => {
 		chess.load(fen, false);
 		let moves = ArrayJS(chess.multiUci(multi));
-		if (answer) {
+		if (answer)
+		{
 			for (let move of moves)
 				expect(getMovePly({fen: move.fen})).toEqual(move.ply);
 			if (IsString(answer))
-				moves = moves.map((item, id) => `${!(id & 1)? (1 + id / 2 + '. '): ''}${item.m}`).join(' ');
+				moves = moves.map((item, id) => `${!(id & 1)? (1 + id / 2 + '. ') : ''}${item.m}`).join(' ');
 			expect(moves).toEqual(answer);
 		}
 		expect(chess.fen()).toEqual(new_fen);
@@ -919,7 +925,8 @@ beforeEach(() => {
 		let moves = ArrayJS(chess.moves());
 		chess.search(moves.join(' '), '', scan_all);
 		let nodes = chess.nodes();
-		if (IsString(answer)) {
+		if (IsString(answer))
+		{
 			let text = moves.map(move => chess.ucifyMove(move)).sort().join(' ');
 			expect(text).toEqual(answer);
 		}
@@ -1004,7 +1011,7 @@ beforeEach(() => {
 // https://www.chessprogramming.org/Chess960_Perft_Results
 [
 	// 960
-	['bbqrnnkr/1ppp1p1p/5p2/p5p1/P7/1P4P1/2PPPP1P/1BQRNNKR w HDhd - 0 9	', 5, 3588435],     // ok
+	['bbqrnnkr/1ppp1p1p/5p2/p5p1/P7/1P4P1/2PPPP1P/1BQRNNKR w HDhd - 0 9 ', 5, 3588435], // ok
 	['bbrqk1rn/pp1ppppp/8/2p5/2P1P3/5n1P/PPBP1PP1/B1RQKNRN w GCgc - 1 9', 5, 2518864],
 	['bqnb1rkr/pp3ppp/3ppn2/2p5/5P2/P2P4/NPP1P1PP/BQ1BNRKR w HFhf - 2 9', 4, 326672],   // ok
 	['brkqnnrb/1ppppppp/8/8/p3P3/5N2/PPPP1PPP/BRKQ1NRB w GBgb - 3 9', 4, 204350],
@@ -1064,7 +1071,7 @@ beforeEach(() => {
 	['n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1', 1, 24],
 
 	// numpty: 1
-	// [START_FEN, 7, 3195901860],  // ??
+	// [START_FEN, 7, 3195901860],                          // ??
 	// [START_FEN, 6, 119060324],
 	[START_FEN, 5, 4865609],
 	[START_FEN, 4, 197281],
@@ -1108,7 +1115,8 @@ beforeEach(() => {
 		let text = chess.perft(fen, depth);
 		if (IsString(answer))
 			expect(text).toEqual(answer);
-		else {
+		else
+		{
 			let pos = text.lastIndexOf('='),
 				pos2 = text.indexOf(' ', pos + 1),
 				count = text.slice(pos + 1, pos2) * 1;
@@ -1304,7 +1312,8 @@ beforeEach(() => {
 		chess.load(fen, false);
 
 		let moves = ArrayJS(chess.moves());
-		if (mask) {
+		if (mask)
+		{
 			let mask_set = new Set(mask.split(' '));
 			moves = moves.filter(move => mask_set.has(chess.ucifyMove(move)));
 		}
@@ -1316,15 +1325,18 @@ beforeEach(() => {
 			keys = Keys(checks),
 			ucis = new Set(bests.map(mask => mask.m));
 
-		if (keys.length) {
+		if (keys.length)
+		{
 			let missing = false,
 				dico = Assign({}, ...objs.map(move => ({[move.m]: move.score})));
 			keys.forEach(key => {
 				let check = checks[key],
 					value = dico[key];
-				if (key == 1 || key == 2) {
+				if (key == 1 || key == 2)
+				{
 					let splits = check.split(' ');
-					if (!splits.some(item => ucis.has(item))) {
+					if (!splits.some(item => ucis.has(item)))
+					{
 						missing = check;
 						return;
 					}
@@ -1333,8 +1345,10 @@ beforeEach(() => {
 					else
 						expect(dico).toHaveProperty(check);
 				}
-				else {
-					if (value == undefined) {
+				else
+				{
+					if (value == undefined)
+					{
 						missing = key;
 						return;
 					}
@@ -1346,7 +1360,8 @@ beforeEach(() => {
 					expect(value).toBeLessThanOrEqual(check[1]);
 				}
 			});
-			if (missing) {
+			if (missing)
+			{
 				LS(`id=${id} : missing=${missing}`);
 				LS(dico);
 				expect(missing).toBeFalse();
@@ -1355,7 +1370,8 @@ beforeEach(() => {
 
 		if (Number.isInteger(answer))
 			answer = [answer -50, answer + 50];
-		if (answer.length) {
+		if (answer.length)
+		{
 			expect(best.score).toBeGreaterThanOrEqual(answer[0]);
 			expect(best.score).toBeLessThanOrEqual(answer[1]);
 		}
@@ -1452,7 +1468,8 @@ beforeEach(() => {
 	test(`undo:${id}`, () => {
 		chess.load(fen, true);
 		let materials = [chess.material(0), chess.material(1)];
-		if (IsString(moves)) {
+		if (IsString(moves))
+		{
 			for (let move of moves.split(' '))
 				chess.moveSan(move, false, false);
 		}
@@ -1461,7 +1478,8 @@ beforeEach(() => {
 		for (let i = 0; i < steps; ++i)
 			chess.undo();
 		expect(chess.fen()).toEqual(answer || fen);
-		if (!answer) {
+		if (!answer)
+		{
 			expect(chess.material(0)).toEqual(materials[0]);
 			expect(chess.material(1)).toEqual(materials[1]);
 		}

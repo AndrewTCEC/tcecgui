@@ -12,33 +12,34 @@
 // jshint -W069
 /*
 globals
-_, __PREFIX:true, A, actionKey, actionKeyNoInput, actionKeyupNoInput, activateTabs, addHistory, AddTimeout,
-adjustPopups, ANCHORS, apiTranslateGet, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
-C, cachedTranslates, CacheId, cannotPopup, change_queue, changedHash, changedSection, changePage, changeSetting,
-changeSettingGame, charts, checkHash, checkSocketIo, Clamp, Class, Clear, ClearTimeout, closePopups, context_areas,
+_, __PREFIX:true, A, ActionKey, actionKeyNoInput, ActionKeyupNoInput, ActivateTabs, AddHistory, AddTimeout,
+AdjustPopups, ANCHORS, ApiTranslateGet, ARCHIVE_KEYS, Assign, Attrs, AUTO_ON_OFF, BOARD_THEMES,
+C, CachedTranslates, CacheId, CannotPopup, change_queue, ChangedHash, changedSection, changePage, ChangeSetting,
+ChangeSettingGame, charts, CheckHash, checkSocketIo, Clamp, Class, Clear, ClearTimeout, ClosePopups, context_areas,
 context_target:true,
-DEFAULT_SCALES, DefaultArray, DEFAULTS, detectDevice, DEV, DEV_NAMES, device, document, downloadTables,
-drag_source:true, E, Events, exports, exportSettings, FileReader, findArea, Floor, From, gameActionKey,
-gameActionKeyup, getArea, getDropId, global, guessTypes, handleBoardEvents, HasClass, HasClasses, hashes, Hide,
-hideElement, HIDES, HTML, ICONS, importSettings, Index, initGraph, IsObject, KEY_TIMES, Keys, KEYS,
-LANGUAGES, listenLog, loadDefaults, loadLibrary, loadPreset, LOCALHOST, location, Max, mergeSettings, Min, movePane,
-navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, openTable, optionNumber, orderBoards, PANES, Parent,
-ParseJSON, PD, PIECE_THEMES, populateAreas, POPUP_ADJUSTS, require, resetDefaults, resetOldSettings, resetSettings,
-resizeBracket, resizeGame, resizeMoveLists, resizeTable, resumeSleep,
-S, SafeId, saveOption, scrollAdjust, ScrollDocument, setDragEvents, setDraggable, setEngineEvents, setFullscreenEvents,
-setGameEvents, setSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames, showPopup, SP, start3d,
-startGame, startup3d, startupConfig, startupEngine, startupGame, startupGlobal, startupGraph, startupNetwork, Style,
-TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, toggleFullscreen, TRANSLATE_SPECIALS,
-translateNodes, TYPES, Undefined, updateBoardTheme, updateDebug, updatePgn, updateTheme, updateTwitch,
-VERSION, vi_changeSettingSpecial:true, vi_checkHashSpecial:true, vi_hideAreas:true, vi_importSettings:true,
-vi_openedTableSpecial:true, vi_populateAreasAfter:true, vi_resetSettingsAfter:true, vi_resize:true,
-vi_setModalEventsAfter:true, vi_windowClickDataset:true, vi_windowClickParent:true, vi_windowClickParentDataset:true,
+DEFAULT_SCALES, DefaultArray, DEFAULTS, DetectDevice, DEV, DEV_NAMES, device, document, downloadTables,
+drag_source:true, E, Events, exports, ExportSettings, FileReader, FindArea, Floor, From, GameActionKey,
+GameActionKeyup, GetArea, GetDropId, global, GuessTypes, handleBoardEvents, HasClass, HasClasses, hashes, Hide,
+HideElement, HIDES, HTML, ICONS, ImportSettings, Index, initGraph, IsObject, KEY_TIMES, Keys, KEYS,
+LANGUAGES, listenLog, LoadDefaults, LoadLibraryOnce, LoadPreset, LOCALHOST, location, Max, MergeSettings, Min, MovePane,
+navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, OpenTable, OptionNumber, orderBoards, PANES, Parent,
+ParseJSON, PD, PIECE_THEMES, PopulateAreas, POPUP_ADJUSTS, require, ResetDefaults, ResetOldSettings, ResetSettings,
+resizeBracket, ResizeGame, resizeMoveLists, resizeTable, ResumeSleep,
+S, SafeId, SaveOption, ScrollAdjust, ScrollDocument, SetDragEvents, SetDraggable, SetEngineEvents, SetFullScreenEvents,
+SetGameEvents, SetSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames, ShowPopup, SP, Start3d,
+StartGame, Startup3d, StartupConfig, StartupEngine, StartupGame, StartupGlobal, StartupGraph, StartupNetwork, Style,
+TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, ToggleFullscreen, TRANSLATE_SPECIALS,
+TranslateNodes, TYPES, Undefined, updateBoardTheme, UpdateDebug, updatePgn, UpdateTheme, updateTwitch,
+VERSION, vi_ChangeSettingSpecial:true, vi_CheckHashSpecial:true, vi_HideAreas:true, vi_ImportSettings:true,
+vi_OpenedTableSpecial:true, vi_PopulateAreasAfter:true, vi_ResetSettingsAfter:true, vi_Resize:true,
+vi_SetModalEventsAfter:true, vi_WindowClickDataset:true, vi_WindowClickParent:true, vi_WindowClickParentDataset:true,
 Visible, VisibleWidth, WB_LOWER, window, X_SETTINGS, xboards, Y, y_three:true, y_x, Z
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['3d', 'common', 'engine', 'game', 'global'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -154,7 +155,7 @@ let	old_font_height,
  * Same as actionKeyNoInput, but when the key is up
  * @param {number} code hardware keycode
  */
-function actionKeyupNoInput(code)
+function ActionKeyupNoInput(code)
 {
 }
 
@@ -162,13 +163,13 @@ function actionKeyupNoInput(code)
  * Handle keys, even when an input is active
  * @param {number} code hardware keycode
  */
-function actionKey(code)
+function ActionKey(code)
 {
 	switch (code)
 	{
 	// escape
 	case 27:
-		closePopups();
+		ClosePopups();
 		break;
 	}
 }
@@ -177,7 +178,7 @@ function actionKey(code)
  * Use an audio set
  * @param {string|number} set custom, bamboo
  */
-function audioSet(set)
+function AudioSet(set)
 {
 	let audio_settings = X_SETTINGS['audio'],
 		prefix = `${set} - `;
@@ -188,7 +189,7 @@ function audioSet(set)
 		let choice = audio_settings[key][0].filter(value => value.slice(0, prefix.length) == prefix)[0];
 		if (choice != undefined)
 		{
-			saveOption(key, choice);
+			SaveOption(key, choice);
 			_(`select[name="${key}"]`).value = choice;
 		}
 	});
@@ -201,7 +202,7 @@ function audioSet(set)
  * @param {boolean=} close close the popup
  * @returns {boolean} true if we've handled the setting
  */
-function changeSettingSpecial(name, value, close)
+function ChangeSettingSpecial(name, value, close)
 {
 	ClearTimeout('close_popup');
 	if (!name)
@@ -212,7 +213,7 @@ function changeSettingSpecial(name, value, close)
 	{
 		let modal = SafeId('modal');
 		if (modal.dataset['xy'] || close == 2)
-			closePopups();
+			ClosePopups();
 	}
 
 	//
@@ -225,7 +226,7 @@ function changeSettingSpecial(name, value, close)
 		result = true,
 		svalue = /** @type {string} */(value);
 
-	addHistory();
+	AddHistory();
 
 	switch (name)
 	{
@@ -254,15 +255,15 @@ function changeSettingSpecial(name, value, close)
 		updateBoardTheme(4);
 		break;
 	case 'audio_set':
-		audioSet(svalue);
+		AudioSet(svalue);
 		break;
 	case 'background_color':
 	case 'background_opacity':
-		updateBackground();
+		UpdateBackground();
 		break;
 	case 'background_reset':
-		resetDefaults(/^background_/);
-		updateBackground();
+		ResetDefaults(/^background_/);
+		UpdateBackground();
 		break;
 	case 'chat_height':
 	case 'column_bottom':
@@ -282,12 +283,12 @@ function changeSettingSpecial(name, value, close)
 	case 'min_right':
 	case 'panel_gap':
 	case 'tabs_per_row':
-		resize();
+		Resize();
 		break;
 	case 'click_here_to_RESET_everything':
-		resetSettings(true);
-		saveOption('last_preset', '');
-		AddTimeout('quick', () => quickSetup(true), TIMEOUT_quick);
+		ResetSettings(true);
+		SaveOption('last_preset', '');
+		AddTimeout('quick', () => QuickSetup(true), TIMEOUT_quick);
 		break;
 	case 'custom_black':
 	case 'custom_black_pv':
@@ -298,23 +299,23 @@ function changeSettingSpecial(name, value, close)
 		let is_pv = (name.slice(-2) == 'pv'),
 			is_pva = (name.slice(-3) == 'pva'),
 			field = `board_theme${is_pva? '_pva' : (is_pv? '_pv' : '')}`;
-		saveOption(field, 'custom');
+		SaveOption(field, 'custom');
 		(_(`select[name="${field}"]`) || {}).value = Y[field];
 		updateBoardTheme(is_pva? 4 : (is_pv? 2 : 1));
 		break;
 	case 'default_positions':
 		Y['areas'] = Assign({}, DEFAULTS['areas']);
-		populateAreas(true);
+		PopulateAreas(true);
 		break;
 	case 'drag_and_drop':
-		setDraggable();
+		SetDraggable();
 		break;
 	case 'engine_font':
 	case 'engine_spacing':
 	case 'graph_aspect_ratio':
 	case 'panel_adjust':
 	case 'status_pv':
-		resizePanels();
+		ResizePanels();
 		break;
 	case 'eval':
 	case 'eval_left':
@@ -325,11 +326,11 @@ function changeSettingSpecial(name, value, close)
 	case 'percent':
 	case 'percent_width':
 	case 'single_line':
-		resizePanels();
-		resizeGame();
+		ResizePanels();
+		ResizeGame();
 		break;
 	case 'export_settings':
-		exportSettings(Y['last_preset'] || 'tcec-settings');
+		ExportSettings(Y['last_preset'] || 'tcec-settings');
 		break;
 	case 'game_960':
 		pva.frc = ivalue;
@@ -341,13 +342,13 @@ function changeSettingSpecial(name, value, close)
 		pva.think(true);
 		break;
 	case 'game_depth':
-		configure('d', ivalue);
+		Configure('d', ivalue);
 		break;
 	case 'game_evaluation':
-		configure('e', svalue);
+		Configure('e', svalue);
 		break;
 	case 'game_level':
-		configureString(svalue);
+		ConfigureString(svalue);
 		break;
 	case 'game_new_FEN':
 	case 'game_new_game':
@@ -355,7 +356,7 @@ function changeSettingSpecial(name, value, close)
 		pva.newGame();
 		break;
 	case 'game_search':
-		configure('s', svalue);
+		Configure('s', svalue);
 		break;
 	case 'game_think':
 		pva.finished = false;
@@ -363,7 +364,7 @@ function changeSettingSpecial(name, value, close)
 		pva.think();
 		break;
 	case 'game_time':
-		configure('t', ivalue);
+		Configure('t', ivalue);
 		break;
 	case 'grid':
 	case 'grid_copy':
@@ -384,40 +385,40 @@ function changeSettingSpecial(name, value, close)
 		resizeMoveLists();
 		break;
 	case 'hardware':
-		resize();
+		Resize();
 		break;
 	case 'hide':
-		hideElement(context_target);
+		HideElement(context_target);
 		break;
 	case 'import_settings':
 		let json = ParseJSON(svalue);
 		if (IsObject(json))
-			importSettings(json, true);
+			ImportSettings(json, true);
 		break;
 	case 'join_next':
-		tabElement(context_target);
+		TabElement(context_target);
 		break;
 	case 'live_log':
 		if (Visible(CacheId('table-log')))
 			listenLog();
 		break;
 	case 'mobility':
-		updateVisible();
+		UpdateVisible();
 		break;
 	case 'moves_copy':
-		populateAreas();
+		PopulateAreas();
 		break;
 	case 'network':
 		checkSocketIo();
 		break;
 	case 'preset':
-		loadPreset(svalue);
-		saveOption('last_preset', svalue);
+		LoadPreset(svalue);
+		SaveOption('last_preset', svalue);
 		break;
 	case 'shortcut_1':
 	case 'shortcut_2':
 	case 'shortcut_3':
-		updateShortcuts();
+		UpdateShortcuts();
 		break;
 	// refresh the Engine tab
 	case 'SI_units':
@@ -425,7 +426,7 @@ function changeSettingSpecial(name, value, close)
 		handleBoardEvents(main, 'ply', main.moves[main.ply]);
 		break;
 	case 'theme':
-		changeTheme(svalue);
+		ChangeTheme(svalue);
 		break;
 	case 'twitch_chat':
 	case 'twitch_dark':
@@ -436,21 +437,21 @@ function changeSettingSpecial(name, value, close)
 		Keys(context_areas).forEach(key => {
 			context_areas[key][2] |= 1;
 		});
-		populateAreas(true);
+		PopulateAreas(true);
 		break;
 	case 'use_for_arrow':
 		for (let id of [2, 3])
-			saveOption(`arrow_color_${id}`, Y[`graph_color_${id}`]);
+			SaveOption(`arrow_color_${id}`, Y[`graph_color_${id}`]);
 		break;
 	default:
-		result = changeSettingGame(name, value);
+		result = ChangeSettingGame(name, value);
 	}
 
 	// show custom colors
 	if (name.includes('board_theme'))
-		showCustomColors(name);
+		ShowCustomColors(name);
 
-	addHistory();
+	AddHistory();
 	return !!result;
 }
 
@@ -459,11 +460,11 @@ function changeSettingSpecial(name, value, close)
  * - if we're in the archive, then also add the [theme]-archive.css
  * @param {string=} theme
  */
-function changeTheme(theme)
+function ChangeTheme(theme)
 {
 	let def = THEMES[0];
 	if (theme != undefined)
-		saveOption('theme', theme || def);
+		SaveOption('theme', theme || def);
 
 	theme = Y['theme'] || '';
 	let themes = [theme];
@@ -479,16 +480,16 @@ function changeTheme(theme)
 
 	S(CacheId('theme0'), theme != def);
 	S(CacheId('theme1'), theme == def);
-	updateTheme(themes);
+	UpdateTheme(themes);
 }
 
 /**
  * Called whenever the page loads and whenever the hash changes
  * @param {!Object} dico
  */
-function checkHashSpecial(dico)
+function CheckHashSpecial(dico)
 {
-	checkStream();
+	CheckStream();
 
 	// handle a short url
 	let archive_keys = ARCHIVE_KEYS.filter(key => dico[key] != undefined),
@@ -506,25 +507,25 @@ function checkHashSpecial(dico)
 	if (!['archive', 'live'].includes(section))
 		section = 'live';
 	hashes[section] = dico;
-	setSection(section);
+	SetSection(section);
 	Z.s = section;
 
 	let is_live = (section == 'live'),
 		parent = CacheId('tables');
 	Class(CacheId('nav-archive'), 'yellow', !is_live);
 	Class(CacheId('nav-live'), 'red', is_live);
-	changeTheme();
+	ChangeTheme();
 
-	populateAreas();
+	PopulateAreas();
 	S('.tab[data-x="season"]', !is_live, parent);
 	S('.tab[data-x="log"]', is_live, parent);
 
 	Attrs('[data-x="sched"] i[data-t]', {'data-t': is_live? 'Schedule' : 'Games'});
-	translateNodes(CacheId('table-tabs'));
+	TranslateNodes(CacheId('table-tabs'));
 
 	// changed section
 	if (ready)
-		changedHash();
+		ChangedHash();
 
 	if (section != old_x)
 	{
@@ -533,23 +534,23 @@ function checkHashSpecial(dico)
 			Y['game'] = 0;
 
 		changedSection();
-		closePopups();
+		ClosePopups();
 	}
 
 	if (!ready)
-		activateTabs();
+		ActivateTabs();
 }
 
 /**
  * Check stream settings
  */
-function checkStream()
+function CheckStream()
 {
 	// stream.html => also activates stream=1
 	if (location.pathname.includes('stream.html'))
 	{
 		Y['stream'] = 1;
-		setSection('live');
+		SetSection('live');
 		Z.s = 'live';
 	}
 
@@ -564,13 +565,13 @@ function checkStream()
 		return;
 	}
 
-	loadPreset('stream2');
+	LoadPreset('stream2');
 	Assign(Y, {
 		'language': 'eng',
 		'twitch_chat': 0,
 		'twitch_video': 0,
 	});
-	scrollAdjust('#overview');
+	ScrollAdjust('#overview');
 	Hide('.adblock, .google-ad');
 
 	// alternate between shortcut_1/2/3
@@ -594,7 +595,7 @@ function checkStream()
  * @param {number|string} value
  * @param {string=} only_color only process this color
  */
-function configure(name, value, only_color)
+function Configure(name, value, only_color)
 {
 	for (let scolor of WB_LOWER)
 	{
@@ -617,7 +618,7 @@ function configure(name, value, only_color)
 		// create the command line
 		let line = Keys(result).sort().map(key => `${key}=${result[key]}`).join(' '),
 			node = _(`textarea[name="${key}"]`);
-		saveOption(key, line);
+		SaveOption(key, line);
 		if (node)
 			node.value = Y[key];
 
@@ -638,7 +639,7 @@ function configure(name, value, only_color)
  * Configure a game preset
  * @param {string} name
  */
-function configureString(name)
+function ConfigureString(name)
 {
 	let level = LEVELS[name],
 		options = level.split(' ');
@@ -651,7 +652,7 @@ function configureString(name)
 				input = _(`#modal [name="${key}"]`);
 			if (input)
 				input.value = level;
-			saveOption(key, level);
+			SaveOption(key, level);
 		}
 
 	// other inputs
@@ -666,14 +667,14 @@ function configureString(name)
 			value = items[1];
 		if (input)
 			input.value = value;
-		saveOption(key, value);
+		SaveOption(key, value);
 	}
 }
 
 /**
  * Create the swap elements for each panel
  */
-function createSwaps()
+function CreateSwaps()
 {
 	let swaps = ['end|1', 'next|1', 'next', 'end', 'minus', 'plus'].map(svg => {
 		let items = svg.split('|');
@@ -697,7 +698,7 @@ function createSwaps()
 			node = this.parentNode.parentNode;
 		// 1, 2, 3, 4 => <<[-3] <[-1] >[1] >>[3]
 		if (index <= 4)
-			movePane(node, index * 2 - 5);
+			MovePane(node, index * 2 - 5);
 		// 5, 6 => -[-1] +[1]
 		else if (index <= 6)
 		{
@@ -713,11 +714,11 @@ function createSwaps()
 			else
 				value += add * 10;
 
-			saveOption(name, Clamp(value, -1, 1200));
+			SaveOption(name, Clamp(value, -1, 1200));
 			TEXT(sizer, Y[name]);
 			Show(sizer);
 			AddTimeout('size', () => Hide('.size'), TIMEOUT_size);
-			resize();
+			Resize();
 		}
 		SP(e);
 	});
@@ -726,7 +727,7 @@ function createSwaps()
 /**
  * Fix old settings
  */
-function fixOldSettings()
+function FixOldSettings()
 {
 	// 1) add missing panel
 	let areas = Y['areas'],
@@ -738,7 +739,7 @@ function fixOldSettings()
 	});
 
 	// 2) insert "agree" somewhere if doesn't exist
-	let found = findArea('table-agree');
+	let found = FindArea('table-agree');
 	if (found.id < 0)
 	{
 		for (let key of Keys(areas))
@@ -768,10 +769,10 @@ function fixOldSettings()
 
 	// 3) insert shortcut_3 after shortcut_2
 	let name = 'shortcut_3',
-		found3 = findArea(name);
+		found3 = FindArea(name);
 	if (found3.id < 0)
 	{
-		let found = findArea('shortcut_2');
+		let found = FindArea('shortcut_2');
 		if (found.id >= 0)
 		{
 			let area = found.area,
@@ -784,14 +785,14 @@ function fixOldSettings()
 	}
 
 	if (populate && ready)
-		populateAreas();
+		PopulateAreas();
 
 	// 4) move height from em => px
 	// - guess, min height is 39px normally, so anything under that = old setting, but will miss values over
 	Keys(Y).filter(key => key.slice(0, 11) == 'move_height').forEach(key => {
 		let value = Y[key];
 		if (value < 39)
-			saveOption(key, Floor(value * 26) / 2);
+			SaveOption(key, Floor(value * 26) / 2);
 	});
 }
 
@@ -799,13 +800,13 @@ function fixOldSettings()
  * Handle a drop event
  * @param {Event} e
  */
-function handleDrop(e)
+function HandleDrop(e)
 {
 	if (!Y['drag_and_drop'])
 		return;
-	addHistory();
+	AddHistory();
 
-	let child = getDropId(e.target).node;
+	let child = GetDropId(e.target).node;
 	if (!child)
 		return;
 
@@ -829,7 +830,7 @@ function handleDrop(e)
 	{
 		let next,
 			parent_areas = new Set([
-				getArea(drag_source).id,
+				GetArea(drag_source).id,
 				parent.id,
 			]),
 			prev_source = drag_source.previousElementSibling,
@@ -879,21 +880,21 @@ function handleDrop(e)
 				return [child.id, context_area[1] || 0, Undefined(context_area[2], 1)];
 			});
 
-		populateAreas();
+		PopulateAreas();
 	}
 
-	setDraggable();
+	SetDraggable();
 	SP(e);
 	PD(e);
-	addHistory();
+	AddHistory();
 }
 
 /**
  * Which elements should be hidden dynamically?
- * - used at the start of populateAreas
+ * - used at the start of PopulateAreas
  * @param {!Object} hides
  */
-function hideAreas(hides)
+function HideAreas(hides)
 {
 	if (!Y['moves_copy'])
 		hides[`moves-${y_x}`] = 1;
@@ -902,36 +903,36 @@ function hideAreas(hides)
 /**
  * Happens after the settings are imported
  */
-function importSettingsSpecial()
+function ImportSettingsSpecial()
 {
-	fixOldSettings();
-	activateTabs();
-	resize();
+	FixOldSettings();
+	ActivateTabs();
+	Resize();
 }
 
 /**
  * Init custom settings
  * @param {boolean=} initial
  */
-function initCustoms(initial)
+function InitCustoms(initial)
 {
 	AddTimeout('twitch', updateTwitch, initial? TIMEOUT_twitch : 0);
-	changeTheme();
+	ChangeTheme();
 	resizeMoveLists();
-	showLiveEngines();
-	setDraggable();
-	populateAreas();
+	ShowLiveEngines();
+	SetDraggable();
+	PopulateAreas();
 	updateBoardTheme(7);
-	updateBackground();
+	UpdateBackground();
 }
 
 /**
  * Ran once at the last initialisation step
  */
-function initGlobals()
+function InitGlobals()
 {
-	changedHash();
-	apiTranslateGet(Z.new_version, resize);
+	ChangedHash();
+	ApiTranslateGet(Z.new_version, Resize);
 	checkSocketIo();
 
 	TEXT(CacheId('version'), VERSION);
@@ -949,7 +950,7 @@ function initGlobals()
 	showBanner();
 	updateTwitch(null, null, true);
 	if (y_three)
-		AddTimeout('three', () => set3dScene, TIMEOUT_three);
+		AddTimeout('three', () => Set3dScene, TIMEOUT_three);
 
 	// google ads
 	if (!DEV['ad'] && !LOCALHOST)
@@ -962,15 +963,15 @@ function initGlobals()
 			}
 		}, TIMEOUT_adblock);
 
-		AddTimeout('ad', insertGoogleAds, TIMEOUT_google_ad);
+		AddTimeout('ad', InsertGoogleAds, TIMEOUT_google_ad);
 	}
-	// loadGoogleAnalytics();
+	// LoadGoogleAnalytics();
 
 	// font size detector
 	AddTimeout('font', () => {
 		let font_height = SafeId('text').offsetHeight;
 		if (font_height != old_font_height || window.innerHeight != old_window_height)
-			resize();
+			Resize();
 
 		if (Y['stream'])
 			ScrollDocument(node_overview, {smooth: false});
@@ -981,19 +982,19 @@ function initGlobals()
 		let now = Now(),
 			diff = now - resume_time;
 		if (diff * 1000 > TIMEOUT_resume * 3)
-			resumeSleep(resume_time);
+			ResumeSleep(resume_time);
 		resume_time = now;
 	}, TIMEOUT_resume, true);
 
 	if (ready == 1)
-		createSwaps();
+		CreateSwaps();
 }
 
 /**
  * Insert one google ad
  * @param {number} id
  */
-function insertGoogleAd(id)
+function InsertGoogleAd(id)
 {
 	let [suffix, width, height] = [
 			[9, 252, 210],
@@ -1019,18 +1020,18 @@ function insertGoogleAd(id)
 /**
  * Insert google ads after some time
  */
-function insertGoogleAds()
+function InsertGoogleAds()
 {
-	insertGoogleAd(0);
-	insertGoogleAd(1);
+	InsertGoogleAd(0);
+	InsertGoogleAd(1);
 
-	// loadLibrary('//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', null, {async: ''});
+	// LoadLibraryOnce('//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', null, {async: ''});
 }
 
 /**
  * Load Google Analytics library
  */
-function loadGoogleAnalytics()
+function LoadGoogleAnalytics()
 {
 	window._gaq = window._gaq || [];
 	window._gaq.push(
@@ -1040,7 +1041,7 @@ function loadGoogleAnalytics()
 		['b._trackPageview']
 	);
 
-	loadLibrary(('https:' == location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js');
+	LoadLibraryOnce(('https:' == location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js');
 }
 
 /**
@@ -1049,20 +1050,20 @@ function loadGoogleAnalytics()
  * @param {string} name
  * @param {Node} tab
  */
-function openedTableSpecial(node, name, tab)
+function OpenedTableSpecial(node, name, tab)
 {
 	if (['chat', 'information', 'winner'].includes(name))
 		updateTwitch(null, null, true);
 }
 
 /**
- * Called after populateAreas
+ * Called after PopulateAreas
  */
-function populateAreasAfter()
+function PopulateAreasAfter()
 {
-	showArchiveLive();
-	updateShortcuts();
-	AddTimeout('populate', resize, 100);
+	ShowArchiveLive();
+	UpdateShortcuts();
+	AddTimeout('populate', Resize, 100);
 }
 
 /**
@@ -1070,38 +1071,38 @@ function populateAreasAfter()
  * - except if #seen=1, or if in the archive
  * @param {boolean=} force
  */
-function quickSetup(force)
+function QuickSetup(force)
 {
 	let old = Z.new_version;
 	if (!force && (old == undefined || old >= '20210109e' || Y['seen'] || y_x == 'archive' || Y['stream']))
 		return;
-	activateTabs();
-	showPopup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
-	saveOption('seen', 1);
+	ActivateTabs();
+	ShowPopup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
+	SaveOption('seen', 1);
 }
 
 /**
  * Reset to the default/other settings
  * @param {boolean=} is_default
  */
-function resetSettingsAfter(is_default)
+function ResetSettingsAfter(is_default)
 {
 	if (is_default)
 	{
-		loadSettings();
-		checkHash();
-		initGlobals();
+		LoadSettings();
+		CheckHash();
+		InitGlobals();
 	}
 
-	initCustoms();
-	closePopups();
-	resize();
+	InitCustoms();
+	ClosePopups();
+	Resize();
 }
 
 /**
  * Resize the window => resize some other elements
  */
-function resize()
+function Resize()
 {
 	// 1) tabs per row
 	Style('.tabs > .tab', `flex-basis:${Floor(200 / Y['tabs_per_row']) / 2}%`);
@@ -1126,7 +1127,7 @@ function resize()
 	Style('#chat, #chat2', [['height', `${chat_height}px`], ['width', '100%']]);
 
 	// 4) resize panels + stats
-	resizePanels();
+	ResizePanels();
 	resizeTable('stats');
 
 	// 5) resize charts
@@ -1141,7 +1142,7 @@ function resize()
 		resizeBracket();
 
 	// 6) resize game
-	adjustPopups();
+	AdjustPopups();
 	showBoardInfo(y_x, 1);
 
 	old_font_height = SafeId('text').offsetHeight;
@@ -1151,9 +1152,9 @@ function resize()
 /**
  * Resize the left & right panels
  */
-function resizePanels()
+function ResizePanels()
 {
-	updateVisible();
+	UpdateVisible();
 
 	// panel full + width
 	let panel_gap = Y['panel_gap'],
@@ -1194,12 +1195,12 @@ function resizePanels()
 	if (node)
 	{
 		Attrs(CacheId('eval'), {'data-t': (node.clientWidth > 330)? 'Evaluation' : 'Eval'});
-		translateNodes(node);
+		TranslateNodes(node);
 	}
 
 	// column/row mode
 	E('.status', node => {
-		let area = getArea(node);
+		let area = GetArea(node);
 		Style(node, [['margin-bottom', '1em'], ['margin-top', 0]], area.clientWidth < 390);
 	});
 	Keys(xboards).forEach(key => {
@@ -1207,12 +1208,12 @@ function resizePanels()
 		if (!board.sub || board.manual)
 			return;
 		let node = board.node,
-			area_width = getArea(node).clientWidth;
+			area_width = GetArea(node).clientWidth;
 		Class(board.xmoves, 'column', area_width < 390);
 		Class(node, 'fcol', area_width >= 390);
 	});
 	E('#table-kibitz, #table-pv', node => {
-		let area = getArea(node);
+		let area = GetArea(node);
 		Class(node, 'frow fastart', area.clientWidth >= 390);
 	});
 
@@ -1224,7 +1225,7 @@ function resizePanels()
 
 	// resize all charts
 	E('.chart', node => {
-		let area = getArea(node);
+		let area = GetArea(node);
 		if (area && !['bottom', 'top'].includes(area.id))
 		{
 			let width = area.clientWidth;
@@ -1239,30 +1240,30 @@ function resizePanels()
  * + start the 3d engine if on
  * @param {boolean} three
  */
-function set3dScene(three)
+function Set3dScene(three)
 {
 	if (three != undefined)
-		saveOption('three', three);
+		SaveOption('three', three);
 
 	Style(CacheId('three'), [['color', y_three? '#fff' : '#555']]);
 	S(CacheId('canvas'), y_three);
 	if (three)
-		start3d();
+		Start3d();
 }
 /**
  *
  * Show the About popup
  */
-function showAbout()
+function ShowAbout()
 {
 	HTML(CacheId('popup-desc'), HTML(CacheId('desc')));
-	showPopup('about', true, {center: true, html: HTML(CacheId('about')), overlay: 1});
+	ShowPopup('about', true, {center: true, html: HTML(CacheId('about')), overlay: 1});
 }
 
 /**
  * Show / hide the archive/live boards
  */
-function showArchiveLive()
+function ShowArchiveLive()
 {
 	let section = y_x,
 		is_live = (section == 'live');
@@ -1277,7 +1278,7 @@ function showArchiveLive()
  * Show/hide custom white & black
  * @param {string} name
  */
-function showCustomColors(name)
+function ShowCustomColors(name)
 {
 	let show = (Y[name] == 'custom');
 	for (let color of WB_LOWER)
@@ -1294,7 +1295,7 @@ function showCustomColors(name)
 /**
  * Show live engines
  */
-function showLiveEngines()
+function ShowLiveEngines()
 {
 	let main = xboards[y_x],
 		players = main.players,
@@ -1316,9 +1317,9 @@ function showLiveEngines()
  * Add a drag element to a tab group
  * @param {Node} target
  */
-function tabElement(target)
+function TabElement(target)
 {
-	let id = getDropId(target).id,
+	let id = GetDropId(target).id,
 		areas = Y['areas'];
 	if (id == null)
 		return;
@@ -1334,13 +1335,13 @@ function tabElement(target)
 			}
 	});
 
-	populateAreas();
+	PopulateAreas();
 }
 
 /**
  * Update the background
  */
-function updateBackground()
+function UpdateBackground()
 {
 	let node = CacheId('background');
 	if (!node)
@@ -1363,7 +1364,7 @@ function updateBackground()
  * - copy the table html
  * TODO: delete this
  */
-function updateShortcuts()
+function UpdateShortcuts()
 {
 	let names = new Set();
 
@@ -1383,7 +1384,7 @@ function updateShortcuts()
 			{
 				let name = target.dataset['t'];
 				tab.dataset['t'] = SHORTCUT_NAMES[name] || name;
-				translateNodes(tab.parentNode);
+				TranslateNodes(tab.parentNode);
 				let node = CacheId(`shortcut_${id}`),
 					table = CacheId(`table-${shortcut}`);
 
@@ -1403,7 +1404,7 @@ function updateShortcuts()
 /**
  * Show/hide stuff
  */
-function updateVisible()
+function UpdateVisible()
 {
 	let eval_left = Y['eval_left'],
 		hardware = Y['hardware'],
@@ -1428,7 +1429,7 @@ function updateVisible()
 	S('#moves-pv0 .live-pv, #moves-pv1 .live-pv, #table-live0 .live-pv, #table-live1 .live-pv', Y['moves_live']);
 	S('#mobil_, #mobil0, #mobil1', Y['mobility']);
 
-	showLiveEngines();
+	ShowLiveEngines();
 }
 
 /**
@@ -1436,13 +1437,13 @@ function updateVisible()
  * @param {!Object} dataset
  * @returns {number} 0:nothing, 1:return
  */
-function windowClickDataset(dataset)
+function WindowClickDataset(dataset)
 {
 	let id = dataset['id'];
 	switch (id)
 	{
 	case 'about':
-		showAbout();
+		ShowAbout();
 		return 1;
 	case 'load_pgn':
 		let file = CacheId('file');
@@ -1460,7 +1461,7 @@ function windowClickDataset(dataset)
  * @param {boolean} is_click
  * @returns {number} 0:nothing, 1:return, 2:break
  */
-function windowClickParent(parent, is_click)
+function WindowClickParent(parent, is_click)
 {
 	if (HasClass(parent, 'fen'))
 		return 1;
@@ -1473,7 +1474,7 @@ function windowClickParent(parent, is_click)
 			return 2;
 		if (HasClass(parent, 'tab'))
 		{
-			openTable(parent, true);
+			OpenTable(parent, true);
 			return 2;
 		}
 	}
@@ -1485,7 +1486,7 @@ function windowClickParent(parent, is_click)
  * @param {!Object} dataset
  * @returns {number} 0:nothing, 1:return, 2:break
  */
-function windowClickParentDataset(dataset)
+function WindowClickParentDataset(dataset)
 {
 	let seek = dataset['seek'];
 	if (seek)
@@ -1502,32 +1503,32 @@ function windowClickParentDataset(dataset)
 /**
  * Happens after a popup is displayed
  */
-function setModalEventsAfter()
+function SetModalEventsAfter()
 {
 	let node = _('[data-t="Board theme"]', node_modal);
 	if (!node)
 		return;
 	node = _('select', node.parentNode.nextElementSibling);
 	if (node)
-		showCustomColors(node.name);
+		ShowCustomColors(node.name);
 }
 
 /**
  * Global events
  */
-function setGlobalEvents()
+function SetGlobalEvents()
 {
 	// general
-	Events(window, 'resize', resize);
-	Events(window, 'scroll', adjustPopups);
-	// it won't be triggered by pushState and replaceState
-	Events(window, 'hashchange', () => checkHash());
+	Events(window, 'resize', Resize);
+	Events(window, 'scroll', AdjustPopups);
+	// it won't be triggered by PushState and replaceState
+	Events(window, 'hashchange', () => CheckHash());
 	Events(window, 'popstate', e => {
 		let state = e.state;
 		if (!state)
 			return;
 		Assign(Y, state);
-		checkHashSpecial(state);
+		CheckHashSpecial(state);
 	});
 
 	// keys
@@ -1541,7 +1542,7 @@ function setGlobalEvents()
 		if (!code)
 			return;
 		if (type == 'keydown')
-			actionKey(code);
+			ActionKey(code);
 
 		// ignore keys when on inputs, except ENTER & TAB
 		if (active && {INPUT: 1, TEXTAREA: 1}[active.tagName])
@@ -1550,7 +1551,7 @@ function setGlobalEvents()
 		if (type == 'keydown')
 		{
 			if (is_game)
-				okay = gameActionKey(code);
+				okay = GameActionKey(code);
 			else
 				okay = actionKeyNoInput(code, active);
 			if (!KEYS[code])
@@ -1560,19 +1561,19 @@ function setGlobalEvents()
 		else
 		{
 			if (is_game)
-				okay = gameActionKeyup(code);
+				okay = GameActionKeyup(code);
 			else
-				okay = actionKeyupNoInput(code);
+				okay = ActionKeyupNoInput(code);
 			KEYS[code] = 0;
 			if (change_queue)
-				changeSetting(change_queue[0], change_queue[1], change_queue[2]);
+				ChangeSetting(change_queue[0], change_queue[1], change_queue[2]);
 		}
 
 		// prevent some default actions
 		if ([9, 112].includes(code) || okay === false)
 			PD(e);
 
-		updateDebug();
+		UpdateDebug();
 	});
 
 	// popups
@@ -1581,11 +1582,11 @@ function setGlobalEvents()
 	});
 	C('#articles, #download, #info, #navigate, #options', function() {
 		if (SafeId('modal').dataset['id'] == this.id)
-			showPopup('');
+			ShowPopup('');
 		else
-			showPopup(this.id, 'toggle', {id: this.id});
+			ShowPopup(this.id, 'toggle', {id: this.id});
 	});
-	C('#overlay', () => closePopups());
+	C('#overlay', () => ClosePopups());
 
 	C('.pages', e => {
 		let target = e.target;
@@ -1605,29 +1606,29 @@ function setGlobalEvents()
 
 	// theme + twitch
 	C('#theme0, #theme1', function() {
-		changeTheme((this.id.slice(-1) == '1')? 'dark' : 'light');
+		ChangeTheme((this.id.slice(-1) == '1')? 'dark' : 'light');
 	});
 	C('#twitch0, #twitch1', function() {
 		updateTwitch((this.id.slice(-1) == '1') * 1);
 	});
 	C('#hide-chat, #hide-video, #show-chat, #show-video', function() {
 		let [left, right] = this.id.split('-');
-		saveOption(`twitch_${right}`, (left == 'show') * 1);
+		SaveOption(`twitch_${right}`, (left == 'show') * 1);
 		updateTwitch();
 	});
-	C('#three', () => set3dScene(!y_three));
+	C('#three', () => Set3dScene(!y_three));
 	C('#full0, #full1', () => {
-		toggleFullscreen(full => {
+		ToggleFullscreen(full => {
 			S(CacheId('full0'), full);
 			S(CacheId('full1'), !full);
-			resize();
+			Resize();
 		});
 	});
 
 	// context menus
 	Keys(CONTEXT_MENUS).forEach(key => {
 		Events(key, 'contextmenu', function(e) {
-			if (cannotPopup())
+			if (CannotPopup())
 				return;
 			context_target = e.target;
 
@@ -1638,14 +1639,14 @@ function setGlobalEvents()
 			if (tag == 'A' && context_target.href)
 				return;
 
-			showPopup('options', true, {setting: CONTEXT_MENUS[key], xy: [e.clientX, e.clientY]});
+			ShowPopup('options', true, {setting: CONTEXT_MENUS[key], xy: [e.clientX, e.clientY]});
 			PD(e);
 		});
 	});
 	Events(
 		'#archive, #live, #live0, #live1, #moves-archive, #moves-live, #moves-pv0, #moves-pv1, #pv0, #pv1, #pva,'
 		+ '#table-live0, #table-live1', 'contextmenu', function(e) {
-		if (cannotPopup())
+		if (CannotPopup())
 			return;
 		let is_pv = '01'.includes(this.id.slice(-1)),
 			is_pva = (this.id == 'pva'),
@@ -1673,7 +1674,7 @@ function setGlobalEvents()
 			if (name)
 			{
 				context_target = target;
-				showPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
+				ShowPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
 				PD(e);
 				return;
 			}
@@ -1681,7 +1682,7 @@ function setGlobalEvents()
 		}
 	});
 	Events(window, 'contextmenu', e => {
-		if (cannotPopup())
+		if (CannotPopup())
 			return;
 		let node = e.target;
 		if (HasClasses(node, 'tab drop'))
@@ -1689,7 +1690,7 @@ function setGlobalEvents()
 			let id = node.dataset['x'],
 				name = (id.includes('shortcut') || id.includes('chat'))? 'quick' : 'tab';
 			context_target = node;
-			showPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
+			ShowPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
 			PD(e);
 		}
 	});
@@ -1712,15 +1713,15 @@ function setGlobalEvents()
 
 				Y[id] = result;
 				if (save)
-					saveOption(id, result);
+					SaveOption(id, result);
 
 				if (!Y[sopacity])
 				{
 					Y[sopacity] = 0.2;
 					if (save)
-						saveOption(sopacity);
+						SaveOption(sopacity);
 				}
-				updateBackground();
+				UpdateBackground();
 			};
 			return;
 		}
@@ -1731,22 +1732,22 @@ function setGlobalEvents()
 			switch (id)
 			{
 				case 'import_settings':
-					changeSetting(id, data);
-					saveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
+					ChangeSetting(id, data);
+					SaveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
 					break;
 				case 'language':
 					let json = ParseJSON(data);
 					if (IsObject(json))
-						apiTranslateGet(false, undefined, /** @type {!Object} */(json));
+						ApiTranslateGet(false, undefined, /** @type {!Object} */(json));
 					break;
 				case 'load_pgn':
 					let new_section = 'archive';
 					if (updatePgn(new_section, data))
 					{
 						Y.scroll = '#overview';
-						setSection(new_section);
+						SetSection(new_section);
 						Z.s = new_section;
-						checkHashSpecial({x: new_section});
+						CheckHashSpecial({x: new_section});
 					}
 					break;
 				}
@@ -1754,8 +1755,8 @@ function setGlobalEvents()
 	});
 
 	// extra events
-	setDragEvents(handleDrop);
-	setFullscreenEvents();
+	SetDragEvents(HandleDrop);
+	SetFullScreenEvents();
 }
 
 // MAIN
@@ -1764,25 +1765,25 @@ function setGlobalEvents()
 /**
  * Load settings from Local Storage
  */
-function loadSettings()
+function LoadSettings()
 {
-	loadDefaults();
+	LoadDefaults();
 	Y['preset'] = 'custom';
-	resetOldSettings(VERSION);
-	fixOldSettings();
+	ResetOldSettings(VERSION);
+	FixOldSettings();
 
-	cachedTranslates();
+	CachedTranslates();
 }
 
 /**
  * Prepare combined settings
  */
-function prepareSettings()
+function PrepareSettings()
 {
 	// globals
 	Y.scroll = 0;
 	y_three = 0;
-	setSection('live');
+	SetSection('live');
 
 	let DEFAULT_NO_IMPORTS = {
 		'div': '',                                          // archive link
@@ -1848,7 +1849,7 @@ function prepareSettings()
 		'twitch_dark': 0,
 		'version': '0',
 	});
-	guessTypes(DEFAULTS);
+	GuessTypes(DEFAULTS);
 
 	Assign(DEV_NAMES, {
 		'a': 'arrow',
@@ -1982,7 +1983,7 @@ function prepareSettings()
 		shortcuts = [...['off'], ...[...Keys(TABLES).filter(table => table != 'overview'), ...['stats']].sort()],
 		show_plies = [['first', 'diverging', 'last'], 'diverging'];
 
-	mergeSettings({
+	MergeSettings({
 		// new column after 10 items
 		'_split': 11,
 		'general': {
@@ -1998,7 +1999,7 @@ function prepareSettings()
 		'audio': {
 			'silent_mode': [ON_OFF, 0],
 			'audio_book': [ON_OFF, 1, 'opening moves from the book'],
-			'audio_delay': optionNumber(150, 0, 2000, 1, {}, 'audio delay when animation speed is 500ms'),
+			'audio_delay': OptionNumber(150, 0, 2000, 1, {}, 'audio delay when animation speed is 500ms'),
 			'audio_live_archive': [ON_OFF, 0, 'when in the archive, hear a sound when a Live move was played'],
 			'audio_moves': [
 				['none', 'all', 'last'], 'all',
@@ -2006,7 +2007,7 @@ function prepareSettings()
 			],
 			'audio_pva': [ON_OFF, 1, 'sound in PVA board'],
 			'audio_set': [['custom', bamboo, 'kan'], 'custom'],
-			'capture_delay': optionNumber(-200, -1000, 1000, 1, {}, 'capture delay when animation speed is 500ms'),
+			'capture_delay': OptionNumber(-200, -1000, 1000, 1, {}, 'capture delay when animation speed is 500ms'),
 			'sound_capture': [['off', `${bamboo2}capture`, 'kan - capture', old], `${bamboo2}capture`],
 			'sound_check': [['off', `${bamboo2}check`, old], `${bamboo2}check`],
 			'sound_checkmate': [['off', `${bamboo2}checkmate`, old], `${bamboo2}checkmate`],
@@ -2014,16 +2015,16 @@ function prepareSettings()
 			'sound_move': [['off', `${bamboo2}move`, 'kan - move', old], `${bamboo2}move`, 'a non-pawn piece moved'],
 			'sound_move_pawn': [['off', `${bamboo2}pawn`, 'kan - move', old], `${bamboo2}pawn`, 'a pawn moved'],
 			'sound_win': [['off', 'draw', 'win'], 'win'],
-			'volume': optionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
+			'volume': OptionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
 		},
 		'video': {
 			'background_color': [{type: 'color'}, '#000000'],
 			'background_image': [{type: 'link'}, ''],
-			'background_opacity': optionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
+			'background_opacity': OptionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
 			'background_reset': '1',
 			'encoding': [['Gamma', 'Linear', 'sRGB'], 'sRGB', '3D'],
-			'exposure': optionNumber(1, 0.1, 10, 0.1, {}, '3D'),
-			'gamma': optionNumber(1.5, 0, 10, 0.1, {}, '3D'),
+			'exposure': OptionNumber(1, 0.1, 10, 0.1, {}, '3D'),
+			'gamma': OptionNumber(1.5, 0, 10, 0.1, {}, '3D'),
 			'lighting': [['low', 'medium', 'high'], 'high', '3D'],
 			'resolution': [['1:4', '1:3', '1:2', '1:1'], '1:2', '3D'],
 			'shadow': [Keys(SHADOW_QUALITIES), 'high', '3D'],
@@ -2033,13 +2034,13 @@ function prepareSettings()
 		'_1': {},
 		'arrow': {
 			'_prefix': 'arrow_',
-			'arrow_base_border': optionNumber(0, 0, 5, 0.01),
+			'arrow_base_border': OptionNumber(0, 0, 5, 0.01),
 			'arrow_base_color': {
 				'_multi': 2,
 				'arrow_base_color': [{type: 'color'}, '#a5a5a5'],
-				'arrow_base_mix': optionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
+				'arrow_base_mix': OptionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
 			},
-			'arrow_base_size': optionNumber(2.05, 0, 5, 0.05),
+			'arrow_base_size': OptionNumber(2.05, 0, 5, 0.05),
 			'color_01': {
 				'_label': '{Color} 0, 1',
 				'_multi': 2,
@@ -2062,19 +2063,19 @@ function prepareSettings()
 				'arrow_color_23': [{type: 'color'}, '#007700', '{blue} + {red}'],
 			},
 			'arrow_from': [['none', 'all', 'kibitzer', 'player'], 'all'],
-			'arrow_from_opponent': optionNumber(0.6, 0, 1, 0.01, {}, 'show the ponder move'),
-			'arrow_head_border': optionNumber(0.5, 0, 5, 0.01),
+			'arrow_from_opponent': OptionNumber(0.6, 0, 1, 0.01, {}, 'show the ponder move'),
+			'arrow_head_border': OptionNumber(0.5, 0, 5, 0.01),
 			'arrow_head_color': {
 				'_multi': 2,
 				'arrow_head_color': [{type: 'color'}, '#a5a5a5'],
-				'arrow_head_mix': optionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
+				'arrow_head_mix': OptionNumber(0.7, 0, 1, 0.01, {}, 'mix'),
 			},
-			'arrow_head_size': optionNumber(2.05, 0, 5, 0.05),
+			'arrow_head_size': OptionNumber(2.05, 0, 5, 0.05),
 			'arrow_history_lag':
-				optionNumber(1300, 0, 5000, 1, {}, 'when checking past moves, wait a bit before showing the arrow'),
+				OptionNumber(1300, 0, 5000, 1, {}, 'when checking past moves, wait a bit before showing the arrow'),
 			'arrow_moves': [['all', 'last'], 'all', 'show arrow for all moves or only the last move'],
-			'arrow_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
-			'arrow_width': optionNumber(1.6, 0, 5, 0.01),
+			'arrow_opacity': OptionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+			'arrow_width': OptionNumber(1.6, 0, 5, 0.01),
 		},
 		'board': {
 			'analysis': analyses,
@@ -2082,8 +2083,8 @@ function prepareSettings()
 			'animation_speed': {
 				'_multi': 2,
 				'_title': 'how fast pieces can move, in ms\nspeed is adjusted between min and max',
-				'smooth_min': optionNumber(250, 0, 2000, 10, {}, HELP_MIN),
-				'smooth_max': optionNumber(500, 0, 2000, 10, {}, HELP_MAX),
+				'smooth_min': OptionNumber(250, 0, 2000, 10, {}, HELP_MIN),
+				'smooth_max': OptionNumber(500, 0, 2000, 10, {}, HELP_MAX),
 			},
 			'arrow': '',
 			'board_theme': [Keys(BOARD_THEMES), 'chess24'],
@@ -2099,8 +2100,8 @@ function prepareSettings()
 			'copy': copy_download,
 			'draw_right_click': [ON_OFF, 0, 'use right click to draw on the board'],
 			'highlight_color': [{type: 'color'}, '#ffff00'],
-			'highlight_delay': optionNumber(0, -100, 1500, 100),
-			'highlight_size': optionNumber(0.055, 0, 0.4, 0.001),
+			'highlight_delay': OptionNumber(0, -100, 1500, 100),
+			'highlight_size': OptionNumber(0.055, 0, 0.4, 0.001),
 			'notation': [ON_OFF, 1, HELP_NOTATION],
 			'piece_theme': [Keys(PIECE_THEMES), 'chess24'],
 			'status': [AUTO_ON_OFF, 'auto', 'status bar\nauto: on when engine tab is not visible'],
@@ -2121,10 +2122,10 @@ function prepareSettings()
 			'controls_pv': [ON_OFF, 1, HELP_CONTROLS],
 			'copy': copy_download,
 			'highlight_color_pv': [{type: 'color'}, '#ffff00'],
-			'highlight_size_pv': optionNumber(0.088, 0, 0.4, 0.001),
+			'highlight_size_pv': OptionNumber(0.088, 0, 0.4, 0.001),
 			'notation_pv': [ON_OFF, 1, HELP_NOTATION],
 			'piece_theme_pv': [Keys(PIECE_THEMES), 'chess24'],
-			// 'show_delay': optionNumber(100, 0, 2000, 10),
+			// 'show_delay': OptionNumber(100, 0, 2000, 10),
 			'show_ply': show_plies,
 			'status_pv': [ON_OFF, 1, 'status bar'],
 		},
@@ -2143,68 +2144,68 @@ function prepareSettings()
 			},
 			'controls_pva': [ON_OFF, 1, HELP_CONTROLS],
 			'highlight_color_pva': [{type: 'color'}, '#ffff00'],
-			'highlight_size_pva': optionNumber(0.055, 0, 0.4, 0.001),
+			'highlight_size_pva': OptionNumber(0.055, 0, 0.4, 0.001),
 			'notation_pva': [ON_OFF, 1, HELP_NOTATION],
 			'piece_theme_pva': [Keys(PIECE_THEMES), 'chess24'],
 			'source_color': {
 				'_multi': 2,
 				'_title': 'color of the clicked piece',
 				'source_color': [{type: 'color'}, '#ffb400'],
-				'source_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+				'source_opacity': OptionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
 			},
 			'status_pva': [ON_OFF, 1, 'status bar'],
 			'target_color': {
 				'_multi': 2,
 				'_title': 'show legal squares that the piece can occupy',
 				'target_color': [{type: 'color'}, '#ff5a00'],
-				'target_opacity': optionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
+				'target_opacity': OptionNumber(0.7, 0, 1, 0.01, {}, HELP_OPACITY),
 			},
 			'turn_color': {
 				'_multi': 2,
 				'_title': 'show pieces that are allowed to move',
 				'turn_color': [{type: 'color'}, '#ff5a00'],
-				'turn_opacity': optionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
+				'turn_opacity': OptionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
 			},
 		},
 		'boom': {
 			'disable_everything': [ON_OFF, 0],
-			'every': optionNumber(30, 0, 1800, 0.5, {}, 'no more than 1 sound every X seconds, -1 to disable sounds'),
+			'every': OptionNumber(30, 0, 1800, 0.5, {}, 'no more than 1 sound every X seconds, -1 to disable sounds'),
 			'boom_sound': [boom_sounds, 0],
-			'boom_threshold': optionNumber(1.2, 0, 10, 0.05, {}, 'threshold to exceed in graph scale => boom'),
+			'boom_threshold': OptionNumber(1.2, 0, 10, 0.05, {}, 'threshold to exceed in graph scale => boom'),
 			'boom_visual': [boom_visuals, 0],
-			'boom_volume': optionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
+			'boom_volume': OptionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
 			'moob_sound': [['off', 'random', 'moob', 'moob2', 'moob3'], 0],
 			'moob_visual': [ON_OFF, 0],
-			'moob_volume': optionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
-			'explosion_buildup': optionNumber(2, 0, 10, 1, {}, 'need to exceed the threshold for X plies'),
-			'explosion_ply_reset': optionNumber(8, 0, 100, 1, {}, 'reactivate after X plies under threshold'),
+			'moob_volume': OptionNumber(3.5, 0, 20, 0.5, {}, 'maximum volume'),
+			'explosion_buildup': OptionNumber(2, 0, 10, 1, {}, 'need to exceed the threshold for X plies'),
+			'explosion_ply_reset': OptionNumber(8, 0, 100, 1, {}, 'reactivate after X plies under threshold'),
 			'explosion_sound': [boom_sounds, 'random'],
 			'explosion_threshold':
-				optionNumber(2.3, 0, 10, 0.1, {}, 'strict majority of unique engines must exceed this eval'),
+				OptionNumber(2.3, 0, 10, 0.1, {}, 'strict majority of unique engines must exceed this eval'),
 			'explosion_visual': [boom_visuals, 'all'],
-			'explosion_volume': optionNumber(5, 0, 20, 0.5),
+			'explosion_volume': OptionNumber(5, 0, 20, 0.5),
 			'PVA': [ON_OFF, 0, 'enable boom in PVA board'],
 			'test': [{list: ['boom', 'moob', 'explosion'], type: 'list'}],
 		},
 		'control': {
-			'book_every': optionNumber(600, 100, 5000, 50, {}, 'opening book play speed'),
+			'book_every': OptionNumber(600, 100, 5000, 50, {}, 'opening book play speed'),
 			'key_accelerate':
-				optionNumber(1.04, 0.5, 1, 0.001, {}, 'divide key repeat time by this value, 1 for no acceleration'),
-			'key_repeat': optionNumber(70, 10, 2000, 10, {}, 'delay for the 2nd, 3rd, ... repeats when holding a key'),
-			'key_repeat_initial': optionNumber(500, 10, 2000, 10, {}, 'delay for the 1st repeat when holding a key'),
-			'play_every': optionNumber(1200, 100, 5000, 50, {}, 'speed when clicking on PLAY'),
+				OptionNumber(1.04, 0.5, 1, 0.001, {}, 'divide key repeat time by this value, 1 for no acceleration'),
+			'key_repeat': OptionNumber(70, 10, 2000, 10, {}, 'delay for the 2nd, 3rd, ... repeats when holding a key'),
+			'key_repeat_initial': OptionNumber(500, 10, 2000, 10, {}, 'delay for the 1st repeat when holding a key'),
+			'play_every': OptionNumber(1200, 100, 5000, 50, {}, 'speed when clicking on PLAY'),
 			'quick_every': {
 				'_multi': 2,
 				'_title': 'Live moves play speed\speed is adjusted between min and max',
-				'quick_min': optionNumber(100, 100, 50000, 10, {}, HELP_MIN),
-				'quick_max': optionNumber(500, 100, 50000, 10, {}, HELP_MAX),
+				'quick_min': OptionNumber(100, 100, 50000, 10, {}, HELP_MIN),
+				'quick_max': OptionNumber(500, 100, 50000, 10, {}, HELP_MAX),
 			},
 			// 'wasm': [ON_OFF, 0],
 		},
 		'engine': {
 			'checkmate': [['moves', 'plies'], 'moves', 'moves: M#8, plies: M16'],
-			'engine_font': optionNumber(16, 8, 24, 0.25),
-			'engine_spacing': optionNumber(0.2, 0, 5, 0.0025),
+			'engine_font': OptionNumber(16, 8, 24, 0.25),
+			'engine_spacing': OptionNumber(0.2, 0, 5, 0.0025),
 			'material_color': [['inverted', 'normal'], 'normal', 'normal will show black pieces under white player'],
 			'mobility': [ON_OFF, 1, 'show r-mobility goal + mobilities'],
 			'moves_left': [ON_OFF, 1, 'show moves left when Lc0 is playing'],
@@ -2225,9 +2226,9 @@ function prepareSettings()
 			'popup_right_click': [ON_OFF, 1, 'right click on elements for a popup menu'],
 			'reverse_kills': [ON_OFF, 0, 'replace "double wins" with "reverse kills"'],
 			'rows_per_page': [[10, 20, 50, 100, 1000], 10],
-			'scroll_inertia': optionNumber(0.95, 0, 0.99, 0.01, {}, HELP_ADVANCED),
+			'scroll_inertia': OptionNumber(0.95, 0, 0.99, 0.01, {}, HELP_ADVANCED),
 			'wheel_adjust':
-				optionNumber(63, 0, 240, 1, {}, 'adjust the scrolling when using wheel scroll\nmax amount in pixels'),
+				OptionNumber(63, 0, 240, 1, {}, 'adjust the scrolling when using wheel scroll\nmax amount in pixels'),
 			'wrap': [ON_OFF, 1, 'wrap cell content'],
 			'wrap_cross': [AUTO_ON_OFF, 'auto'],
 			'wrap_h2h': [AUTO_ON_OFF, 'auto'],
@@ -2242,7 +2243,7 @@ function prepareSettings()
 			'game_arrow': [['none', 'color', 'kibitz', 'color 0', 'color 1', 'color 2', 'color 3'], 'kibitz'],
 			'board_pva': '',
 			'copy': copy_download,
-			'game_every': optionNumber(200, 50, 5000, 50),
+			'game_every': OptionNumber(200, 50, 5000, 50),
 			'game_level': [Keys(LEVELS), 'amateur'],
 			'game_new_FEN': [{type: 'text'}, '', 'FEN to be used for a new game, empty for default'],
 			'game_new_game': '1',
@@ -2251,11 +2252,11 @@ function prepareSettings()
 			'parameters': '',
 			'game_PV': [ON_OFF, 1, 'show the PV'],
 			'game_think': '1',
-			'game_time': optionNumber(5, -1, 120),
+			'game_time': OptionNumber(5, -1, 120),
 		},
 		'graph': {
 			'_prefix': 'graph_',
-			'graph_aspect_ratio': optionNumber(1.5, 0.5, 5, 0.005, {}, '(horizontal/vertical) ratio'),
+			'graph_aspect_ratio': OptionNumber(1.5, 0.5, 5, 0.005, {}, '(horizontal/vertical) ratio'),
 			'color_01': {
 				'_label': '{Color} 0, 1',
 				'_multi': 2,
@@ -2270,24 +2271,24 @@ function prepareSettings()
 				'graph_color_2': [{type: 'color'}, '#236ad6', 'blue'],
 				'graph_color_3': [{type: 'color'}, '#eb282d', 'red'],
 			},
-			'graph_eval_clamp': optionNumber(10, 0, 256, 0.5, {}, 'limit the eval, only works with scale=linear'),
+			'graph_eval_clamp': OptionNumber(10, 0, 256, 0.5, {}, 'limit the eval, only works with scale=linear'),
 			'graph_eval_mode': [['percent', 'score'], 'score'],
-			'graph_line': optionNumber(1.5, 0, 10, 0.1, {}, 'line thickness'),
+			'graph_line': OptionNumber(1.5, 0, 10, 0.1, {}, 'line thickness'),
 			'marker_color': {
 				'_multi': 2,
 				'marker_color': [{type: 'color'}, '#299bff'],
-				'marker_opacity': optionNumber(0.5, 0, 1, 0.01, {}, HELP_OPACITY),
+				'marker_opacity': OptionNumber(0.5, 0, 1, 0.01, {}, HELP_OPACITY),
 			},
-			'graph_min_width': optionNumber(240, 40, 640),
-			'graph_radius': optionNumber(1.2, 0, 10, 0.1, {}, 'radius of the points'),
+			'graph_min_width': OptionNumber(240, 40, 640),
+			'graph_radius': OptionNumber(1.2, 0, 10, 0.1, {}, 'radius of the points'),
 			'graph_scale': [SCALES, 0, '!', null, () => {
 				let name = ((context_target || {}).id || '').split('-')[1],
 					value = Y['scales'][name];
 				DEFAULTS['graph_scale'] = DEFAULT_SCALES[name];
 				return (value & 10)? 10 : value;
 			}],
-			'graph_tension': optionNumber(0.1, 0, 0.5, 0.01, {}, HELP_ADVANCED),
-			'graph_text': optionNumber(10, 1, 30, 1, {}, 'text size'),
+			'graph_tension': OptionNumber(0.1, 0, 0.5, 0.01, {}, HELP_ADVANCED),
+			'graph_text': OptionNumber(10, 1, 30, 1, {}, 'text size'),
 			'use_for_arrow': '1',
 		},
 		'info': {
@@ -2301,44 +2302,44 @@ function prepareSettings()
 			'moves_pv': [ON_OFF, 1],
 			'moves_pva': [ON_OFF, 1],
 			'percent': [ON_OFF, 1, HELP_PERCENT],
-			'percent_width': optionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+			'percent_width': OptionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
 			'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
 		},
 		'live': {
 			'agree_length': agree_length,
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'grid_live': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'grid_live': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
 			'live_engine_1': [ON_OFF, 1],
 			'live_engine_2': [ON_OFF, 1],
 			'live_pv': [ON_OFF, 1],
-			'move_font_live': optionNumber(13, 6, 30, 0.1),
-			'move_height_live': optionNumber(52, 39, 1600, 0.5),
+			'move_font_live': OptionNumber(13, 6, 30, 0.1),
+			'move_height_live': OptionNumber(52, 39, 1600, 0.5),
 			'moves_live': [ON_OFF, 1],
 			'show_ply': show_plies,
 		},
 		'moves': {
 			'agree_length': agree_length,
-			'grid': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
-			'grid_copy': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
-			'grid_live': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
-			'grid_pv': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
-			'grid_pva': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
-			'move_font': optionNumber(13, 6, 30, 0.1),
-			'move_font_copy': optionNumber(13, 6, 30, 0.1),
-			'move_font_live': optionNumber(13, 6, 30, 0.1),
-			'move_font_pv': optionNumber(13, 6, 30, 0.1),
-			'move_font_pva': optionNumber(13, 6, 30, 0.1),
-			'move_height': optionNumber(70, 3, 1600, 0.5),
-			'move_height_copy': optionNumber(260, 39, 1600, 0.5),
-			'move_height_live': optionNumber(52, 39, 1600, 0.5),
-			'move_height_pv': optionNumber(91, 65, 1600, 0.5),
-			'move_height_pva': optionNumber(70, 65, 1600, 0.5),
+			'grid': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'grid_copy': OptionNumber(2, 0, 10, 1, {}, HELP_GRID),
+			'grid_live': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'grid_pv': OptionNumber(2, 0, 10, 1, {}, HELP_GRID),
+			'grid_pva': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'move_font': OptionNumber(13, 6, 30, 0.1),
+			'move_font_copy': OptionNumber(13, 6, 30, 0.1),
+			'move_font_live': OptionNumber(13, 6, 30, 0.1),
+			'move_font_pv': OptionNumber(13, 6, 30, 0.1),
+			'move_font_pva': OptionNumber(13, 6, 30, 0.1),
+			'move_height': OptionNumber(70, 3, 1600, 0.5),
+			'move_height_copy': OptionNumber(260, 39, 1600, 0.5),
+			'move_height_live': OptionNumber(52, 39, 1600, 0.5),
+			'move_height_pv': OptionNumber(91, 65, 1600, 0.5),
+			'move_height_pva': OptionNumber(70, 65, 1600, 0.5),
 		},
 		'network': {
 			'log_auto_start':
 				[ON_OFF, 1, 'enable the LiveLog whenever the page is loaded\nlog is used for live eval+pv updates'],
-			'log_history': optionNumber(100, -1, 1000, 1, {}, 'max number of lines'),
+			'log_history': OptionNumber(100, -1, 1000, 1, {}, 'max number of lines'),
 			'log_pv': [ON_OFF, 1, 'use LiveLog to update the PV in real time'],
 			'network': [
 				['auto', 'socket.io', 'websocket'], 'websocket',
@@ -2351,50 +2352,50 @@ function prepareSettings()
 			'twitch_video': [ON_OFF, 1, 'show the Twitch stream at the bottom of the page'],
 		},
 		'panel': {
-			'column_bottom': optionNumber(4, 1, 8, 1, {}, 'number of columns in the bottom panel'),
-			'column_top': optionNumber(2, 1, 8, 1, {}, 'number of columns in the top panel'),
+			'column_bottom': OptionNumber(4, 1, 8, 1, {}, 'number of columns in the bottom panel'),
+			'column_top': OptionNumber(2, 1, 8, 1, {}, 'number of columns in the top panel'),
 			'default_positions': '1',
 			'drag_and_drop': [ON_OFF, 0, HELP_DRAG_AND_DROP],
 			'left_2': {
 				'_multi': 2,
 				'_title': HELP_MIN_MAX,
-				'min_left_2': optionNumber(0, -1, 1200, 1, {}, HELP_MIN),
-				'max_left_2': optionNumber(0, -1, 1200, 1, {}, HELP_MAX),
+				'min_left_2': OptionNumber(0, -1, 1200, 1, {}, HELP_MIN),
+				'max_left_2': OptionNumber(0, -1, 1200, 1, {}, HELP_MAX),
 			},
 			'left': {
 				'_multi': 2,
 				'_title': HELP_MIN_MAX,
-				'min_left': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
-				'max_left': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
+				'min_left': OptionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+				'max_left': OptionNumber(500, -1, 1200, 1, {}, HELP_MAX),
 			},
 			'center': {
 				'_multi': 2,
 				'_title': HELP_MIN_MAX,
-				'min_center': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
-				'max_center': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
+				'min_center': OptionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+				'max_center': OptionNumber(500, -1, 1200, 1, {}, HELP_MAX),
 			},
 			'right': {
 				'_multi': 2,
 				'_title': HELP_MIN_MAX,
-				'min_right': optionNumber(300, -1, 1200, 1, {}, HELP_MIN),
-				'max_right': optionNumber(500, -1, 1200, 1, {}, HELP_MAX),
+				'min_right': OptionNumber(300, -1, 1200, 1, {}, HELP_MIN),
+				'max_right': OptionNumber(500, -1, 1200, 1, {}, HELP_MAX),
 			},
 			'right_2': {
 				'_multi': 2,
 				'_title': HELP_MIN_MAX,
-				'min_right_2': optionNumber(0, -1, 1200, 1, {}, HELP_MIN),
-				'max_right_2': optionNumber(0, -1, 1200, 1, {}, HELP_MAX),
+				'min_right_2': OptionNumber(0, -1, 1200, 1, {}, HELP_MIN),
+				'max_right_2': OptionNumber(0, -1, 1200, 1, {}, HELP_MAX),
 			},
-			'max_window': optionNumber(2560, 256, 32000, 1, {}, 'max width of the layout, in pixels'),
+			'max_window': OptionNumber(2560, 256, 32000, 1, {}, 'max width of the layout, in pixels'),
 			'panel_adjust': [ON_OFF, 0, 'show the < > - + above the panel'],
-			'panel_gap': optionNumber(device.mobile? 5 : 10, 0, 100, 1, {}, 'spacing between each panel'),
+			'panel_gap': OptionNumber(device.mobile? 5 : 10, 0, 100, 1, {}, 'spacing between each panel'),
 			'quick': '',
-			'tabs_per_row': optionNumber(7, 1, 100, 1, {}, 'max number of tabs per row'),
+			'tabs_per_row': OptionNumber(7, 1, 100, 1, {}, 'max number of tabs per row'),
 			'unhide': '1',
 		},
 		'quick': {
 			'chat_height':
-				optionNumber(828, 100, 1600, 0.5, {}, 'height in pixels of the chat + other tabs next to the chat'),
+				OptionNumber(828, 100, 1600, 0.5, {}, 'height in pixels of the chat + other tabs next to the chat'),
 			'shortcut_1': [shortcuts, 'stand'],
 			'shortcut_2': [shortcuts, 'stats'],
 			'shortcut_3': [shortcuts, 0],
@@ -2409,9 +2410,9 @@ function prepareSettings()
 			'_pop': true,
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'grid': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
-			'move_font': optionNumber(13, 6, 30, 0.1),
-			'move_height': optionNumber(70, 39, 1600, 0.5),
+			'grid': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'move_font': OptionNumber(13, 6, 30, 0.1),
+			'move_height': OptionNumber(70, 39, 1600, 0.5),
 			'moves': [ON_OFF, 1],
 			'moves_copy': [ON_OFF, 0],
 		},
@@ -2419,9 +2420,9 @@ function prepareSettings()
 			'_pop': true,
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'grid_copy': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
-			'move_font_copy': optionNumber(13, 6, 30, 0.1),
-			'move_height_copy': optionNumber(260, 39, 1600, 0.5),
+			'grid_copy': OptionNumber(2, 0, 10, 1, {}, HELP_GRID),
+			'move_font_copy': OptionNumber(13, 6, 30, 0.1),
+			'move_height_copy': OptionNumber(260, 39, 1600, 0.5),
 			'moves': [ON_OFF, 1],
 			'moves_copy': [ON_OFF, 0],
 		},
@@ -2430,9 +2431,9 @@ function prepareSettings()
 			'agree_length': agree_length,
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'grid_pv': optionNumber(2, 0, 10, 1, {}, HELP_GRID),
-			'move_font_pv': optionNumber(13, 6, 30, 0.1),
-			'move_height_pv': optionNumber(91, 39, 1600, 0.5),
+			'grid_pv': OptionNumber(2, 0, 10, 1, {}, HELP_GRID),
+			'move_font_pv': OptionNumber(13, 6, 30, 0.1),
+			'move_height_pv': OptionNumber(91, 39, 1600, 0.5),
 			'moves_pv': [ON_OFF, 1],
 			'show_ply': show_plies,
 		},
@@ -2441,12 +2442,12 @@ function prepareSettings()
 			'_prefix': 'game_',
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'grid_pva': optionNumber(0, 0, 10, 1, {}, HELP_GRID),
-			'move_font_pva': optionNumber(13, 6, 30, 0.1),
-			'move_height_pva': optionNumber(70, 39, 1600, 0.5),
+			'grid_pva': OptionNumber(0, 0, 10, 1, {}, HELP_GRID),
+			'move_font_pva': OptionNumber(13, 6, 30, 0.1),
+			'move_height_pva': OptionNumber(70, 39, 1600, 0.5),
 			'moves_pva': [ON_OFF, 1],
 			'game_PV': [ON_OFF, 1],
-			'PV_height': optionNumber(60, 39, 1600, 0.5),
+			'PV_height': OptionNumber(60, 39, 1600, 0.5),
 		},
 		'eval': {
 			'_pop': true,
@@ -2455,18 +2456,18 @@ function prepareSettings()
 			'hardware': [ON_OFF, 0, HELP_HARDWARE],
 			'moves_live': [ON_OFF, 1],
 			'percent': [ON_OFF, 1, HELP_PERCENT],
-			'percent_width': optionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
+			'percent_width': OptionNumber(58, 0, 100, 0.5, {}, HELP_PERCENT_WIDTH),
 			'single_line': [ON_OFF, 0, HELP_SINGLE_LINE],
 		},
 		'parameters': {
 			'_pop': true,
 			'_prefix': 'game_',
-			'game_depth': optionNumber(4, 0, 9, 1, {}, HELP_ADVANCED),
+			'game_depth': OptionNumber(4, 0, 9, 1, {}, HELP_ADVANCED),
 			'game_evaluation': [['nul', 'mat', 'mob', 'hce', 'att', 'paw', 'kin', 'nn'], 'att', HELP_ADVANCED],
 			'game_options_black': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
 			'game_options_white': [{type: 'area'}, 'd=4 e=att h=1 o=2 q=8 s=ab t=2 x=20', HELP_ADVANCED],
 			'game_search': [['ab=AlphaBeta', 'mm=Minimax', 'rnd=RandomMove'], 'ab', HELP_ADVANCED],
-			'game_threads': optionNumber(1, 1, cores),      // Max(1, cores / 2)
+			'game_threads': OptionNumber(1, 1, cores),      // Max(1, cores / 2)
 			'game_wasm': [ON_OFF, 1, 'WASM = compiled C++, faster than native Javascript'],
 		},
 		'quick_copy': {
@@ -2487,7 +2488,7 @@ function prepareSettings()
 				'_value': [LANGUAGES, ''],
 			},
 			'theme': [THEMES, THEMES[0]],
-			'volume': optionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
+			'volume': OptionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
 		},
 	});
 
@@ -2499,7 +2500,7 @@ function prepareSettings()
 /**
  * Startup
  */
-function startup()
+function Startup()
 {
 	// engine overrides
 	__PREFIX = 'tc_';
@@ -2566,46 +2567,46 @@ function startup()
 	});
 
 	// assign virtual functions
-	vi_changeSettingSpecial = changeSettingSpecial;
-	vi_checkHashSpecial = checkHashSpecial;
-	vi_hideAreas = hideAreas;
-	vi_importSettings = importSettingsSpecial;
-	vi_openedTableSpecial = openedTableSpecial;
-	vi_populateAreasAfter = populateAreasAfter;
-	vi_resetSettingsAfter = resetSettingsAfter;
-	vi_resize = resize;
-	vi_setModalEventsAfter = setModalEventsAfter;
-	vi_windowClickDataset = windowClickDataset;
-	vi_windowClickParent = windowClickParent;
-	vi_windowClickParentDataset = windowClickParentDataset;
+	vi_ChangeSettingSpecial = ChangeSettingSpecial;
+	vi_CheckHashSpecial = CheckHashSpecial;
+	vi_HideAreas = HideAreas;
+	vi_ImportSettings = ImportSettingsSpecial;
+	vi_OpenedTableSpecial = OpenedTableSpecial;
+	vi_PopulateAreasAfter = PopulateAreasAfter;
+	vi_ResetSettingsAfter = ResetSettingsAfter;
+	vi_Resize = Resize;
+	vi_SetModalEventsAfter = SetModalEventsAfter;
+	vi_WindowClickDataset = WindowClickDataset;
+	vi_WindowClickParent = WindowClickParent;
+	vi_WindowClickParentDataset = WindowClickParentDataset;
 
 	// pre-process
-	detectDevice();
-	startupEngine();
-	startup3d();
-	startupGlobal();
-	startupConfig();
-	startupGame();
+	DetectDevice();
+	StartupEngine();
+	Startup3d();
+	StartupGlobal();
+	StartupConfig();
+	StartupGame();
 
-	prepareSettings();
-	loadSettings();
-	changeTheme();
-	startGame();
+	PrepareSettings();
+	LoadSettings();
+	ChangeTheme();
+	StartGame();
 	initGraph();
-	checkHash();
+	CheckHash();
 
-	setGlobalEvents();
-	setEngineEvents();
-	setGameEvents();
-	startupGraph();
-	startupNetwork();
-	addHistory();
+	SetGlobalEvents();
+	SetEngineEvents();
+	SetGameEvents();
+	StartupGraph();
+	StartupNetwork();
+	AddHistory();
 	++ready;
 
-	initGlobals();
-	initCustoms(true);
-	quickSetup();
-	resize();
+	InitGlobals();
+	InitCustoms(true);
+	QuickSetup();
+	Resize();
 	++ready;
 }
 
@@ -2614,6 +2615,6 @@ function startup()
 // <<
 if (typeof exports != 'undefined')
 	Assign(exports, {
-		prepareSettings: prepareSettings,
+		PrepareSettings: PrepareSettings,
 	});
 // >>

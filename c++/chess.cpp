@@ -1,6 +1,6 @@
 // chess.cpp
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-06-06
 // - wasm implementation, 2x faster than fast chess.js
 // - FRC support
 // - emcc --bind -o ../js/chess-wasm.js chess.cpp -s WASM=1 -Wall -s MODULARIZE=1 -O3 --closure 1
@@ -232,7 +232,7 @@ const std::map<std::string, int> EVAL_MODES = {
 	{"paw", 1 + 2 + 4 + 8},
 	{"kin", 1 + 2 + 4 + 16},
 };
-// piece names for print
+// piece names for Print
 static std::map<char, Piece> PIECES = {
 	{'P', 1},
 	{'N', 2},
@@ -356,11 +356,13 @@ struct MoveText {
 
 	MoveText() {}
 	MoveText(Piece capture, uint8_t flag, Square from, Piece promote, int score, Square to):
-			capture(capture), flag(flag), from(from), promote(promote), score(score), to(to) {
+		capture(capture), flag(flag), from(from), promote(promote), score(score), to(to)
+	{
 		ply = -2;
 	}
 
-	MoveText(const Move move) {
+	MoveText(const Move move)
+	{
 		capture = MoveCapture(move);
 		flag = MoveFlag(move);
 		from = MoveFrom(move);
@@ -375,9 +377,7 @@ struct PV {
 	int     length;
 	Move    moves[MAX_DEPTH];
 
-	PV() {
-		length = 0;
-	}
+	PV() { length = 0; }
 };
 
 struct State {
@@ -413,7 +413,8 @@ MoveText NULL_OBJ = {
  * https://en.wikipedia.org/wiki/Xorshift
  * + WeissNNUE
  */
-Hash xorshift64() {
+Hash Xorshift64()
+{
 	static Hash seed = 1070372ull;
 	seed ^= seed >> 12;
 	seed ^= seed << 25;
@@ -480,7 +481,8 @@ private:
 	/**
 	 * Add a single move
 	 */
-	void addMove(std::vector<Move> &moves, Piece piece, Square from, Square to, uint8_t flag, Piece promote, Piece value) {
+	void AddMove(std::vector<Move> &moves, Piece piece, Square from, Square to, uint8_t flag, Piece promote, Piece value)
+	{
 		int capture = (flag & BITS_EN_PASSANT)? PAWN: (flag & BITS_CASTLE? NONE: TYPE(value));
 		auto score = (capture | promote)? Max(PIECE_CAPTURES[capture], PIECE_CAPTURES[promote]) - (PIECE_CAPTURES[piece] >> 3) + 50: 0;
 		auto squares = PIECE_SQUARES[COLOR(piece)][TYPE(piece)];
@@ -494,7 +496,8 @@ private:
 			+ ((to & 127) << 25)
 		);
 
-		if (!promote) {
+		if (!promote)
+		{
 			// TODO:
 			// empty => give bonus for controlling the square, especially if near the other king (or in the center)
 			++mobilities[piece];
@@ -504,24 +507,27 @@ private:
 	/**
 	 * Add a pawn move + promote moves
 	 */
-	void addPawnMove(std::vector<Move> &moves, Piece piece, Square from, Square to, uint8_t flag, Piece value, bool only_capture) {
-		auto rank = Rank(to);
-		if (rank == 0 || rank == 7) {
+	void AddPawnMove(std::vector<Move> &moves, Piece piece, Square from, Square to, uint8_t flag, Piece value, bool only_capture)
+	{
+		const auto rank = Rank(to);
+		if (rank == 0 || rank == 7)
+		{
 			if (only_capture)
-				addMove(moves, piece, from, to, flag, QUEEN, value);
+				AddMove(moves, piece, from, to, flag, QUEEN, value);
 			else
 				for (auto promote = QUEEN; promote >= KNIGHT; --promote)
-					addMove(moves, piece, from, to, flag, promote, value);
+					AddMove(moves, piece, from, to, flag, promote, value);
 			++mobilities[piece];
 		}
 		else
-			addMove(moves, piece, from, to, flag, 0, value);
+			AddMove(moves, piece, from, to, flag, 0, value);
 	}
 
 	/**
 	 * Add a ply state
 	 */
-	void addState(Move move) {
+	void AddState(Move move)
+	{
 		auto &state = ply_states[ply & 127];
 		state.hash = board_hash;
 		memcpy(state.castling, castling, sizeof(castling));
@@ -533,16 +539,18 @@ private:
 	/**
 	 * Add a top level move
 	 */
-	void addTopMove(Move move, int score, PV *pv) {
-		auto uci = ucifyMove(move),
+	void AddTopMove(Move move, int score, PV *pv)
+	{
+		const auto uci = UcifyMove(move),
 			pv_string = uci;
 		if (pv)
-			for (auto i = 0; i < pv->length; ++i) {
+			for (auto i = 0; i < pv->length; ++i)
+			{
 				pv_string += " ";
-				pv_string += ucifyMove(pv->moves[i]);
+				pv_string += UcifyMove(pv->moves[i]);
 			}
 
-		auto obj = unpackMove(move);
+		auto obj = UnpackMove(move);
 		obj.m = uci;
 		obj.pv = pv_string;
 		obj.score = score;
@@ -556,40 +564,41 @@ private:
 	 * Alpha beta tree search
 	 * http://web.archive.org/web/20040427015506/http://brucemo.com/compchess/programming/pvs.htm
 	 */
-	int alphaBeta(int alpha, int beta, int depth, int max_depth, PV *pv) {
+	int AlphaBeta(int alpha, int beta, int depth, int max_depth, PV *pv)
+	{
 		// extend depth if in check
-		if (max_depth < max_extend && kingAttacked(turn))
+		if (max_depth < max_extend && KingAttacked(turn))
 			++max_depth;
 
 		// transposition
 		bool hit = false,
 			is_pv = (alpha != beta - 1);
-		auto entry = findEntry(board_hash, hit);
+		auto entry = FindEntry(board_hash, hit);
 		auto idepth = max_depth - depth;
 
-		if (depth > 0 && hit && entry->depth >= idepth) {
+		if (depth > 0 && hit && entry->depth >= idepth)
+		{
 			++nodes;
 			++tt_hits;
 
-			if (entry->bound & BOUND_EXACT)
-				return entry->score;
-			if ((entry->bound & BOUND_UPPER) && entry->score <= alpha)
-				return alpha;
-			if ((entry->bound & BOUND_LOWER) && entry->score >= beta)
-				return beta;
+			if (entry->bound & BOUND_EXACT) return entry->score;
+			if ((entry->bound & BOUND_UPPER) && entry->score <= alpha) return alpha;
+			if ((entry->bound & BOUND_LOWER) && entry->score >= beta) return beta;
 		}
 
-		if (idepth <= 0) {
+		if (idepth <= 0)
+		{
 			pv->length = 0;
 			int score;
-			if (!max_quiesce) {
+			if (!max_quiesce)
+			{
 				++nodes;
-				score = evaluate();
+				score = Evaluate();
 			}
 			else
-				score = quiesce(alpha, beta, max_quiesce);
+				score = Quiesce(alpha, beta, max_quiesce);
 
-			updateEntry(entry, board_hash, score, BOUND_EXACT, idepth, 0);
+			UpdateEntry(entry, board_hash, score, BOUND_EXACT, idepth, 0);
 			++move_id;
 			return score;
 		}
@@ -598,38 +607,42 @@ private:
 			best = -SCORE_INFINITY;
 		Move best_move = 0;
 		PV line;
-		auto moves = createMoves(false);
+		auto moves = CreateMoves(false);
 		auto num_valid = 0;
 
 		// top level
 		if (depth == 0)
 			moves = first_moves;
-		else {
+		else
+		{
 			++nodes;
 			if (ply >= avg_depth)
 				avg_depth = ply + 1;
 		}
 
 		// check all moves
-		for (auto &move : moves) {
-			if (!makeMove(move))
+		for (auto &move : moves)
+		{
+			if (!MakeMove(move))
 				continue;
 			++num_valid;
 
 			int score;
 			// pv search
-			if (alpha > alpha0 && pv_mode) {
-				score = -alphaBeta(-alpha - 1, -alpha, depth + 1, max_depth, &line);
+			if (alpha > alpha0 && pv_mode)
+			{
+				score = -AlphaBeta(-alpha - 1, -alpha, depth + 1, max_depth, &line);
 				if (score > alpha && score < beta)
-					score = -alphaBeta(-beta, -alpha, depth + 1, max_depth, &line);
+					score = -AlphaBeta(-beta, -alpha, depth + 1, max_depth, &line);
 			}
 			else
-				score = -alphaBeta(-beta, -alpha, depth + 1, max_depth, &line);
-			undoMove();
+				score = -AlphaBeta(-beta, -alpha, depth + 1, max_depth, &line);
+			UndoMove();
 
 			// top level
-			if (depth == 0 && scan_all) {
-				addTopMove(move, score, &line);
+			if (depth == 0 && scan_all)
+			{
+				AddTopMove(move, score, &line);
 				if (score > best)
 					best = score;
 				continue;
@@ -638,21 +651,24 @@ private:
 			// bound check
 			if (!hash_mode && score >= beta)
 				return beta;
-			if (score > best) {
+			if (score > best)
+			{
 				best = score;
 				best_move = move;
 
 				// update pv
-				if ((score > alpha && is_pv) || (!ply && num_valid == 0)) {
+				if ((score > alpha && is_pv) || (!ply && num_valid == 0))
+				{
 					pv->length = line.length + 1;
 					pv->moves[0] = move;
 					memcpy(pv->moves + 1, line.moves, line.length * sizeof(Move));
 				}
 
-				if (score > alpha) {
+				if (score > alpha)
+				{
 					alpha = score;
 					if (depth == 0)
-						addTopMove(move, score, &line);
+						AddTopMove(move, score, &line);
 
 					if (hash_mode && score >= beta)
 						break;
@@ -666,10 +682,10 @@ private:
 
 		// mate + stalemate
 		if (!num_valid)
-			return kingAttacked(turn)? -SCORE_MATE + ply: 0;
+			return KingAttacked(turn)? -SCORE_MATE + ply: 0;
 
 		auto bound = (best >= beta)? BOUND_LOWER: ((alpha != alpha0)? BOUND_EXACT: BOUND_UPPER);
-		updateEntry(entry, board_hash, best, bound, idepth, best_move);
+		UpdateEntry(entry, board_hash, best, bound, idepth, best_move);
 		return best;
 	}
 
@@ -679,14 +695,16 @@ private:
 	 * - castle
 	 * - nb/r/q/r/p
 	 */
-	static bool compareMoves(const Move a, const Move b) {
+	static bool CompareMoves(const Move a, const Move b)
+	{
 		return (b & 1023) < (a & 1023);
 	}
 
 	/**
 	 * Uniquely identify ambiguous moves
 	 */
-	std::string disambiguate(Move move, std::vector<Move> &moves) {
+	std::string Disambiguate(Move move, std::vector<Move> &moves)
+	{
 		auto ambiguities = 0;
 		auto from = MoveFrom(move),
 			to = MoveTo(move);
@@ -694,13 +712,15 @@ private:
 			same_rank = 0;
 		auto type = board[from];
 
-		for (auto &move2 : moves) {
+		for (auto &move2 : moves)
+		{
 			auto ambig_from = MoveFrom(move2),
 				ambig_to = MoveTo(move2);
 
 			// if a move of the same piece type ends on the same to square,
 			// we'll need to add a disambiguator to the algebraic notation
-			if (type == board[ambig_from] && from != ambig_from && to == ambig_to) {
+			if (type == board[ambig_from] && from != ambig_from && to == ambig_to)
+			{
 				++ambiguities;
 
 				if (Rank(from) == Rank(ambig_from))
@@ -713,7 +733,7 @@ private:
 		if (!ambiguities)
 			return "";
 
-		auto an = squareToAn(from, false);
+		auto an = SquareToAn(from, false);
 		if (same_rank > 0 && same_file > 0)
 			return an;
 		else
@@ -723,7 +743,8 @@ private:
 	/**
 	 * Find an entry in the transposition table
 	 */
-	Table *findEntry(Hash hash, bool &hit) {
+	Table *FindEntry(Hash hash, bool &hit)
+	{
 		if (!hash_mode)
 			return nullptr;
 
@@ -735,8 +756,10 @@ private:
 	/**
 	 * Initialise piece squares
 	 */
-	void initSquares() {
-		for (auto piece = PAWN; piece <= KING; ++piece) {
+	void InitSquares()
+	{
+		for (auto piece = PAWN; piece <= KING; ++piece)
+		{
 			auto bsquares = PIECE_SQUARES[1][piece],
 				wsquares = PIECE_SQUARES[0][piece];
 			for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
@@ -747,52 +770,58 @@ private:
 	/**
 	 * Mini max tree search
 	 */
-	int miniMax(int depth, int max_depth, PV *pv) {
+	int MiniMax(int depth, int max_depth, PV *pv)
+	{
 		// transposition
 		bool hit = false;
-		auto entry = findEntry(board_hash, hit);
+		auto entry = FindEntry(board_hash, hit);
 		auto idepth = max_depth - depth;
-		if (depth > 0 && hit && entry->depth >= idepth) {
+		if (depth > 0 && hit && entry->depth >= idepth)
+		{
 			++nodes;
 			++tt_hits;
 			return entry->score;
 		}
 
-		if (depth >= max_depth) {
+		if (depth >= max_depth)
+		{
 			++nodes;
 			pv->length = 0;
-			return evaluate();
+			return Evaluate();
 		}
 
 		auto best = -SCORE_INFINITY,
 			best_move = 0;
 		PV line;
-		auto moves = createMoves(false);
+		auto moves = CreateMoves(false);
 		auto num_valid = 0;
 
 		// top level
 		if (depth == 0)
 			moves = first_moves;
-		else {
+		else
+		{
 			++nodes;
 			if (ply >= avg_depth)
 				avg_depth = ply + 1;
 		}
 
 		// check all moves
-		for (auto &move : moves) {
-			if (!makeMove(move))
+		for (auto &move : moves)
+		{
+			if (!MakeMove(move))
 				continue;
 			++num_valid;
 
-			int score = -miniMax(depth + 1, max_depth, &line);
-			undoMove();
+			int score = -MiniMax(depth + 1, max_depth, &line);
+			UndoMove();
 
 			// top level
 			if (depth == 0)
-				addTopMove(move, score, &line);
+				AddTopMove(move, score, &line);
 
-			if (score > best) {
+			if (score > best)
+			{
 				best = score;
 				best_move = move;
 
@@ -809,41 +838,46 @@ private:
 
 		// mate + stalemate
 		if (!num_valid)
-			best = kingAttacked(turn)? -SCORE_MATE + ply: 0;
+			best = KingAttacked(turn)? -SCORE_MATE + ply: 0;
 
-		updateEntry(entry, board_hash, best, BOUND_EXACT, idepth, best_move);
+		UpdateEntry(entry, board_hash, best, BOUND_EXACT, idepth, best_move);
 		return best;
 	}
 
 	/**
 	 * Get the move list
 	 */
-	std::string moveList() {
+	std::string MoveList()
+	{
 		std::string text;
-		for (auto i = 0 ; i <= ply; ++i) {
+		for (auto i = 0 ; i <= ply; ++i)
+		{
 			auto state = ply_states[i & 127];
 			if (text.size())
 				text += " ";
-			text += ucifyMove(state.move);
+			text += UcifyMove(state.move);
 		}
 		return text;
 	}
 
 	/**
-	 * Null search, used by perft
+	 * Null search, used by Perft
 	 */
-	void nullSearch(int depth) {
-		if (depth <= 0) {
+	void NullSearch(int depth)
+	{
+		if (depth <= 0)
+		{
 			++nodes;
 			return;
 		}
 
-		auto moves = createMoves(false);
-		for (auto &move : moves) {
-			if (!makeMove(move))
+		auto moves = CreateMoves(false);
+		for (auto &move : moves)
+		{
+			if (!MakeMove(move))
 				continue;
-			nullSearch(depth - 1);
-			undoMove();
+			NullSearch(depth - 1);
+			UndoMove();
 		}
 	}
 
@@ -851,18 +885,15 @@ private:
 	 * Quiescence search
 	 * https://www.chessprogramming.org/Quiescence_Search
 	 */
-	int quiesce(int alpha, int beta, int depth_left) {
+	int Quiesce(int alpha, int beta, int depth_left)
+	{
 		auto delta = PIECE_SCORES[QUEEN];
 		++nodes;
-		auto score = evaluate();
-		if (depth_left <= 0)
-			return score;
-		if (score >= beta)
-			return beta;
-		if (score + delta < alpha)
-			return alpha;
-		if (score > alpha)
-			alpha = score;
+		auto score = Evaluate();
+		if (depth_left <= 0) return score;
+		if (score >= beta) return beta;
+		if (score + delta < alpha) return alpha;
+		if (score > alpha) alpha = score;
 
 		auto best = score,
 			futility = best + PIECE_SCORES[PAWN];
@@ -870,20 +901,23 @@ private:
 		if (ply >= sel_depth)
 			sel_depth = ply + 1;
 
-		auto moves = createMoves(true);
-		for (auto &move : moves) {
+		auto moves = CreateMoves(true);
+		for (auto &move : moves)
+		{
 			if (futility + PIECE_SCORES[MoveCapture(move)] <= alpha
 					&& (TYPE(board[MoveFrom(move)]) != PAWN || RELATIVE_RANK(turn, MoveTo(move)) <= 5))
 				continue;
 
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				continue;
-			auto score = -quiesce(-beta, -alpha, depth_left - 1);
-			undoMove();
+			auto score = -Quiesce(-beta, -alpha, depth_left - 1);
+			UndoMove();
 
-			if (score > best) {
+			if (score > best)
+			{
 				best = score;
-				if (score > alpha) {
+				if (score > alpha)
+				{
 					alpha = score;
 					if (score >= beta)
 						break;
@@ -897,7 +931,8 @@ private:
 	/**
 	 * Update an entry
 	 */
-	void updateEntry(Table *entry, Hash hash, int score, uint8_t bound, uint8_t depth, Move move) {
+	void UpdateEntry(Table *entry, Hash hash, int score, uint8_t bound, uint8_t depth, Move move)
+	{
 		if (!hash_mode)
 			return;
 
@@ -915,13 +950,15 @@ public:
 	// PUBLIC
 	/////////
 
-	Chess() {
-		configure(false, "", 4);
-		clear();
-		load(DEFAULT_POSITION, false);
-		initSquares();
+	Chess()
+	{
+		Configure(false, "", 4);
+		Clear();
+		Load(DEFAULT_POSITION, false);
+		InitSquares();
 	}
-	~Chess() {
+	~Chess()
+	{
 	}
 
 	/**
@@ -931,7 +968,8 @@ public:
 	 * @param an c2
 	 * @return 98
 	 */
-	Square anToSquare(std::string an) {
+	Square AnToSquare(std::string an)
+	{
 		if (an.size() < 2)
 			return EMPTY;
 		Square file = an[0] - 'a',
@@ -940,15 +978,17 @@ public:
 	}
 
 	/**
-	 * Check if a square is attacked by a color
+	 * Check if a square is Attacked by a color
 	 * @param color attacking color
 	 * @param square .
-	 * @returns true if the square is attacked
+	 * @returns true if the square is Attacked
 	 */
-	bool attacked(int color, Square square) {
+	bool Attacked(int color, Square square)
+	{
 		// knight
 		auto target = COLORIZE(color, KNIGHT);
-		for (auto &offset : PIECE_OFFSETS[KNIGHT]) {
+		for (auto &offset : PIECE_OFFSETS[KNIGHT])
+		{
 			auto pos = square + offset;
 			if (pos & 0x88)
 				continue;
@@ -958,12 +998,14 @@ public:
 
 		// bishop + pawn + rook + queen
 		auto offsets = PIECE_OFFSETS[QUEEN];
-		for (auto j = 0; j < 8; ++j) {
+		for (auto j = 0; j < 8; ++j)
+		{
 			auto offset = offsets[j];
 			auto pos = square;
 			auto target = BISHOP + (j & 1);
 
-			for (auto k = 0; ; ++k) {
+			for (auto k = 0; ; ++k)
+			{
 				pos += offset;
 				if (pos & 0x88)
 					break;
@@ -977,10 +1019,12 @@ public:
 				auto piece_type = TYPE(value);
 				if (piece_type == QUEEN || piece_type == target)
 					return true;
-				if (k == 0) {
+				if (k == 0)
+				{
 					if (piece_type == KING)
 						return true;
-					if (target == BISHOP && piece_type == PAWN) {
+					if (target == BISHOP && piece_type == PAWN)
+					{
 						if (color == ((j < 4)? BLACK: WHITE))
 							return true;
 					}
@@ -997,12 +1041,14 @@ public:
 	 * @param san Bxe6+!!
 	 * @return clean san Bxe6
 	 */
-	std::string cleanSan(std::string san) {
+	std::string CleanSan(std::string san)
+	{
 		int i = san.size() - 1;
 		for (; i >= 0 && strchr("+#?!", san[i]); --i)
 			san.erase(i, 1);
 		for (; i >= 0; --i)
-			if (san[i] == '=') {
+			if (san[i] == '=')
+			{
 				san.erase(i, 1);
 				break;
 			}
@@ -1013,7 +1059,8 @@ public:
 	/**
 	 * Clear the board
 	 */
-	void clear() {
+	void Clear()
+	{
 		memset(attacks, 0, sizeof(attacks));
 		avg_depth = 0;
 		memset(board, 0, sizeof(board));
@@ -1046,7 +1093,8 @@ public:
 	 * @param options
 	 * @param depth this overrides max_depth if > 0
 	 */
-	void configure(bool frc_, std::string options, int depth) {
+	void Configure(bool frc_, std::string options, int depth)
+	{
 		debug = 0;
 		eval_mode = 1;
 		frc = frc_;
@@ -1064,53 +1112,39 @@ public:
 		std::regex re("\\s+");
 		std::sregex_token_iterator it(options.begin(), options.end(), re, -1);
 		std::sregex_token_iterator reg_end;
-		for (; it != reg_end; ++it) {
+		for (; it != reg_end; ++it)
+		{
 			auto option = it->str();
 			if (option.size() < 3 || option.at(1) != '=')
 				continue;
 			auto left = option.at(0);
 			auto right = option.substr(2);
 			auto value = std::atoi(right.c_str());
-			switch (left) {
-			case 'd':
-				max_depth = value;
+			switch (left)
+			{
+			case 'd': max_depth = value; break;
+			case 'D': debug = value; break;
+			case 'e':
+			{
+				auto eit = EVAL_MODES.find(right);
+				if (eit != EVAL_MODES.end())
+					eval_mode = eit->second;
 				break;
-			case 'D':
-				debug = value;
+			}
+			case 'h': hash_mode = value; break;
+			case 'n': max_nodes = value; break;
+			case 'o': order_mode = value; break;
+			case 'p': pv_mode = value; break;
+			case 'q': max_quiesce = value; break;
+			case 's':
+			{
+				auto sit = SEARCH_MODES.find(right);
+				if (sit != SEARCH_MODES.end())
+					search_mode = sit->second;
 				break;
-			case 'e': {
-					auto eit = EVAL_MODES.find(right);
-					if (eit != EVAL_MODES.end())
-						eval_mode = eit->second;
-				}
-				break;
-			case 'h':
-				hash_mode = value;
-				break;
-			case 'n':
-				max_nodes = value;
-				break;
-			case 'o':
-				order_mode = value;
-				break;
-			case 'p':
-				pv_mode = value;
-				break;
-			case 'q':
-				max_quiesce = value;
-				break;
-			case 's': {
-					auto sit = SEARCH_MODES.find(right);
-					if (sit != SEARCH_MODES.end())
-						search_mode = sit->second;
-				}
-				break;
-			case 't':
-				max_time = value;
-				break;
-			case 'x':
-				max_extend = value;
-				break;
+			}
+			case 't': max_time = value; break;
+			case 'x': max_extend = value; break;
 			}
 		}
 
@@ -1123,16 +1157,20 @@ public:
 	 * Create the FEN
 	 * @return fen
 	 */
-	std::string createFen() {
+	std::string CreateFen()
+	{
 		auto empty = 0;
 		fen = "";
 
-		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
+		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
+		{
 			auto piece = board[i];
 			if (!piece)
 				++empty;
-			else {
-				if (empty > 0) {
+			else
+			{
+				if (empty > 0)
+				{
 					fen += ('0' + empty);
 					empty = 0;
 				}
@@ -1140,7 +1178,8 @@ public:
 			}
 
 			// off board
-			if ((i + 1) & 0x88) {
+			if ((i + 1) & 0x88)
+			{
 				if (empty > 0)
 					fen += ('0' + empty);
 				if (i != SQUARE_H1)
@@ -1152,9 +1191,11 @@ public:
 		}
 
 		std::string castle;
-		if (frc) {
+		if (frc)
+		{
 			for (auto &square : castling)
-				if (square != EMPTY) {
+				if (square != EMPTY)
+				{
 					auto file = Filer(square),
 						rank = Rank(square);
 					if (rank > 0)
@@ -1163,7 +1204,8 @@ public:
 						castle += (file + 'a');
 				}
 		}
-		else {
+		else
+		{
 			if (castling[0] != EMPTY) castle += 'K';
 			if (castling[1] != EMPTY) castle += 'Q';
 			if (castling[2] != EMPTY) castle += 'k';
@@ -1173,7 +1215,7 @@ public:
 		// empty castling flag?
 		if (castle.empty())
 			castle = "-";
-		std::string epflags = (ep_square == EMPTY)? "-": squareToAn(ep_square, false);
+		std::string epflags = (ep_square == EMPTY)? "-": SquareToAn(ep_square, false);
 
 		fen = fen + " " + COLOR_TEXT(turn) + " " + castle + " " + epflags + " " + std::to_string(half_moves) + " " + std::to_string(move_number);
 		return fen;
@@ -1184,7 +1226,8 @@ public:
 	 * http://www.russellcottrell.com/Chess/Chess960.htm
 	 * @param index between 0 and 959
 	 */
-	std::string createFen960(int index) {
+	std::string CreateFen960(int index)
+	{
 		if (index < 0 || index >= 960)
 			return "";
 
@@ -1198,7 +1241,8 @@ public:
 		q = index % 6;
 		index /= 6;
 
-		for (n1 = 0; n1 < 4; ++n1) {
+		for (n1 = 0; n1 < 4; ++n1)
+		{
 			n2 = index + ((3 - n1) * (4 - n1)) / 2 - 5;
 			if (n1 < n2 && n2 > 0 && n2 < 5)
 				break;
@@ -1206,8 +1250,10 @@ public:
 
 		// queen
 		for (i = 0; i < 8; ++i)
-			if (line[i] == ' ') {
-				if (!q) {
+			if (line[i] == ' ')
+			{
+				if (!q)
+				{
 					line[i] = 'Q';
 					break;
 				}
@@ -1216,7 +1262,8 @@ public:
 
 		// knights
 		for (i = 0; i < 8; ++i)
-			if (line[i] == ' ') {
+			if (line[i] == ' ')
+			{
 				if (!n1 || !n2)
 					line[i] = 'N';
 				--n1;
@@ -1227,10 +1274,13 @@ public:
 		std::string castle, castle2;
 		i = 7;
 		for (auto type : "RKR")
-			for (; i >= 0; --i) {
-				if (line[i] == ' ') {
+			for (; i >= 0; --i)
+			{
+				if (line[i] == ' ')
+				{
 					line[i] = type;
-					if (type == 'R') {
+					if (type == 'R')
+					{
 						castle += 'A' + i;
 						castle2 += 'a' + i;
 					}
@@ -1251,23 +1301,27 @@ public:
 	 * @param only_capture
 	 * @return moves
 	 */
-	std::vector<Move> createMoves(bool only_capture) {
+	std::vector<Move> CreateMoves(bool only_capture)
+	{
 		std::vector<Move> moves;
 		auto second_rank = 6 - turn * 5,
 			us = turn,
 			us8 = us << 3,
 			them = us ^ 1;
 
-		for (auto i = us8; i < us8 + 8; ++i) {
+		for (auto i = us8; i < us8 + 8; ++i)
+		{
 			attacks[i] = 0;
 			defenses[i] = 0;
 			mobilities[i] = 0;
 		}
 
 		// 1) collect all moves
-		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
+		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
+		{
 			// off board
-			if (i & 0x88) {
+			if (i & 0x88)
+			{
 				i += 7;
 				continue;
 			}
@@ -1278,35 +1332,41 @@ public:
 
 			auto piece_type = TYPE(piece);
 			// pawn
-			if (piece_type == PAWN) {
+			if (piece_type == PAWN)
+			{
 				auto offsets = PAWN_OFFSETS[us],
 					piece_attacks = PIECE_ATTACKS[piece];
 
 				// single square, non-capturing
 				auto square = i + offsets[1];
-				if (!only_capture) {
-					if (!board[square]) {
-						addPawnMove(moves, piece, i, square, 0, 0, only_capture);
+				if (!only_capture)
+				{
+					if (!board[square])
+					{
+						AddPawnMove(moves, piece, i, square, 0, 0, only_capture);
 
 						// double square
 						square += offsets[1];
 						if (second_rank == Rank(i) && !board[square])
-							addMove(moves, piece, i, square, 0, 0, 0);
+							AddMove(moves, piece, i, square, 0, 0, 0);
 					}
 				}
 				// else if (Rank(square) % 7 == 0)
 				//     addMove(moves, piece, i, square, 0, QUEEN, 0);
 
 				// pawn captures
-				for (auto j : {0, 2}) {
+				for (auto j : {0, 2})
+				{
 					auto square = i + offsets[j];
 					if (square & 0x88)
 						continue;
 					auto value = board[square];
 
-					if (value) {
-						if (COLOR(value) == them) {
-							addPawnMove(moves, piece, i, square, 0, value, only_capture);
+					if (value)
+					{
+						if (COLOR(value) == them)
+						{
+							AddPawnMove(moves, piece, i, square, 0, value, only_capture);
 							attacks[piece] += piece_attacks[value];
 						}
 						else
@@ -1314,35 +1374,41 @@ public:
 					}
 					// en passant
 					else if (square == ep_square)
-						addPawnMove(moves, piece, i, square, BITS_EN_PASSANT, value, false);
+						AddPawnMove(moves, piece, i, square, BITS_EN_PASSANT, value, false);
 				}
 			}
 			// other pieces
 			// TODO: separate by piece_type?
-			else {
+			else
+			{
 				auto offsets = PIECE_OFFSETS[piece_type],
 					piece_attacks = PIECE_ATTACKS[piece];
-				for (auto j = 0; j < 8; ++j) {
+				for (auto j = 0; j < 8; ++j)
+				{
 					auto offset = offsets[j];
 					auto square = i;
 					if (!offset)
 						break;
 
-					while (true) {
+					while (true)
+					{
 						square += offset;
 						if (square & 0x88)
 							break;
 						auto value = board[square];
 
-						if (!value) {
+						if (!value)
+						{
 							if (!only_capture)
-								addMove(moves, piece, i, square, 0, 0, 0);
+								AddMove(moves, piece, i, square, 0, 0, 0);
 						}
-						else {
+						else
+						{
 							if (COLOR(value) == us)
 								defenses[piece] += piece_attacks[value];
-							else {
-								addMove(moves, piece, i, square, 0, 0, value);
+							else
+							{
+								AddMove(moves, piece, i, square, 0, 0, value);
 								attacks[piece] += piece_attacks[value];
 							}
 							break;
@@ -1357,12 +1423,14 @@ public:
 		}
 
 		// 2) castling
-		if (!only_capture) {
+		if (!only_capture)
+		{
 			Square king = kings[us],
 				pos0 = Rank(king) << 4;
 
 			// q=0: king side, q=1: queen side
-			for (auto q = 0; q < 2; ++q) {
+			for (auto q = 0; q < 2; ++q)
+			{
 				auto rook = castling[(us << 1) + q];
 				if (rook == EMPTY)
 					continue;
@@ -1377,39 +1445,43 @@ public:
 
 				// check that all squares are empty along the path
 				for (auto j = min_path; j <= max_path; ++j)
-					if (j != king && j != rook && board[j]) {
+					if (j != king && j != rook && board[j])
+					{
 						error = true;
 						break;
 					}
 				if (error)
 					continue;
 
-				// check that the king is not attacked
+				// check that the king is not Attacked
 				for (auto j = min_king; j <= max_king; ++j)
-					if (attacked(them, j)) {
+					if (Attacked(them, j))
+					{
 						error = true;
 						break;
 					}
 
 				// add castle, always in FRC format
 				if (!error)
-					addMove(moves, COLORIZE(us, KING), king, rook, BITS_CASTLE, 0, 0);
+					AddMove(moves, COLORIZE(us, KING), king, rook, BITS_CASTLE, 0, 0);
 			}
 		}
 
 		// move ordering for alpha-beta
 		if (order_mode && is_search)
-			orderMoves(moves);
+			OrderMoves(moves);
 		return moves;
 	}
 
 	/**
 	 * Decorate the SAN with + or #
 	 */
-	std::string decorateSan(std::string san) {
+	std::string DecorateSan(std::string san)
+	{
 		char last = san[san.size() - 1];
-		if (last != '+' && last != '#' && kingAttacked(turn)) {
-			auto moves = legalMoves();
+		if (last != '+' && last != '#' && KingAttacked(turn))
+		{
+			auto moves = LegalMoves();
 			san += moves.size()? '+': '#';
 		}
 		return san;
@@ -1422,7 +1494,8 @@ public:
 	 * - 8/5r2/8/3K4/8/8/8/7k w - - 0 1 KR vs K
 	 * - 8/5n2/8/3K4/8/8/b7/7k w - - 0 1  KNB vs K
 	 */
-	int evaluate() {
+	int Evaluate()
+	{
 		// 1) draw
 		if (half_moves >= 100)
 			return 0;
@@ -1434,21 +1507,24 @@ public:
 			low1 = (!num_pawn1 && mat1 < 6000),
 			score = 0;
 
-		if (low0) {
+		if (low0)
+		{
 			if (low1)
 				return 0;
 			mat0 -= 300;
 			if (num_pawn1)
 				mat1 += 600;
 		}
-		else if (low1) {
+		else if (low1)
+		{
 			mat1 -= 300;
 			if (num_pawn0)
 				mat0 += 600;
 		}
 
 		// 2) material
-		if (eval_mode & 1) {
+		if (eval_mode & 1)
+		{
 			score += mat0 - mat1;
 			// KRR vs KR => KR should not exchange the rook
 			float ratio = mat0 * 1.0f / (mat0 + mat1) - 0.5f;
@@ -1456,10 +1532,12 @@ public:
 		}
 
 		// 3) mobility
-		if (eval_mode & 2) {
+		if (eval_mode & 2)
+		{
 			auto factor = (eval_mode & 16)? 1: 2;
 
-			if (mat0 <= 5000) {
+			if (mat0 <= 5000)
+			{
 				auto king = kings[WHITE],
 					king2 = kings[BLACK];
 				score -= (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 25;
@@ -1470,7 +1548,8 @@ public:
 				for (auto i = 1; i < 7; ++i)
 					score += Min(mobilities[i] * MOBILITY_SCORES[i], MOBILITY_LIMITS[i]) * factor;
 
-			if (mat1 <= 5000) {
+			if (mat1 <= 5000)
+			{
 				auto king = kings[BLACK],
 					king2 = kings[WHITE];
 				score += (std::abs(Filer(king) * 2 - 7) + std::abs(Rank(king) * 2 - 7)) * 25;
@@ -1483,26 +1562,30 @@ public:
 		}
 
 		// 4) attacks + defenses
-		if (eval_mode & 4) {
-			for (auto i = 1; i < 7; ++i)
-				score += attacks[i] + defenses[i];
-			for (auto i = 9; i < 15; ++i)
-				score -= attacks[i] + defenses[i];
+		if (eval_mode & 4)
+		{
+			for (auto i = 1; i < 7; ++i) score += attacks[i] + defenses[i];
+			for (auto i = 9; i < 15; ++i) score -= attacks[i] + defenses[i];
 		}
 
 		// 5) pawns
-		if (eval_mode & 8) {
-			for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square) {
-				if (square & 0x88) {
+		if (eval_mode & 8)
+		{
+			for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square)
+			{
+				if (square & 0x88)
+				{
 					square += 7;
 					continue;
 				}
 				auto piece = board[square];
-				if (piece == PAWN) {
+				if (piece == PAWN)
+				{
 					if (board[square + 1] == PAWN)
 						score += 15;
 				}
-				else if (piece == PAWN + 8) {
+				else if (piece == PAWN + 8)
+				{
 					if (board[square + 1] == PAWN + 8)
 						score -= 15;
 				}
@@ -1510,23 +1593,25 @@ public:
 		}
 
 		// 6) king
-		// if (eval_mode & 16) {
-		// }
+		// if (eval_mode & 16) {}
 		return score * (1 - (turn << 1));
 	}
 
 	/**
 	 * Evaluate every piece position, done when starting a search
 	 */
-	void evaluatePositions() {
+	void EvaluatePositions()
+	{
 		memset(attacks, 0, sizeof(attacks));
 		memset(defenses, 0, sizeof(defenses));
 		memset(materials, 0, sizeof(materials));
 		memset(mobilities, 0, sizeof(mobilities));
 		memset(positions, 0, sizeof(positions));
 
-		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
-			if (i & 0x88) {
+		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
+		{
+			if (i & 0x88)
+			{
 				i += 7;
 				continue;
 			}
@@ -1542,14 +1627,17 @@ public:
 	/**
 	 * Hash the current board
 	 */
-	void hashBoard() {
+	void HashBoard()
+	{
 		if (!zobrist_ready)
-			initZobrist();
+			InitZobrist();
 
 		// 1) board
 		board_hash = 0;
-		for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square) {
-			if (square & 0x88) {
+		for (auto square = SQUARE_A8; square <= SQUARE_H1; ++square)
+		{
+			if (square & 0x88)
+			{
 				square += 7;
 				continue;
 			}
@@ -1559,7 +1647,7 @@ public:
 		}
 
 		// 2) en passant
-		hashEnPassant();
+		HashEnPassant();
 
 		// 3) castle
 		for (auto id = 0; id < 4; ++id)
@@ -1575,8 +1663,10 @@ public:
 	 * Hash a castle square
 	 * @param id 2 * color + 0/1 => 0, 1, 2, 3
 	 */
-	void hashCastle(int id) {
-		if (castling[id] != EMPTY) {
+	void HashCastle(int id)
+	{
+		if (castling[id] != EMPTY)
+		{
 			castling[id] = EMPTY;
 			board_hash ^= zobrist[0][id];
 		}
@@ -1585,7 +1675,8 @@ public:
 	/**
 	 * Hash the en-passant square
 	 */
-	void hashEnPassant() {
+	void HashEnPassant()
+	{
 		if (ep_square != EMPTY)
 			board_hash ^= zobrist[0][ep_square];
 	}
@@ -1596,7 +1687,8 @@ public:
 	 * @param {number} square
 	 * @param {number} piece
 	 */
-	inline void hashSquare(Square square, Piece piece) {
+	inline void HashSquare(Square square, Piece piece)
+	{
 		board_hash ^= zobrist[piece][square];
 	}
 
@@ -1604,23 +1696,28 @@ public:
 	 * Initialise the zobrist table
 	 * - 0 is used for en passant + castling
 	 */
-	void initZobrist() {
+	void InitZobrist()
+	{
 		auto collision = 0;
 
-		xorshift64();
-		zobrist_side = xorshift64();
+		Xorshift64();
+		zobrist_side = Xorshift64();
 		std::set<Hash> seens;
 
-		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
-			if (i & 0x88) {
+		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
+		{
+			if (i & 0x88)
+			{
 				i += 7;
 				continue;
 			}
-			for (auto j = 0; j <= 14; ++j) {
+			for (auto j = 0; j <= 14; ++j)
+			{
 				if (j && !PIECE_ORDERS[j])
 					continue;
-				auto x = xorshift64();
-				if (seens.find(x) != seens.end()) {
+				auto x = Xorshift64();
+				if (seens.find(x) != seens.end())
+				{
 					++collision;
 					break;
 				}
@@ -1635,26 +1732,29 @@ public:
 	}
 
 	/**
-	 * Check if the king is attacked
+	 * Check if the king is Attacked
 	 * @param color 0, 1 + special cases: 2, 3
-	 * @return true if king is attacked
+	 * @return true if king is Attacked
 	 */
-	bool kingAttacked(int color) {
+	bool KingAttacked(int color)
+	{
 		if (color > 1)
 			color = (color == 2)? turn: turn ^ 1;
-		return attacked(color ^ 1, kings[color]);
+		return Attacked(color ^ 1, kings[color]);
 	}
 
 	/**
 	 * Get a list of all legal moves
 	 */
-	std::vector<Move> legalMoves() {
-		auto moves = createMoves(false);
+	std::vector<Move> LegalMoves()
+	{
+		auto moves = CreateMoves(false);
 		std::vector<Move> legals;
-		for (auto &move : moves) {
-			if (!makeMove(move))
+		for (auto &move : moves)
+		{
+			if (!MakeMove(move))
 				continue;
-			undoMove();
+			UndoMove();
 			legals.push_back(std::move(move));
 		}
 		return legals;
@@ -1666,11 +1766,12 @@ public:
 	 * @param hash must_hash the board?
 	 * @return empty on error, and the FEN may be corrected
 	 */
-	std::string load(std::string fen_, bool must_hash) {
+	std::string Load(std::string fen_, bool must_hash)
+	{
 		if (fen_.empty())
 			return "";
 
-		clear();
+		Clear();
 		fen = fen_;
 
 		int half = 0,
@@ -1681,9 +1782,11 @@ public:
 			square = 0;
 		std::string castle, ep;
 
-		for (auto i = 0; i < fen.size(); ++i) {
+		for (auto i = 0; i < fen.size(); ++i)
+		{
 			auto value = fen[i];
-			if (value == ' ') {
+			if (value == ' ')
+			{
 				++step;
 				if (step == 2)
 					step2 = i;
@@ -1692,15 +1795,17 @@ public:
 				continue;
 			}
 
-			switch (step) {
+			switch (step)
+			{
 			// pieces
 			case 0:
 				if (value == '/')
 					square += 8;
 				else if (value >= '1' && value <= '9')
 					square += value - '0';
-				else {
-					put(PIECES[value], square);
+				else
+				{
+					Put(PIECES[value], square);
 					++square;
 				}
 				break;
@@ -1727,7 +1832,7 @@ public:
 			}
 		}
 
-		ep_square = (ep == "-")? EMPTY: anToSquare(ep);
+		ep_square = (ep == "-")? EMPTY: AnToSquare(ep);
 		half_moves = half;
 		move_number = Max(move, 1);
 		fen_ply = (move_number << 1) - 3 + turn;
@@ -1738,9 +1843,11 @@ public:
 			frc = (fen_.substr(0, 8) != "rnbqkbnr");
 
 		// can detect FRC if castle is not empty
-		if (castle != "-") {
+		if (castle != "-")
+		{
 			auto error = false;
-			for (auto letter : castle) {
+			for (auto letter : castle)
+			{
 				auto lower = (letter < 'a')? letter + 'a' - 'A': letter,
 					final = (lower == 'k')? 'h': (lower == 'q')? 'a': lower,
 					color = (letter == lower)? 1: 0,
@@ -1757,21 +1864,25 @@ public:
 			}
 
 			// fix corrupted FEN (only for the initial board)
-			if (error) {
+			if (error)
+			{
 				castle = "";
-				for (auto color = 0; color < 2; ++color) {
+				for (auto color = 0; color < 2; ++color)
+				{
 					char file_letter = color? 'a': 'A';
 					auto king = kings[color];
 
 					for (int i = king + 1; Filer(i) <= 7; ++i)
-						if (TYPE(board[i]) == ROOK) {
+						if (TYPE(board[i]) == ROOK)
+						{
 							castling[color * 2] = i;
 							castle += file_letter + Filer(i);
 							break;
 						}
 
 					for (int i = king - 1; Filer(i) >= 0; --i)
-						if (TYPE(board[i]) == ROOK) {
+						if (TYPE(board[i]) == ROOK)
+						{
 							castling[color * 2 + 1] = i;
 							castle += file_letter + Filer(i);
 							break;
@@ -1783,7 +1894,7 @@ public:
 		}
 
 		if (must_hash)
-			hashBoard();
+			HashBoard();
 		else
 			board_hash = 0;
 		return fen;
@@ -1793,12 +1904,14 @@ public:
 	 * Make a raw move, no verification is being performed
 	 * @returns false if the move is not legal
 	 */
-	bool makeMove(Move move) {
+	bool MakeMove(Move move)
+	{
 		// null move
 		auto move_from = MoveFrom(move),
 			move_to = MoveTo(move);
-		if (move_from == move_to) {
-			// addState(move);
+		if (move_from == move_to)
+		{
+			// AddState(move);
 			// ++ply;
 			// turn ^= 1;
 			return false;
@@ -1821,9 +1934,10 @@ public:
 			promote = COLORIZE(us, promote);
 
 		// 1) check if move is legal
-		// castle is always legal because the checks were made in makeMove
-		if (!is_castle) {
-			// quick makeMove
+		// castle is always legal because the checks were made in MakeMove
+		if (!is_castle)
+		{
+			// quick MakeMove
 			if (piece_type == KING)
 				kings[us] = move_to;
 			board[move_from] = 0;
@@ -1831,8 +1945,9 @@ public:
 			if (passant)
 				board[passant] = 0;
 
-			if (kingAttacked(us)) {
-				// quick undoMove
+			if (KingAttacked(us))
+			{
+				// quick UndoMove
 				if (piece_type == KING)
 					kings[us] = move_from;
 				board[move_from] = piece_from;
@@ -1844,14 +1959,15 @@ public:
 		}
 
 		// 2) move is legal => do all other stuff
-		addState(move);
+		AddState(move);
 
 		++half_moves;
-		hashEnPassant();
+		HashEnPassant();
 		ep_square = EMPTY;
 
 		// castle?
-		if (is_castle) {
+		if (is_castle)
+		{
 			auto q = (move_to < move_from)? 1: 0;
 			auto king = kings[us];
 			auto king_piece = COLORIZE(us, KING);
@@ -1860,18 +1976,18 @@ public:
 			auto rook_piece = COLORIZE(us, ROOK);
 			auto rook_to = king_to - 1 + (q << 1);
 
-			hashSquare(king, king_piece);
-			hashSquare(rook, rook_piece);
-			hashSquare(king_to, king_piece);
-			hashSquare(rook_to, rook_piece);
+			HashSquare(king, king_piece);
+			HashSquare(rook, rook_piece);
+			HashSquare(king_to, king_piece);
+			HashSquare(rook_to, rook_piece);
 			board[king] = 0;
 			board[rook] = 0;
 			board[king_to] = king_piece;
 			board[rook_to] = rook_piece;
 
 			kings[us] = king_to;
-			hashCastle(us << 1);
-			hashCastle((us << 1) + 1);
+			HashCastle(us << 1);
+			HashCastle((us << 1) + 1);
 
 			// score
 			positions[us]
@@ -1879,38 +1995,44 @@ public:
 				+ squares[ROOK][rook_to] - squares[ROOK][rook]
 				+ 30;
 		}
-		else {
-			hashSquare(move_from, piece_from);
-			hashSquare(move_to, piece_to);
-			hashSquare(move_to, promote? promote: piece_from);
+		else
+		{
+			HashSquare(move_from, piece_from);
+			HashSquare(move_to, piece_to);
+			HashSquare(move_to, promote? promote: piece_from);
 
 			// remove castling if we capture a rook
-			if (capture) {
+			if (capture)
+			{
 				materials[them] -= PIECE_SCORES[capture];
-				if (capture == ROOK) {
+				if (capture == ROOK)
+				{
 					if (move_to == castling[them << 1])
-						hashCastle(them << 1);
+						HashCastle(them << 1);
 					else if (move_to == castling[(them << 1) + 1])
-						hashCastle((them << 1) + 1);
+						HashCastle((them << 1) + 1);
 				}
 				half_moves = 0;
 			}
 
 			// remove castling if we move a king/rook
-			if (piece_type == KING) {
-				hashCastle(us << 1);
-				hashCastle((us << 1) + 1);
+			if (piece_type == KING)
+			{
+				HashCastle(us << 1);
+				HashCastle((us << 1) + 1);
 			}
-			else if (piece_type == ROOK) {
+			else if (piece_type == ROOK)
+			{
 				if (move_from == castling[us << 1])
-					hashCastle(us << 1);
+					HashCastle(us << 1);
 				else if (move_from == castling[(us << 1) + 1])
-					hashCastle((us << 1) + 1);
+					HashCastle((us << 1) + 1);
 			}
 			// pawn + update 50MR
-			else if (piece_type == PAWN) {
+			else if (piece_type == PAWN)
+			{
 				if (passant != EMPTY)
-					hashEnPassant();
+					HashEnPassant();
 				else if (promote)
 					materials[us] += PROMOTE_SCORES[promote];
 				// pawn moves 2 squares
@@ -1937,21 +2059,25 @@ public:
 	 * @param move {from: 23, to: 7, promote: 5}
 	 * @param decorate add + # decorators
 	 */
-	MoveText moveObject(MoveText &obj, bool decorate) {
+	MoveText MoveObject(MoveText &obj, bool decorate)
+	{
 		auto flag = 0;
 		Move move = 0;
 		auto move_from = obj.from,
 			move_to = obj.to;
-		auto moves = legalMoves();
+		auto moves = LegalMoves();
 		std::string san;
 
 		// castle
-		if (move_from == kings[turn]) {
+		if (move_from == kings[turn])
+		{
 			auto piece = board[move_to];
 
 			// regular notation => change .to to rook position
-			if (!piece) {
-				if (std::abs(Filer(move_from) - Filer(move_to)) == 2) {
+			if (!piece)
+			{
+				if (std::abs(Filer(move_from) - Filer(move_to)) == 2)
+				{
 					if (move_to > move_from)
 						++move_to;
 					else
@@ -1964,16 +2090,19 @@ public:
 		}
 
 		// find an existing match + add the SAN
-		if (flag) {
+		if (flag)
+		{
 			for (auto &move2 : moves)
-				if ((MoveFlag(move2) & flag) && move_to == MoveTo(move2)) {
+				if ((MoveFlag(move2) & flag) && move_to == MoveTo(move2))
+				{
 					move = move2;
-					san = moveToSan(move, moves);
+					san = MoveToSan(move, moves);
 					break;
 				}
 		}
 		else
-			for (auto &move2 : moves) {
+			for (auto &move2 : moves)
+			{
 				if (move_from != MoveFrom(move2) || move_to != MoveTo(move2))
 					continue;
 				auto promote = MovePromote(move2);
@@ -1981,14 +2110,15 @@ public:
 					continue;
 
 				move = move2;
-				san = moveToSan(move, moves);
+				san = MoveToSan(move, moves);
 				break;
 			}
 
 		// no suitable move?
-		if (move && makeMove(move)) {
-			obj = unpackMove(move);
-			obj.m = decorate? decorateSan(san): san;
+		if (move && MakeMove(move))
+		{
+			obj = UnpackMove(move);
+			obj.m = decorate? DecorateSan(san): san;
 			obj.ply = fen_ply + ply;
 		}
 		return obj;
@@ -2000,13 +2130,15 @@ public:
 	 * @param decorate add + # decorators
 	 * @param sloppy allow sloppy parser
 	 */
-	MoveText moveSan(std::string text, bool decorate, bool sloppy) {
-		auto moves = legalMoves();
-		auto obj = sanToObject(text, moves, sloppy);
-		if (obj.from != obj.to) {
-			makeMove(packObject(obj));
+	MoveText MoveSan(std::string text, bool decorate, bool sloppy)
+	{
+		auto moves = LegalMoves();
+		auto obj = SanToObject(text, moves, sloppy);
+		if (obj.from != obj.to)
+		{
+			MakeMove(PackObject(obj));
 			if (decorate)
-				obj.m = decorateSan(obj.m);
+				obj.m = DecorateSan(obj.m);
 		}
 		return obj;
 	}
@@ -2019,7 +2151,8 @@ public:
 	 * @param move
 	 * @param moves
 	 */
-	std::string moveToSan(Move move, std::vector<Move> &moves) {
+	std::string MoveToSan(Move move, std::vector<Move> &moves)
+	{
 		auto move_flag = MoveFlag(move),
 			move_from = MoveFrom(move),
 			move_to = MoveTo(move);
@@ -2027,23 +2160,25 @@ public:
 		if (move_flag & BITS_CASTLE)
 			return (move_to > move_from)? "O-O": "O-O-O";
 
-		std::string disambiguator = disambiguate(move, moves);
+		std::string disambiguator = Disambiguate(move, moves);
 		auto move_type = TYPE(board[move_from]);
 		std::string output;
 
 		if (move_type != PAWN)
 			output += PIECE_UPPER[move_type] + disambiguator;
 
-		if (MoveCapture(move) || (move_flag & BITS_EN_PASSANT)) {
+		if (MoveCapture(move) || (move_flag & BITS_EN_PASSANT))
+		{
 			if (move_type == PAWN)
-				output += squareToAn(move_from, false)[0];
+				output += SquareToAn(move_from, false)[0];
 			output += 'x';
 		}
 
-		output += squareToAn(move_to, false);
+		output += SquareToAn(move_to, false);
 
 		auto promote = MovePromote(move);
-		if (promote) {
+		if (promote)
+		{
 			output += '=';
 			output += PIECE_UPPER[promote];
 		}
@@ -2055,12 +2190,13 @@ public:
 	 * @param text c2c4, a7a8a
 	 * @param decorate add + # decorators
 	 */
-	MoveText moveUci(std::string text, bool decorate) {
+	MoveText MoveUci(std::string text, bool decorate)
+	{
 		MoveText obj;
-		obj.from = anToSquare(text.substr(0, 2));
+		obj.from = AnToSquare(text.substr(0, 2));
 		obj.promote = text[4]? TYPE(PIECES[text[4]]): 0;
-		obj.to = anToSquare(text.substr(2, 2));
-		return moveObject(obj, decorate);
+		obj.to = AnToSquare(text.substr(2, 2));
+		return MoveObject(obj, decorate);
 	}
 
 	/**
@@ -2068,22 +2204,25 @@ public:
 	 * @param text c2c4 a7a8a ...
 	 * @param sloppy allow sloppy parser
 	 */
-	std::vector<MoveText> multiSan(std::string multi, bool sloppy, bool create_fen) {
+	std::vector<MoveText> MultiSan(std::string multi, bool sloppy, bool create_fen)
+	{
 		std::vector<MoveText> result;
 		int prev = 0,
 			size = multi.size();
-		for (int i = 0; i <= size; ++i) {
+		for (int i = 0; i <= size; ++i)
+		{
 			if (i < size && multi[i] != ' ')
 				continue;
 
-			if (multi[prev] >= 'A') {
+			if (multi[prev] >= 'A')
+			{
 				auto text = multi.substr(prev, i - prev);
-				auto moves = legalMoves();
-				auto obj = sanToObject(text, moves, sloppy);
+				auto moves = LegalMoves();
+				auto obj = SanToObject(text, moves, sloppy);
 				if (obj.from == obj.to)
 					break;
-				makeMove(packObject(obj));
-				obj.fen = create_fen? createFen(): "";
+				MakeMove(PackObject(obj));
+				obj.fen = create_fen? CreateFen(): "";
 				obj.ply = fen_ply + ply;
 				obj.score = 0;
 				result.emplace_back(obj);
@@ -2097,21 +2236,24 @@ public:
 	 * Parse a list of UCI moves + create SAN + FEN for each move
 	 * @param text c2c4 a7a8a ...
 	 */
-	std::vector<MoveText> multiUci(std::string multi) {
+	std::vector<MoveText> MultiUci(std::string multi)
+	{
 		std::vector<MoveText> result;
 		int prev = 0,
 			size = multi.size();
-		for (int i = 0; i <= size; ++i) {
+		for (int i = 0; i <= size; ++i)
+		{
 			if (i < size && multi[i] != ' ')
 				continue;
 
-			if (multi[prev] >= 'A') {
+			if (multi[prev] >= 'A')
+			{
 				auto text = multi.substr(prev, i - prev);
-				auto obj = moveUci(text, true);
+				auto obj = MoveUci(text, true);
 				if (obj.from == obj.to || !obj.m.size())
 					break;
 
-				obj.fen = createFen();
+				obj.fen = CreateFen();
 				obj.ply = fen_ply + ply;
 				obj.score = 0;
 				result.emplace_back(obj);
@@ -2127,23 +2269,26 @@ public:
 	 * - castle
 	 * - nb/r/q/r/p
 	 */
-	void orderMoves(std::vector<Move> &moves) {
+	void OrderMoves(std::vector<Move> &moves)
+	{
 		// use previous PV to reorder the first move
-		if (!move_id && (order_mode & 2) && prev_pv.size() > ply) {
+		if (!move_id && (order_mode & 2) && prev_pv.size() > ply)
+		{
 			auto first = prev_pv[ply];
-			auto from = anToSquare(first.substr(0, 2)),
-				to = anToSquare(first.substr(2, 2));
+			auto from = AnToSquare(first.substr(0, 2)),
+				to = AnToSquare(first.substr(2, 2));
 			auto promote = first[4]? TYPE(PIECES[first[4]]): 0;
 
 			auto id = 0;
-			for (auto &move : moves) {
+			for (auto &move : moves)
+			{
 				if (MoveFrom(move) == from && MoveTo(move) == to && MovePromote(move) == promote)
 					moves[id] += 1023 - (move & 1023);
 				++id;
 			}
 		}
 
-		std::stable_sort(moves.begin(), moves.end(), compareMoves);
+		std::stable_sort(moves.begin(), moves.end(), CompareMoves);
 	}
 
 	/**
@@ -2155,7 +2300,8 @@ public:
 	 * - 22-24 : promote
 	 * - 25-31 : to
 	 */
-	Move packObject(MoveText &obj) {
+	Move PackObject(MoveText &obj)
+	{
 		return 0
 			+ (obj.capture << 10)
 			+ (obj.flag << 13)
@@ -2167,7 +2313,8 @@ public:
 	/**
 	 * Get params
 	 */
-	std::vector<int> params() {
+	std::vector<int> Params()
+	{
 		std::vector<int> result = {
 			max_depth,          // 0
 			eval_mode,          // 1
@@ -2180,26 +2327,28 @@ public:
 	}
 
 	/**
-	 * Perform perft and divide
+	 * Perform Perft and divide
 	 * @param {string} fen
 	 * @param {number} depth
 	 * @returns {string}
 	 */
-	std::string perft(std::string fen, int depth) {
+	std::string Perft(std::string fen, int depth)
+	{
 		if (fen.size())
-			load(fen, false);
-		auto moves = legalMoves();
+			Load(fen, false);
+		auto moves = LegalMoves();
 		std::vector<std::string> lines;
 		lines.push_back(std::to_string(1) + "=" +std::to_string(moves.size()));
 
-		for (auto &move : moves) {
-			makeMove(move);
+		for (auto &move : moves)
+		{
+			MakeMove(move);
 			auto prev = nodes;
-			nullSearch(depth - 1);
+			NullSearch(depth - 1);
 			auto delta = nodes - prev;
-			lines.push_back(ucifyMove(move) + ":" + std::to_string(delta));
+			lines.push_back(UcifyMove(move) + ":" + std::to_string(delta));
 			prev = nodes;
-			undoMove();
+			UndoMove();
 		}
 
 		if (depth > 1)
@@ -2207,7 +2356,8 @@ public:
 		std::sort(lines.begin(), lines.end());
 
 		std::string result;
-		for (auto &line : lines) {
+		for (auto &line : lines)
+		{
 			if (result.size())
 				result += " ";
 			result += line;
@@ -2221,21 +2371,25 @@ public:
 	 * @param pv_string previous pv
 	 * @param scan_all_
 	 */
-	void prepareSearch(std::string move_string, std::string pv_string, bool scan_all_) {
+	void PrepareSearch(std::string move_string, std::string pv_string, bool scan_all_)
+	{
 		std::regex re("\\s+");
 		std::sregex_token_iterator reg_end;
 
 		first_moves.clear();
-		if (move_string.size()) {
+		if (move_string.size())
+		{
 			std::sregex_token_iterator it(move_string.begin(), move_string.end(), re, -1);
-			for (; it != reg_end; ++it) {
+			for (; it != reg_end; ++it)
+			{
 				auto move = static_cast<uint32_t>(std::stoul(it->str()));
 				first_moves.push_back(move);
 			}
 		}
 
 		prev_pv.clear();
-		if (pv_string.size()) {
+		if (pv_string.size())
+		{
 			std::sregex_token_iterator it2(pv_string.begin(), pv_string.end(), re, -1);
 			for (; it2 != reg_end; ++it2)
 				prev_pv.push_back(it2->str());
@@ -2255,11 +2409,14 @@ public:
 	/**
 	 * Print the board
 	 */
-	std::string print(bool console) {
+	std::string Print(bool console)
+	{
 		std::string text;
-		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i) {
+		for (auto i = SQUARE_A8; i <= SQUARE_H1; ++i)
+		{
 			// off board
-			if (i & 0x88) {
+			if (i & 0x88)
+			{
 				i += 7;
 				text += '\n';
 				continue;
@@ -2274,7 +2431,8 @@ public:
 	/**
 	 * Put a piece on a square
 	 */
-	void put(Piece piece, Square square) {
+	void Put(Piece piece, Square square)
+	{
 		board[square] = piece;
 		if (TYPE(piece) == KING)
 			kings[COLOR(piece)] = square;
@@ -2285,9 +2443,10 @@ public:
 	/**
 	 * Reset the board to the default position
 	 */
-	void reset() {
+	void Reset()
+	{
 		frc = false;
-		load(DEFAULT_POSITION, false);
+		Load(DEFAULT_POSITION, false);
 	}
 
 	/**
@@ -2296,12 +2455,14 @@ public:
 	 * @param moves list of moves to match the san against
 	 * @param sloppy allow sloppy parser
 	 */
-	MoveText sanToObject(std::string san, std::vector<Move> &moves, bool sloppy) {
+	MoveText SanToObject(std::string san, std::vector<Move> &moves, bool sloppy)
+	{
 		// 1) try exact matching
-		auto clean = cleanSan(san);
+		auto clean = CleanSan(san);
 		for (auto &move : moves)
-			if (clean == cleanSan(moveToSan(move, moves))) {
-				auto obj = unpackMove(move);
+			if (clean == CleanSan(MoveToSan(move, moves)))
+			{
+				auto obj = UnpackMove(move);
 				obj.m = san;
 				obj.ply = fen_ply + ply + 1;
 				return obj;
@@ -2322,7 +2483,8 @@ public:
 			return NULL_OBJ;
 
 		// analyse backwards
-		if (strchr("bnrqBNRQ", clean[i])) {
+		if (strchr("bnrqBNRQ", clean[i]))
+		{
 			promote = TYPE(PIECES[clean[i]]);
 			--i;
 		}
@@ -2338,18 +2500,21 @@ public:
 		if (i >= 0 && clean[i] == 'x')
 			--i;
 		// from
-		if (i >= 0 && clean[i] >= '1' && clean[i] <= '8') {
+		if (i >= 0 && clean[i] >= '1' && clean[i] <= '8')
+		{
 			from_rank = '8' - clean[i];
 			--i;
 		}
-		if (i >= 0 && clean[i] >= 'a' && clean[i] <= 'j') {
+		if (i >= 0 && clean[i] >= 'a' && clean[i] <= 'j')
+		{
 			from_file = clean[i] - 'a';
 			--i;
 		}
 		// type
 		type = TYPE(PIECES[clean[i]]);
 
-		for (auto &move : moves) {
+		for (auto &move : moves)
+		{
 			auto move_from = MoveFrom(move),
 				move_to = MoveTo(move);
 
@@ -2357,9 +2522,10 @@ public:
 					&& (!type || type == TYPE(board[move_from]))
 					&& (from_file == EMPTY || from_file == Filer(move_from))
 					&& (from_rank == EMPTY || from_rank == Rank(move_from))
-					&& (!promote || promote == MovePromote(move))) {
-				auto obj = unpackMove(move);
-				obj.m = moveToSan(move, moves);
+					&& (!promote || promote == MovePromote(move)))
+			{
+				auto obj = UnpackMove(move);
+				obj.m = MoveToSan(move, moves);
 				obj.ply = fen_ply + ply + 1;
 				return obj;
 			}
@@ -2375,28 +2541,31 @@ public:
 	 * @param scan_all_
 	 * @return updated moves
 	 */
-	std::vector<MoveText> search(std::string move_string, std::string pv_string, bool scan_all_) {
+	std::vector<MoveText> Search(std::string move_string, std::string pv_string, bool scan_all_)
+	{
 		// 1) prepare search
-		prepareSearch(move_string, pv_string, scan_all_);
-		hashBoard();
-		evaluatePositions();
+		PrepareSearch(move_string, pv_string, scan_all_);
+		HashBoard();
+		EvaluatePositions();
 
 		// 3) search
 		PV pv;
 		if (search_mode == 1)
-			miniMax(0, max_depth, &pv);
+			MiniMax(0, max_depth, &pv);
 		else
-			alphaBeta(-SCORE_INFINITY, SCORE_INFINITY, 0, max_depth, &pv);
+			AlphaBeta(-SCORE_INFINITY, SCORE_INFINITY, 0, max_depth, &pv);
 
 		// 4) add unseen moves with a None score
-		if (!scan_all) {
+		if (!scan_all)
+		{
 			std::map<std::string, int> seens;
 			for (auto &obj : first_objs)
 				seens[obj.m] = 1;
-			for (auto &move : first_moves) {
-				auto uci = ucifyMove(move);
+			for (auto &move : first_moves)
+			{
+				auto uci = UcifyMove(move);
 				if (seens.find(uci) != seens.end())
-					addTopMove(move, -SCORE_NONE, nullptr);
+					AddTopMove(move, -SCORE_NONE, nullptr);
 			}
 		}
 
@@ -2412,7 +2581,8 @@ public:
 	 * @param check check the boundaries
 	 * @return a1
 	 */
-	std::string squareToAn(Square square, bool check) {
+	std::string SquareToAn(Square square, bool check)
+	{
 		auto file = Filer(square),
 			rank = Rank(square);
 		if (check && (file < 0 || file > 7 || rank < 0 || rank > 7))
@@ -2426,9 +2596,10 @@ public:
 	/**
 	 * Get the UCI of a move number
 	 */
-	std::string ucifyMove(Move move) {
+	std::string UcifyMove(Move move)
+	{
 		auto promote = MovePromote(move);
-		auto uci = squareToAn(MoveFrom(move), false) + squareToAn(MoveTo(move), false);
+		auto uci = SquareToAn(MoveFrom(move), false) + SquareToAn(MoveTo(move), false);
 		if (promote)
 			uci += PIECE_LOWER[promote];
 		return uci;
@@ -2439,8 +2610,9 @@ public:
 	 * @param {MoveText} obj
 	 * @returns {string}
 	 */
-	std::string ucifyObject(MoveText &obj) {
-		auto uci = squareToAn(obj.from, false) + squareToAn(obj.to, false);
+	std::string UcifyObject(MoveText &obj)
+	{
+		auto uci = SquareToAn(obj.from, false) + SquareToAn(obj.to, false);
 		if (obj.promote)
 			uci += PIECE_LOWER[obj.promote];
 		return uci;
@@ -2449,7 +2621,8 @@ public:
 	/**
 	 * Undo a move
 	 */
-	bool undoMove() {
+	bool UndoMove()
+	{
 		if (ply <= 0)
 			return false;
 		--ply;
@@ -2474,13 +2647,15 @@ public:
 		auto us = turn,
 			them = turn ^ 1;
 
-		if (move_from == move_to) {
+		if (move_from == move_to)
+		{
 			// null move
 			return true;
 		}
 
 		// undo castle
-		if (move_flag & BITS_CASTLE) {
+		if (move_flag & BITS_CASTLE)
+		{
 			auto q = (move_to < move_from)? 1: 0;
 			auto king = move_from;
 			auto king_piece = COLORIZE(us, KING);
@@ -2500,9 +2675,11 @@ public:
 				+ squares[ROOK][move_to] - squares[ROOK][rook_to]
 				- 30;
 		}
-		else {
+		else
+		{
 			auto piece = board[move_to];
-			if (promote) {
+			if (promote)
+			{
 				piece = COLORIZE(us, PAWN);
 				materials[us] -= PROMOTE_SCORES[promote];
 			}
@@ -2513,13 +2690,15 @@ public:
 			if (piece_type == KING)
 				kings[us] = move_from;
 
-			if (move_flag & BITS_EN_PASSANT) {
+			if (move_flag & BITS_EN_PASSANT)
+			{
 				auto capture = COLORIZE(them, PAWN);
 				Square target = move_to + 16 - (us << 5);
 				board[target] = capture;
 				materials[them] += PIECE_SCORES[PAWN];
 			}
-			else if (move_capture) {
+			else if (move_capture)
+			{
 				auto capture = COLORIZE(them, move_capture);
 				board[move_to] = capture;
 				materials[them] += PIECE_SCORES[move_capture];
@@ -2542,7 +2721,8 @@ public:
 	 * - 22-24 : promote
 	 * - 25-31 : to
 	 */
-	MoveText unpackMove(Move move) {
+	MoveText UnpackMove(Move move)
+	{
 		return {
 			MoveCapture(move),
 			MoveFlag(move),
@@ -2556,86 +2736,39 @@ public:
 	// EMSCRIPTEN INTERFACES
 	////////////////////////
 
-	val em_attacks() {
-		return val(typed_memory_view(16, attacks));
-	}
+	val em_attacks() { return val(typed_memory_view(16, attacks)); }
+	int em_avgDepth() { return max_depth; }
+	val em_board() { return val(typed_memory_view(128, board)); }
+	int32_t em_boardHash() { return (int32_t)board_hash; }
+	val em_castling() { return val(typed_memory_view(4, castling)); }
+	bool em_checked(int color) { return KingAttacked(color); }
+	val em_defenses() { return val(typed_memory_view(16, defenses)); }
+	std::string em_fen() { return fen; }
+	bool em_frc() { return frc; }
+	std::vector<int> em_hashStats() { return {tt_adds, tt_hits}; }
+	int em_material(int color) { return materials[color]; }
+	val em_mobilities() { return val(typed_memory_view(16, mobilities)); }
+	int em_nodes() { return nodes; }
 
-	int em_avgDepth() {
-		return max_depth;
-	}
-
-	val em_board() {
-		return val(typed_memory_view(128, board));
-	}
-
-	int32_t em_boardHash() {
-		return (int32_t)board_hash;
-	}
-
-	val em_castling() {
-		return val(typed_memory_view(4, castling));
-	}
-
-	bool em_checked(int color) {
-		return kingAttacked(color);
-	}
-
-	val em_defenses() {
-		return val(typed_memory_view(16, defenses));
-	}
-
-	std::string em_fen() {
-		return fen;
-	}
-
-	bool em_frc() {
-		return frc;
-	}
-
-	std::vector<int> em_hashStats() {
-		return {tt_adds, tt_hits};
-	}
-
-	int em_material(int color) {
-		return materials[color];
-	}
-
-	val em_mobilities() {
-		return val(typed_memory_view(16, mobilities));
-	}
-
-	int em_nodes() {
-		return nodes;
-	}
-
-	Piece em_piece(std::string text) {
+	Piece em_piece(std::string text)
+	{
 		if (text.size() != 1)
 			return 0;
 		auto it = PIECES.find(text.at(0));
 		return (it != PIECES.end())? it->second: 0;
 	}
 
-	int em_selDepth() {
-		return Max(avg_depth, sel_depth);
-	}
-
-	std::string em_trace() {
-		return trace;
-	}
-
-	int em_turn() {
-		return turn;
-	}
-
-	std::string em_version() {
-		return "20201102";
-	}
+	int em_selDepth() { return Max(avg_depth, sel_depth); }
+	std::string em_trace() { return trace; }
+	int em_turn() { return turn; }
+	std::string em_version() { return "20220606"; }
 };
 
 // BINDING CODE
 ///////////////
 
-EMSCRIPTEN_BINDINGS(chess) {
+EMSCRIPTEN_BINDINGS(chess)
+{
 	// MOVE BINDINGS
 	value_object<MoveText>("MoveText")
 		.field("capture", &MoveText::capture)
@@ -2655,57 +2788,57 @@ EMSCRIPTEN_BINDINGS(chess) {
 	class_<Chess>("Chess")
 		.constructor()
 		//
-		.function("anToSquare", &Chess::anToSquare)
-		.function("attacked", &Chess::attacked)
+		.function("AnToSquare", &Chess::AnToSquare)
+		.function("Attacked", &Chess::Attacked)
 		.function("attacks", &Chess::em_attacks)
 		.function("avgDepth", &Chess::em_avgDepth)
 		.function("board", &Chess::em_board)
 		.function("boardHash", &Chess::em_boardHash)
 		.function("castling", &Chess::em_castling)
 		.function("checked", &Chess::em_checked)
-		.function("cleanSan", &Chess::cleanSan)
-		.function("clear", &Chess::clear)
-		.function("configure", &Chess::configure)
+		.function("CleanSan", &Chess::CleanSan)
+		.function("Clear", &Chess::Clear)
+		.function("Configure", &Chess::Configure)
 		.function("currentFen", &Chess::em_fen)
-		.function("decorateSan", &Chess::decorateSan)
+		.function("DecorateSan", &Chess::DecorateSan)
 		.function("defenses", &Chess::em_defenses)
-		.function("evaluate", &Chess::evaluate)
-		.function("fen", &Chess::createFen)
-		.function("fen960", &Chess::createFen960)
+		.function("Evaluate", &Chess::Evaluate)
+		.function("fen", &Chess::CreateFen)
+		.function("fen960", &Chess::CreateFen960)
 		.function("frc", &Chess::em_frc)
-		.function("hashBoard", &Chess::hashBoard)
+		.function("HashBoard", &Chess::HashBoard)
 		.function("hashStats", &Chess::em_hashStats)
-		.function("load", &Chess::load)
-		.function("makeMove", &Chess::makeMove)
+		.function("Load", &Chess::Load)
+		.function("MakeMove", &Chess::MakeMove)
 		.function("material", &Chess::em_material)
 		.function("mobilities", &Chess::em_mobilities)
-		.function("moveObject", &Chess::moveObject)
-		.function("moves", &Chess::legalMoves)
-		.function("moveSan", &Chess::moveSan)
-		.function("moveToSan", &Chess::moveToSan)
-		.function("moveUci", &Chess::moveUci)
-		.function("multiSan", &Chess::multiSan)
-		.function("multiUci", &Chess::multiUci)
+		.function("MoveObject", &Chess::MoveObject)
+		.function("moves", &Chess::LegalMoves)
+		.function("MoveSan", &Chess::MoveSan)
+		.function("MoveToSan", &Chess::MoveToSan)
+		.function("MoveUci", &Chess::MoveUci)
+		.function("MultiSan", &Chess::MultiSan)
+		.function("MultiUci", &Chess::MultiUci)
 		.function("nodes", &Chess::em_nodes)
-		.function("order", &Chess::orderMoves)
-		.function("packObject", &Chess::packObject)
-		.function("params", &Chess::params)
-		.function("perft", &Chess::perft)
+		.function("order", &Chess::OrderMoves)
+		.function("PackObject", &Chess::PackObject)
+		.function("Params", &Chess::Params)
+		.function("Perft", &Chess::Perft)
 		.function("piece", &Chess::em_piece)
-		.function("prepare", &Chess::prepareSearch)
-		.function("print", &Chess::print)
-		.function("put", &Chess::put)
-		.function("reset", &Chess::reset)
-		.function("sanToObject", &Chess::sanToObject)
-		.function("search", &Chess::search)
+		.function("prepare", &Chess::PrepareSearch)
+		.function("Print", &Chess::Print)
+		.function("Put", &Chess::Put)
+		.function("Reset", &Chess::Reset)
+		.function("SanToObject", &Chess::SanToObject)
+		.function("Search", &Chess::Search)
 		.function("selDepth", &Chess::em_selDepth)
-		.function("squareToAn", &Chess::squareToAn)
+		.function("SquareToAn", &Chess::SquareToAn)
 		.function("trace", &Chess::em_trace)
 		.function("turn", &Chess::em_turn)
-		.function("ucifyMove", &Chess::ucifyMove)
-		.function("ucifyObject", &Chess::ucifyObject)
-		.function("undo", &Chess::undoMove)
-		.function("unpackMove", &Chess::unpackMove)
+		.function("UcifyMove", &Chess::UcifyMove)
+		.function("UcifyObject", &Chess::UcifyObject)
+		.function("undo", &Chess::UndoMove)
+		.function("UnpackMove", &Chess::UnpackMove)
 		.function("version", &Chess::em_version)
 		;
 

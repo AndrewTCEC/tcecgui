@@ -9,23 +9,23 @@ expect, global, require, test
 'use strict';
 
 let {A, Assign, From, Keys, Safe} = require('./common.js'),
-	{loadDefaults, Y} = require('./engine.js'),
+	{LoadDefaults, Y} = require('./engine.js'),
 	{createBoards} = require('./game.js'),
 	{xboards} = require('./global.js'),
-	{prepareSettings} = require('./startup.js'),
+	{PrepareSettings} = require('./startup.js'),
 	{START_FEN} = require('./xboard.js');
 
 global.T = null;
 
-prepareSettings();
-loadDefaults();
+PrepareSettings();
+LoadDefaults();
 Y.volume = 0;
 createBoards('text');
 
 let archive = xboards.archive,
 	live = xboards.live;
 
-live.initialise();
+live.Initialize();
 live.dual = archive;
 live.id = 'null';
 
@@ -63,7 +63,7 @@ live.id = 'null';
 	],
 ].forEach(([text, cur_ply, answer], id) => {
 	test(`addMovesString:${id}`, () => {
-		live.reset(Y.x);
+		live.Reset(Y.x);
 		live.addMovesString(text, {cur_ply: cur_ply});
 
 		let offset = answer[0],
@@ -319,7 +319,7 @@ live.id = 'null';
 	});
 });
 
-// renderText
+// RenderText
 [
 	[
 		'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -351,20 +351,20 @@ live.id = 'null';
 		].join('\n'),
 	],
 ].forEach(([fen, options, answer], id) => {
-	test(`renderText:${id}`, () => {
+	test(`RenderText:${id}`, () => {
 		Assign(live, options);
 		live.setFen(fen);
-		expect(live.renderText()).toEqual(answer);
+		expect(live.RenderText()).toEqual(answer);
 	});
 });
 
-// reset
+// Reset
 [
 	[{exploded: 5.5}, {exploded: 0}],
 ].forEach(([states, answer], id) => {
-	test(`reset:${id}`, () => {
+	test(`Reset:${id}`, () => {
 		Assign(live, states);
-		live.reset(Y.x);
+		live.Reset(Y.x);
 		expect(live).toEqual(expect.objectContaining(answer));
 	});
 });

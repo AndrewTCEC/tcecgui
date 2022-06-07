@@ -8,7 +8,7 @@ expect, global, require, test
 'use strict';
 
 let {Assign, Clear, FromTimestamp, IsArray, IsString, Keys, ParseJSON, Stringify, Undefined} = require('./common.js'),
-	{DEV, loadDefaults, setSection, Y} = require('./engine.js'),
+	{DEV, LoadDefaults, SetSection, Y} = require('./engine.js'),
 	{
 		analyseLog, calculateH2h, calculateProbability, calculateSeeds, checkAdjudication, checkBoom, checkExplosion,
 		checkExplosionBoom, copyPgn, createBoards, createGameLink, createSeek, currentArchiveLink, extractThreads,
@@ -18,7 +18,7 @@ let {Assign, Clear, FromTimestamp, IsArray, IsString, Keys, ParseJSON, Stringify
 	} = require('./game.js'),
 	{getFenPly, xboards} = require('./global.js'),
 	{createChartData} = require('./graph.js'),
-	{prepareSettings} = require('./startup.js'),
+	{PrepareSettings} = require('./startup.js'),
 	{START_FEN} = require('./xboard.js');
 
 global.T = null;
@@ -38,8 +38,8 @@ let PGN_HEADERS = [
 	'',
 ];
 
-prepareSettings();
-loadDefaults();
+PrepareSettings();
+LoadDefaults();
 Y.volume = 0;
 createBoards('text');
 createChartData();
@@ -711,7 +711,7 @@ function initPlayers(ply, players, evals)
 		Assign(main, states);
 		Assign(Y, y);
 		if (y.x)
-			setSection(y.x);
+			SetSection(y.x);
 
 		expect(checkExplosion('live', !!is_boom)).toEqual(answer);
 		expect(main.exploded).toBeCloseTo(answer_boomed, 3);
@@ -740,7 +740,7 @@ function initPlayers(ply, players, evals)
 		main.moves.length = ply;
 		Assign(Y, y);
 		if (y.x)
-			setSection(y.x);
+			SetSection(y.x);
 		if (reset)
 			main.seens.clear();
 
@@ -820,12 +820,12 @@ function initPlayers(ply, players, evals)
 	],
 ].forEach(([start_fen, main_moves, board_moves, fen, answer], id) => {
 	test(`copyPgn:${id}`, () => {
-		setSection('live');
+		SetSection('live');
 		for (let [name, moves] of [['live', main_moves], ['pv0', board_moves]])
 		{
 			let board = xboards[name];
 			board.start_fen = start_fen;
-			board.reset(Y.x);
+			board.Reset(Y.x);
 			for (let move of moves)
 				board.moves[move.ply] = move;
 		}
@@ -2473,7 +2473,7 @@ function initPlayers(ply, players, evals)
 	test(`updatePlayerEval:${id}`, () => {
 		Assign(Y, states);
 		if (states.x)
-			setSection(states.x);
+			SetSection(states.x);
 		expect(updatePlayerEval(section, data)).toEqual(answer);
 	});
 });

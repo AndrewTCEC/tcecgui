@@ -19,10 +19,10 @@ let chess = new Chess(),
 
 describe('chess.js', () => {
 beforeEach(() => {
-	chess.reset();
+	chess.Reset();
 });
 
-// anToSquare
+// AnToSquare
 [
 	['a8', 0],
 	['h8', 7],
@@ -32,12 +32,12 @@ beforeEach(() => {
 	['a1', 112],
 	['h1', 119],
 ].forEach(([an, answer], id) => {
-	test(`anToSquare:${id}`, () => {
-		expect(chess.anToSquare(an)).toEqual(answer);
+	test(`AnToSquare:${id}`, () => {
+		expect(chess.AnToSquare(an)).toEqual(answer);
 	});
 });
 
-// attacked
+// Attacked
 [
 	['r2q1rk1/1b1nppbp/1P1p2p1/pBpP4/PnN1P3/1QN5/1P3PPP/R1B2RK1 b - - 7 14', 0, 'a1', false],
 	['r2q1rk1/1b1nppbp/1P1p2p1/pBpP4/PnN1P3/1QN5/1P3PPP/R1B2RK1 b - - 7 14', 0, 'b4', true],
@@ -53,11 +53,11 @@ beforeEach(() => {
 	['r2q1rk1/1b1nppbp/1P1p2p1/pBpP4/PnN1P3/1QN5/1P3PPP/R1B2RK1 b - - 7 14', 1, 'e3', false],
 	['r2q1rk1/1b1nppbp/1P1p2p1/pBpP4/PnN1P3/1QN5/1P3PPP/R1B2RK1 b - - 7 14', 1, 'h8', true],
 ].forEach(([fen, color, square, answer], id) => {
-	test(`attacked:${id}`, () => {
-		chess.load(fen, false);
+	test(`Attacked:${id}`, () => {
+		chess.Load(fen, false);
 		if (IsString(square))
-			square = chess.anToSquare(square);
-		expect(chess.attacked(color, square)).toEqual(answer);
+			square = chess.AnToSquare(square);
+		expect(chess.Attacked(color, square)).toEqual(answer);
 	});
 });
 
@@ -69,7 +69,7 @@ beforeEach(() => {
 	['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', [0, 0, 7, 2, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
 ].forEach(([fen, answer], id) => {
 	test(`attacks:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		chess.moves();
 		answer = new Uint8Array(answer);
 		expect(chess.attacks()).toEqual(answer);
@@ -82,7 +82,7 @@ beforeEach(() => {
 	['8/8/8/8/8/8/8/4K3 w - - 0 1', 128, {116: 6, 127: 0}],
 ].forEach(([fen, answer, dico], id) => {
 	test(`board:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		answer = new Uint8Array(answer);
 		Keys(dico).forEach(key => {
 			answer[key] = dico[key];
@@ -108,7 +108,7 @@ beforeEach(() => {
 	['rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq - 1 1', [3835669381, 3065660905]],
 ].forEach(([fen, answer], id) => {
 	test(`boardHash:${id}`, () => {
-		chess.load(fen, true);
+		chess.Load(fen, true);
 		let result = chess.boardHash() >>> 0;
 		if (IsArray(answer))
 			expect(answer).toContain(result);
@@ -127,7 +127,7 @@ beforeEach(() => {
 	['bbrknqrn/pppppppp/8/8/8/8/PPPPPPPP/BBRKNQRN w GCgc - 0 1', [118, 114, 6, 2]],
 ].forEach(([fen, answer], id) => {
 	test(`castling:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		answer = new Uint8Array(answer);
 		expect(chess.castling()).toEqual(answer);
 	});
@@ -153,14 +153,14 @@ beforeEach(() => {
 	],
 ].forEach(([fen, move, color, answer], id) => {
 	test(`checked:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		if (move)
-			chess.makeMove(chess.packObject(move));
+			chess.MakeMove(chess.PackObject(move));
 		expect(chess.checked(color)).toEqual(answer);
 	});
 });
 
-// cleanSan
+// CleanSan
 [
 	['', ''],
 	['O-O-O+', 'O-O-O'],
@@ -169,24 +169,24 @@ beforeEach(() => {
 	['d2d4', 'd2d4'],
 	['Nxd6#', 'Nxd6'],
 ].forEach(([san, answer], id) => {
-	test(`cleanSan:${id}`, () => {
-		expect(chess.cleanSan(san)).toEqual(answer);
+	test(`CleanSan:${id}`, () => {
+		expect(chess.CleanSan(san)).toEqual(answer);
 	});
 });
 
-// clear
+// Clear
 [
 	['2r3k1/7p/4pQpP/1R2Pq2/3P1P2/PR6/1K6/8 b - - 0 42', '8/8/8/8/8/8/8/8 w - - 0 1'],
 ].forEach(([fen, answer], id) => {
-	test(`clear:${id}`, () => {
-		chess.load(fen, true);
-		chess.clear();
+	test(`Clear:${id}`, () => {
+		chess.Load(fen, true);
+		chess.Clear();
 		expect(chess.fen()).toEqual(answer);
 		expect(chess.boardHash()).toEqual(0);
 	});
 });
 
-// configure
+// Configure
 [
 	[false, 'd=4 t=8 q=10', 5, [5, 1, 1e9, 0, 8, 10]],
 	[false, 'd=6', 0, [6, 1, 1e9, 0, 0, 0]],
@@ -197,9 +197,9 @@ beforeEach(() => {
 	[true, 'e=hce q=5', 0, [4, 3, 1e9, 0, 0, 5]],
 	[true, 'e=att', 0, [4, 7, 1e9, 0, 0, 0]],
 ].forEach(([frc, options, depth, answer], id) => {
-	test(`configure:${id}`, () => {
-		chess.configure(frc, options, depth);
-		let params = ArrayJS(chess.params());
+	test(`Configure:${id}`, () => {
+		chess.Configure(frc, options, depth);
+		let params = ArrayJS(chess.Params());
 		expect(params).toEqual(answer);
 		expect(chess.frc()).toEqual(frc);
 	});
@@ -214,19 +214,19 @@ beforeEach(() => {
 	],
 ].forEach(([fen, answer], id) => {
 	test(`currentFen:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		expect(chess.currentFen()).toEqual(Undefined(answer, fen));
 	});
 });
 
-// decorateSan
+// DecorateSan
 [
 	['8/5Np1/3k4/p2p4/6P1/7P/1Pn2K2/8 b - - 6 47', 'Nf7', 'Nf7+'],
 	['3r2r1/pp3p1k/8/7P/4q2K/1P5P/P7/3R4 w - - 0 30', 'Qxe4', 'Qxe4#'],
 ].forEach(([fen, san, answer], id) => {
-	test(`decorateSan:${id}`, () => {
-		chess.load(fen, false);
-		expect(chess.decorateSan(san)).toEqual(answer);
+	test(`DecorateSan:${id}`, () => {
+		chess.Load(fen, false);
+		expect(chess.DecorateSan(san)).toEqual(answer);
 	});
 });
 
@@ -238,14 +238,14 @@ beforeEach(() => {
 	['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', [0, 0, 0, 9, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
 ].forEach(([fen, answer], id) => {
 	test(`defenses:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		chess.moves();
 		answer = new Uint8Array(answer);
 		expect(chess.defenses()).toEqual(answer);
 	});
 });
 
-// evaluate
+// Evaluate
 [
 	['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=nul', [0, 0]],
 	['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', 'e=mat', [-483, -483]],
@@ -257,11 +257,11 @@ beforeEach(() => {
 	['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=hce', [-2281, -2281]],
 	['3Q4/6qk/p7/4n3/2N5/r7/4B3/3bK3 w - - 0 40', 'e=att', [-2244, -2244]],
 ].forEach(([fen, options, answer], id) => {
-	test(`evaluate:${id}`, () => {
-		chess.configure(false, options, 1);
-		chess.load(fen, false);
+	test(`Evaluate:${id}`, () => {
+		chess.Configure(false, options, 1);
+		chess.Load(fen, false);
 		chess.moves();
-		let score = chess.evaluate();
+		let score = chess.Evaluate();
 		expect(score).toBeGreaterThanOrEqual(answer[0]);
 		expect(score).toBeLessThanOrEqual(answer[1]);
 	});
@@ -305,9 +305,9 @@ beforeEach(() => {
 	['8/2pk4/p2p4/8/1P6/1KP4r/8/R7 w - - 42 80', 'Rxa6 d5', '8/2pk4/R7/3p4/1P6/1KP4r/8/8 w - - 0 81'],
 ].forEach(([fen, moves, answer], id) => {
 	test(`fen:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		for (let move of moves.split(' '))
-			chess.moveSan(move, false, false);
+			chess.MoveSan(move, false, false);
 		expect(chess.fen()).toEqual(Undefined(answer, fen));
 	});
 });
@@ -343,10 +343,10 @@ beforeEach(() => {
 	[START_FEN, 'h=1 s=ab', 7, [[40169, 304719], [53562, 60648]]],
 ].forEach(([fen, options, depth, answer], id) => {
 	test(`hashStats:${id}`, () => {
-		chess.configure(false, options, depth);
-		chess.load(fen, false);
+		chess.Configure(false, options, depth);
+		chess.Load(fen, false);
 		let moves = ArrayJS(chess.moves());
-		chess.search(moves.join(' '), '', false);
+		chess.Search(moves.join(' '), '', false);
 		let stats = ArrayJS(chess.hashStats());
 		for (let i = 0; i < 2; ++i)
 		{
@@ -363,7 +363,7 @@ beforeEach(() => {
 	});
 });
 
-// load
+// Load
 [
 	['rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -', false, '', undefined, START_FEN, 0],
 	[START_FEN, false, '', undefined, START_FEN, 0],
@@ -441,15 +441,15 @@ beforeEach(() => {
 		[0, 0],
 	],
 ].forEach(([fen, must_hash, moves, answer, new_fen, new_hash], id) => {
-	test(`load:${id}`, () => {
-		expect(chess.load(fen, must_hash)).toEqual(Undefined(answer, fen));
+	test(`Load:${id}`, () => {
+		expect(chess.Load(fen, must_hash)).toEqual(Undefined(answer, fen));
 		if (IsString(moves))
 		{
 			for (let move of moves.split(' '))
-				chess.moveSan(move, false, false);
+				chess.MoveSan(move, false, false);
 		}
 		else
-			chess.makeMove(chess.packObject(moves));
+			chess.MakeMove(chess.PackObject(moves));
 		expect(chess.fen()).toEqual(new_fen);
 		let result = chess.boardHash() >>> 0;
 		if (IsArray(new_hash))
@@ -459,7 +459,7 @@ beforeEach(() => {
 	});
 });
 
-// makeMove
+// MakeMove
 [
 	[
 		START_FEN,
@@ -486,10 +486,10 @@ beforeEach(() => {
 		undefined,
 	],
 ].forEach(([fen, move, answer, new_fen], id) => {
-	test(`makeMove:${id}`, () => {
-		chess.load(fen, false);
+	test(`MakeMove:${id}`, () => {
+		chess.Load(fen, false);
 		let old = {...move};
-		chess.makeMove(chess.packObject(move));
+		chess.MakeMove(chess.PackObject(move));
 		expect(move).toEqual(Undefined(answer, old));
 		expect(chess.fen()).toEqual(Undefined(new_fen, fen));
 	});
@@ -505,7 +505,7 @@ beforeEach(() => {
 	[START_FEN, 1, 9128],
 ].forEach(([fen, color, answer], id) => {
 	test(`material:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		expect(chess.material(color)).toEqual(answer);
 	});
 });
@@ -517,14 +517,14 @@ beforeEach(() => {
 	['7k/2q3bP/p2pbp2/r3n3/3QP3/2N5/2P1B3/3RK1R1 b - - 0 33', [0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 8, 13, 7, 13, 2, 0]],
 ].forEach(([fen, answer], id) => {
 	test(`mobilities:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		chess.moves();
 		answer = new Uint8Array(answer);
 		expect(chess.mobilities()).toEqual(answer);
 	});
 });
 
-// moveObject
+// MoveObject
 [
 	[
 		START_FEN,
@@ -563,9 +563,9 @@ beforeEach(() => {
 		{capture: 4, fen: '', flag: 0, from: 85, m: 'Qxe4#', ply: 57, promote: 0, pv: '', score: 420, to: 68},
 	],
 ].forEach(([fen, move, decorate, answer], id) => {
-	test(`moveObject:${id}`, () => {
-		chess.load(fen, false);
-		expect(chess.moveObject(move, decorate)).toEqual(answer);
+	test(`MoveObject:${id}`, () => {
+		chess.Load(fen, false);
+		expect(chess.MoveObject(move, decorate)).toEqual(answer);
 	});
 });
 
@@ -600,18 +600,18 @@ beforeEach(() => {
 	['r3k3/1P6/8/8/8/8/8/4K3 w q - 0 1', 13, ''],
 ].forEach(([fen, number, answer], id) => {
 	test(`moves:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		let moves = ArrayJS(chess.moves());
 		expect(moves.length).toEqual(number);
 		if (answer)
 		{
-			let text = moves.map(move => chess.ucifyMove(move)).sort().join(' ');
+			let text = moves.map(move => chess.UcifyMove(move)).sort().join(' ');
 			expect(text).toEqual(answer);
 		}
 	});
 });
 
-// moveSan
+// MoveSan
 [
 	[
 		START_FEN,
@@ -724,14 +724,14 @@ beforeEach(() => {
 		{capture: 0, fen: '', flag: 0, from: 99, m: 'Q2c2', ply: 60, promote: 0, pv: '', score: 100, to: 98},
 	],
 ].forEach(([fen, move, [decorate, sloppy], answer], id) => {
-	test(`moveSan:${id}`, () => {
-		chess.load(fen, false);
-		let result = chess.moveSan(move, decorate, sloppy);
+	test(`MoveSan:${id}`, () => {
+		chess.Load(fen, false);
+		let result = chess.MoveSan(move, decorate, sloppy);
 		expect(result).toEqual(answer);
 	});
 });
 
-// moveToSan
+// MoveToSan
 [
 	[
 		'r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4',
@@ -739,14 +739,14 @@ beforeEach(() => {
 		'Ne7',
 	],
 ].forEach(([fen, move, answer], id) => {
-	test(`moveToSan:${id}`, () => {
-		chess.load(fen, false);
+	test(`MoveToSan:${id}`, () => {
+		chess.Load(fen, false);
 		let moves = chess.moves();
-		expect(chess.moveToSan(chess.packObject(move), moves)).toEqual(answer);
+		expect(chess.MoveToSan(chess.PackObject(move), moves)).toEqual(answer);
 	});
 });
 
-// moveUci
+// MoveUci
 [
 	[
 		START_FEN,
@@ -794,13 +794,13 @@ beforeEach(() => {
 		{capture: 0, fen: '', flag: 0, from: 54, m: 'Nf7+', ply: 92, promote: 0, pv: '', score: 115, to: 21},
 	],
 ].forEach(([fen, move, decorate, answer], id) => {
-	test(`moveUci:${id}`, () => {
-		chess.load(fen, false);
-		expect(chess.moveUci(move, decorate)).toEqual(answer);
+	test(`MoveUci:${id}`, () => {
+		chess.Load(fen, false);
+		expect(chess.MoveUci(move, decorate)).toEqual(answer);
 	});
 });
 
-// multiSan
+// MultiSan
 [
 	[
 		START_FEN,
@@ -830,9 +830,9 @@ beforeEach(() => {
 		'8/2R5/4k3/7K/2P4P/6r1/8/8 b - - 0 50',
 	],
 ].forEach(([fen, multi, [sloppy, create_fen], answer, new_fen], id) => {
-	test(`multiSan:${id}`, () => {
-		chess.load(fen, false);
-		let moves = ArrayJS(chess.multiSan(multi, sloppy, create_fen));
+	test(`MultiSan:${id}`, () => {
+		chess.Load(fen, false);
+		let moves = ArrayJS(chess.MultiSan(multi, sloppy, create_fen));
 		if (answer)
 		{
 			for (let move of moves)
@@ -844,7 +844,7 @@ beforeEach(() => {
 	});
 });
 
-// multiUci
+// MultiUci
 [
 	[
 		START_FEN,
@@ -884,9 +884,9 @@ beforeEach(() => {
 		'rk1rbq1b/pppppppp/1n3n2/8/3PP3/1N6/PPP2PPP/RK1RBQNB b DAda e3 0 3',
 	],
 ].forEach(([fen, multi, answer, new_fen], id) => {
-	test(`multiUci:${id}`, () => {
-		chess.load(fen, false);
-		let moves = ArrayJS(chess.multiUci(multi));
+	test(`MultiUci:${id}`, () => {
+		chess.Load(fen, false);
+		let moves = ArrayJS(chess.MultiUci(multi));
 		if (answer)
 		{
 			for (let move of moves)
@@ -920,14 +920,14 @@ beforeEach(() => {
 	['6k1/pp1R1np1/7p/5p2/3B4/1P3P1P/r5P1/7K w - - 0 33', 's=ab', 4, false, 5799],
 ].forEach(([fen, options, depth, scan_all, answer], id) => {
 	test(`nodes:${id}`, () => {
-		chess.configure(false, options, depth);
-		chess.load(fen, false);
+		chess.Configure(false, options, depth);
+		chess.Load(fen, false);
 		let moves = ArrayJS(chess.moves());
-		chess.search(moves.join(' '), '', scan_all);
+		chess.Search(moves.join(' '), '', scan_all);
 		let nodes = chess.nodes();
 		if (IsString(answer))
 		{
-			let text = moves.map(move => chess.ucifyMove(move)).sort().join(' ');
+			let text = moves.map(move => chess.UcifyMove(move)).sort().join(' ');
 			expect(text).toEqual(answer);
 		}
 		else
@@ -964,16 +964,16 @@ beforeEach(() => {
 	],
 ].forEach(([fen, [options, depth], answer], id) => {
 	test(`order:${id}`, () => {
-		chess.configure(false, options, depth);
-		chess.load(fen, false);
+		chess.Configure(false, options, depth);
+		chess.Load(fen, false);
 		let moves = chess.moves();
 		chess.order(moves);
-		moves = ArrayJS(moves).map(move => chess.ucifyMove(move)).join(' ');
+		moves = ArrayJS(moves).map(move => chess.UcifyMove(move)).join(' ');
 		expect(moves).toEqual(answer);
 	});
 });
 
-// packObject
+// PackObject
 [
 	[{capture: 0, fen: '', flag: 0, from: 0, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 0}, 0],
 	[{capture: 0, fen: '', flag: 0, from: 20, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 36}, 1208614912],
@@ -982,31 +982,31 @@ beforeEach(() => {
 	[{capture: 0, fen: '', flag: 0, from: 97, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 65}, 2184216576],
 	[{capture: 1, fen: '', flag: 0, from: 5, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 65}, 2181202944],
 ].forEach(([move, answer], id) => {
-	test(`packObject:${id}`, () => {
-		let number = chess.packObject(move);
+	test(`PackObject:${id}`, () => {
+		let number = chess.PackObject(move);
 		expect(number).toEqual(answer);
-		expect(chess.unpackMove(number)).toEqual(move);
+		expect(chess.UnpackMove(number)).toEqual(move);
 	});
 });
 
-// params
+// Params
 [
 	[false, 'd=5', 0, [5, 1, 1e9, 0, 0, 0]],
 	[false, 'e=mat', 0, [4, 1, 1e9, 0, 0, 0]],
 	[false, 'e=mob n=1000', 0, [4, 2, 1000, 0, 0, 0]],
 	[false, 'd=8 q=32', 0, [8, 1, 1e9, 0, 0, 32]],
 ].forEach(([frc, options, depth, answer], id) => {
-	test(`params:${id}`, () => {
-		chess.configure(frc, options, depth);
-		let params = ArrayJS(chess.params());
+	test(`Params:${id}`, () => {
+		chess.Configure(frc, options, depth);
+		let params = ArrayJS(chess.Params());
 		expect(params).toEqual(answer);
 		expect(chess.frc()).toEqual(frc);
 	});
 });
 
-// perft
-// https://sites.google.com/site/numptychess/perft/position-1
-// http://www.rocechess.ch/perft.html
+// Perft
+// https://sites.google.com/site/numptychess/Perft/position-1
+// http://www.rocechess.ch/Perft.html
 // https://www.chessprogramming.org/Perft_Results
 // https://www.chessprogramming.org/Chess960_Perft_Results
 [
@@ -1111,8 +1111,8 @@ beforeEach(() => {
 	['r3k2r/pb3p2/5npp/n2p4/1p1PPB2/6P1/P2N1PBP/R3K2R b KQkq - 0 1', 2, 953],
 	['r3k2r/pb3p2/5npp/n2p4/1p1PPB2/6P1/P2N1PBP/R3K2R b KQkq - 0 1', 1, 29],
 ].forEach(([fen, depth, answer], id) => {
-	test(`perft:${id}`, () => {
-		let text = chess.perft(fen, depth);
+	test(`Perft:${id}`, () => {
+		let text = chess.Perft(fen, depth);
 		if (IsString(answer))
 			expect(text).toEqual(answer);
 		else
@@ -1165,30 +1165,30 @@ beforeEach(() => {
 	],
 ].forEach(([fen, [options, depth, move_string, pv_string], answer], id) => {
 	test(`prepare:${id}`, () => {
-		chess.configure(false, options, depth);
-		chess.load(fen, false);
+		chess.Configure(false, options, depth);
+		chess.Load(fen, false);
 		chess.prepare(move_string, pv_string, false);
 		let moves = chess.moves();
 		chess.order(moves);
-		moves = ArrayJS(moves).map(move => chess.ucifyMove(move)).join(' ');
+		moves = ArrayJS(moves).map(move => chess.UcifyMove(move)).join(' ');
 		expect(moves).toEqual(answer);
 	});
 });
 
-// print
+// Print
 [
 	[
 		START_FEN,
 		'rnbqkbnr\npppppppp\n        \n        \n        \n        \nPPPPPPPP\nRNBQKBNR',
 	],
 ].forEach(([fen, answer], id) => {
-	test(`print:${id}`, () => {
-		chess.load(fen, false);
-		expect(chess.print(false)).toEqual(answer);
+	test(`Print:${id}`, () => {
+		chess.Load(fen, false);
+		expect(chess.Print(false)).toEqual(answer);
 	});
 });
 
-// put
+// Put
 [
 	[
 		'1r2kb1r/pb1p1p2/1p1q2pn/7p/1PB1P3/3NQ2P/P2N1PP1/1R1K3R w KQ - 0 20',
@@ -1216,25 +1216,25 @@ beforeEach(() => {
 		'8/8/8/8/8/8/8/4K3 w - - 0 1',
 	],
 ].forEach(([fen, piece, square, answer], id) => {
-	test(`put:${id}`, () => {
-		chess.load(fen, false);
-		chess.put(piece, square);
+	test(`Put:${id}`, () => {
+		chess.Load(fen, false);
+		chess.Put(piece, square);
 		expect(chess.fen()).toEqual(answer);
 	});
 });
 
-// reset
+// Reset
 [
 	['1r2kb1r/pb1p1p2/1p1q2pn/7p/1PB1P3/3NQ2P/P2N1PP1/1R1K3R w KQ - 0 20', START_FEN],
 ].forEach(([fen, answer], id) => {
-	test(`reset:${id}`, () => {
-		chess.load(fen, false);
-		chess.reset();
+	test(`Reset:${id}`, () => {
+		chess.Load(fen, false);
+		chess.Reset();
 		expect(chess.fen()).toEqual(answer);
 	});
 });
 
-// sanToObject
+// SanToObject
 [
 	[
 		'r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4',
@@ -1267,15 +1267,15 @@ beforeEach(() => {
 		{capture: 0, fen: '', flag: 0, from: 0, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 0},
 	],
 ].forEach(([fen, san, sloppy, answer], id) => {
-	test(`sanToObject:${id}`, () => {
-		chess.load(fen, false);
+	test(`SanToObject:${id}`, () => {
+		chess.Load(fen, false);
 		let moves = chess.moves(),
-			move = chess.sanToObject(san, moves, sloppy);
+			move = chess.SanToObject(san, moves, sloppy);
 		expect(move).toEqual(answer);
 	});
 });
 
-// search
+// Search
 [
 	[START_FEN, '', 'd=4 e=hce p=1 s=mm', 0, {}],
 	['1rb1kbnq/1p1p4/p1nPp1p1/6Br/5Q2/P1N2N2/1P2PPPP/3RKB1R w K -', 'f4f7', 'd=5 e=att q=2 s=ab t=0', -2127, {}],
@@ -1308,16 +1308,16 @@ beforeEach(() => {
 	test(`search:${id}`, () => {
 		let [frc, options, depth] =
 			(IsString(config)? [false, config, 0]: (Number.isInteger(config)? [false, '', config]: config));
-		chess.configure(frc, options, depth);
-		chess.load(fen, false);
+		chess.Configure(frc, options, depth);
+		chess.Load(fen, false);
 
 		let moves = ArrayJS(chess.moves());
 		if (mask)
 		{
 			let mask_set = new Set(mask.split(' '));
-			moves = moves.filter(move => mask_set.has(chess.ucifyMove(move)));
+			moves = moves.filter(move => mask_set.has(chess.UcifyMove(move)));
 		}
-		let objs = ArrayJS(chess.search(moves.join(' '), '', true));
+		let objs = ArrayJS(chess.Search(moves.join(' '), '', true));
 		objs.sort((a, b) => b.score - a.score);
 
 		let best = objs[0],
@@ -1378,7 +1378,7 @@ beforeEach(() => {
 	});
 });
 
-// squareToAn
+// SquareToAn
 [
 	[0, false, 'a8'],
 	[7, false, 'h8'],
@@ -1390,8 +1390,8 @@ beforeEach(() => {
 	[112, false, 'a1'],
 	[119, false, 'h1'],
 ].forEach(([square, check, answer], id) => {
-	test(`squareToAn:${id}`, () => {
-		expect(chess.squareToAn(square, check)).toEqual(answer);
+	test(`SquareToAn:${id}`, () => {
+		expect(chess.SquareToAn(square, check)).toEqual(answer);
 	});
 });
 
@@ -1403,24 +1403,24 @@ beforeEach(() => {
 	['rnbqkbnr/pp1ppppp/8/1Bp5/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 1 2', 'e6', 0],
 ].forEach(([fen, moves, answer], id) => {
 	test(`turn:${id}`, () => {
-		chess.load(fen, false);
+		chess.Load(fen, false);
 		for (let move of moves.split(' '))
-			chess.moveSan(move, false, false);
+			chess.MoveSan(move, false, false);
 		expect(chess.turn()).toEqual(answer);
 	});
 });
 
-// ucifyMove
+// UcifyMove
 [
 	[1208614912, 'e7e6'],
 	[2251390976, 'd2d4'],
 ].forEach(([move, answer], id) => {
-	test(`ucifyMove:${id}`, () => {
-		expect(chess.ucifyMove(move)).toEqual(answer);
+	test(`UcifyMove:${id}`, () => {
+		expect(chess.UcifyMove(move)).toEqual(answer);
 	});
 });
 
-// ucifyObject
+// UcifyObject
 [
 	[
 		{capture: 0, depth: 0, fen: '', flag: 0, from: 99, m: '', ply: 0, promote: 0, pv: '', score: 0, to: 67},
@@ -1431,8 +1431,8 @@ beforeEach(() => {
 		'a2b1q',
 	],
 ].forEach(([move, answer], id) => {
-	test(`ucifyObject:${id}`, () => {
-		expect(chess.ucifyObject(move)).toEqual(answer);
+	test(`UcifyObject:${id}`, () => {
+		expect(chess.UcifyObject(move)).toEqual(answer);
 	});
 });
 
@@ -1466,15 +1466,15 @@ beforeEach(() => {
 	['5k2/8/8/8/6pP/8/6K1/8 b - h3 0 17', 'gxh3+', 1, '', [1514358265, 2342289575]],
 ].forEach(([fen, moves, steps, answer, hash], id) => {
 	test(`undo:${id}`, () => {
-		chess.load(fen, true);
+		chess.Load(fen, true);
 		let materials = [chess.material(0), chess.material(1)];
 		if (IsString(moves))
 		{
 			for (let move of moves.split(' '))
-				chess.moveSan(move, false, false);
+				chess.MoveSan(move, false, false);
 		}
 		else
-			chess.makeMove(chess.packObject(moves));
+			chess.MakeMove(chess.PackObject(moves));
 		for (let i = 0; i < steps; ++i)
 			chess.undo();
 		expect(chess.fen()).toEqual(answer || fen);
@@ -1491,7 +1491,7 @@ beforeEach(() => {
 	});
 });
 
-// unpackMove
+// UnpackMove
 [
 	[0, {capture: 0, fen: '', flag: 0, from: 0, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 0}, 'a8a8'],
 	[1208614912, {capture: 0, fen: '', flag: 0, from: 20, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 36}, 'e7e6'],
@@ -1500,9 +1500,9 @@ beforeEach(() => {
 	[2184216576, {capture: 0, fen: '', flag: 0, from: 97, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 65}, 'b2b4'],
 	[2181202944, {capture: 1, fen: '', flag: 0, from: 5, m: '', ply: -2, promote: 0, pv: '', score: 0, to: 65}, 'f8b4'],
 ].forEach(([number, answer, uci], id) => {
-	test(`unpackMove:${id}`, () => {
-		let move = chess.unpackMove(number);
-		expect(chess.ucifyObject(move)).toEqual(uci);
+	test(`UnpackMove:${id}`, () => {
+		let move = chess.UnpackMove(number);
+		expect(chess.UcifyObject(move)).toEqual(uci);
 		expect(move).toEqual(answer);
 	});
 });

@@ -27,7 +27,7 @@ const real_now = Date.now.bind(global.Date);
  * Override Date.now
  * @param {number} now
  */
-function beginDateNow(now)
+function BeginDateNow(now)
 {
 	if (now == null)
 		return;
@@ -37,7 +37,7 @@ function beginDateNow(now)
 /**
  * Reset the Date.now
  */
-function endDateNow()
+function EndDateNow()
 {
 	global.Date.now = real_now;
 }
@@ -404,9 +404,9 @@ function endDateNow()
 	[1625336832301, undefined, [['2021-07-03'], ['18:27:12', '20:27:12']]],
 ].forEach(([now, stamp, answer], id) => {
 	test(`FromTimestamp:${id}`, () => {
-		beginDateNow(now);
+		BeginDateNow(now);
 		const [date, time] = FromTimestamp(stamp);
-		endDateNow();
+		EndDateNow();
 		if (!answer.length)
 		{
 			expect(date).toBe(undefined);
@@ -734,9 +734,9 @@ function endDateNow()
 	[1625336832301, 2, 1625336832301],
 ].forEach(([now, mode, answer], id) => {
 	test(`Now:${id}`, () => {
-		beginDateNow(now);
+		BeginDateNow(now);
 		const result = Now(mode);
-		endDateNow();
+		EndDateNow();
 		expect(result).toEqual(answer);
 	});
 });

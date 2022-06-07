@@ -1157,8 +1157,7 @@ function CopyClipboard(text, callback)
 	if (clipboard)
 	{
 		clipboard.writeText(text).then(() => {
-			if (callback)
-				callback();
+			if (callback) callback();
 		});
 	}
 	// support for old browsers
@@ -1172,8 +1171,7 @@ function CopyClipboard(text, callback)
 		if (document.execCommand)
 			document.execCommand('copy');
 		document.body.removeChild(node);
-		if (callback)
-			callback();
+		if (callback) callback();
 	}
 }
 
@@ -1359,8 +1357,7 @@ function LoadLibrary(url, callback, extra)
 {
 	const node = CreateNode('script', null, Assign({src: url}, extra || {}));
 	document.body.appendChild(node);
-	if (callback)
-		node.onload = callback;
+	if (callback) node.onload = callback;
 }
 
 /**

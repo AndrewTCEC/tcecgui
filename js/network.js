@@ -10,15 +10,16 @@
 globals
 _, A, AddTimeout, analyseCrosstable, analyseLog, analyseTournament, Assign, CacheId, Class, ClearTimeout, createCup,
 CreateNode,
-DEV, exports, From, global, HasClass, Hide, HOST, HTML, Id, initWebsockets, InsertNodes, IsArray,
+DEV, exports, From, global, HasClass, Hide, HOST, HTML, Id, InitWebSockets, InsertNodes, IsArray,
 LoadLibrary, LS, Max, Min, MSG_USER_COUNT, Now, ParseJSON, RandomInt, require,
-S, saveOption, setViewers, Show, socket_io:true, updateLiveEval, updatePgn, updatePlayerEval, updateTable, updateTwitch,
+S, SaveOption, setViewers, Show, socket_io:true, updateLiveEval, updatePgn, updatePlayerEval, updateTable, updateTwitch,
 VisibleWidth, window, Y, y_x
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['common', 'engine'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -48,7 +49,7 @@ let log_time = 0,
 	TIMEOUT_pause = 3000,
 	TIMEOUT_users = 5000,
 	twitch_player,
-	vi_resize;
+	vi_Resize;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +67,7 @@ function checkSocketIo()
 		{
 			socket_io.close();
 			if (is_websocket)
-				startupNetwork();
+				StartupNetwork();
 		}
 		return;
 	}
@@ -86,7 +87,7 @@ function checkSocketIo()
 }
 
 /**
- * Initialise socket_io events
+ * Initialize socket_io events
  * + handle all messages
  */
 function eventSockets()
@@ -311,7 +312,7 @@ function showBanner(text)
  * @param {Event} e
  * @returns {boolean}
  */
-function socketMessage(e)
+function SocketMessage(e)
 {
 	let datax = IsArray(e)? e : ParseJSON(e.data);
 	if (!datax || !IsArray(datax))
@@ -379,7 +380,7 @@ function socketMessage(e)
 function updateTwitch(dark, chat_url, only_resize)
 {
 	if (dark != undefined)
-		saveOption('twitch_dark', dark);
+		SaveOption('twitch_dark', dark);
 
 	if (chat_url)
 		TWITCH_CHAT = chat_url;
@@ -412,8 +413,8 @@ function updateTwitch(dark, chat_url, only_resize)
 	{
 		Class(right, 'narrow', need_narrow);
 		Class(right, 'wide', need_wide);
-		if (vi_resize)
-			vi_resize();
+		if (vi_Resize)
+			vi_Resize();
 	}
 
 	// 2) update twitch video IF there was a change
@@ -459,7 +460,7 @@ function updateTwitch(dark, chat_url, only_resize)
 		}
 		else if (!channel)
 		{
-			twitch_player.pause();
+			twitch_player.Pause();
 			if (!twitch_player.isPaused())
 				AddTimeout('pause', twitch_player.pause, TIMEOUT_pause);
 		}
@@ -471,9 +472,9 @@ function updateTwitch(dark, chat_url, only_resize)
 }
 
 /**
- * Initialise structures with game specific data
+ * Initialize structures with game specific data
  */
-function startupNetwork()
+function StartupNetwork()
 {
 	if (Y['network'] == 'socket.io')
 	{
@@ -481,8 +482,8 @@ function startupNetwork()
 		return;
 	}
 
-	initWebsockets({
-		message: socketMessage,
+	InitWebSockets({
+		message: SocketMessage,
 	});
 }
 

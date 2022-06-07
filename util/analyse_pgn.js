@@ -320,7 +320,7 @@ function mergeStats(result)
  * @param {!Object} result
  * @param {Function} callback
  */
-function openFile(filename, result, callback)
+function OpenFile(filename, result, callback)
 {
 	const ext = filename.split('.').slice(-1)[0],
 		verbose = OPTIONS.verbose;
@@ -468,7 +468,7 @@ function main()
 				let left2 = files.length;
 				for (const file of files)
 				{
-					openFile(file, result, () => {
+					OpenFile(file, result, () => {
 						--left2;
 						LS(`${left2} : ${filename} / ${file}`);
 						if (!left2)
@@ -484,7 +484,7 @@ function main()
 		}
 		else
 		{
-			openFile(filename, result, () => {
+			OpenFile(filename, result, () => {
 				--left;
 				LS(`A:left=${left} : ${filename}`);
 				if (!left)

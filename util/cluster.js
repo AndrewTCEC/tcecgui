@@ -22,7 +22,8 @@ function eachWorker(callback)
 		callback(cluster.workers[id]);
 }
 
-if (cluster.isMaster) {
+if (cluster.isMaster)
+{
 	let clientCount = 0,
 		count = 0,
 		cpus = os.cpus().length;

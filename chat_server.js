@@ -8,69 +8,73 @@ console, exports, require
 'use strict';
 
 let Module = require('./js/chess-wasm.js'),
-    {Stringify} = require('./js/common.js'),
-    Net = require('net');
+	{Stringify} = require('./js/common.js'),
+	Net = require('net');
 
 let frc = false,
-    LS = console.log,
-    port = 8090,
-    server = new Net.Server();
+	LS = console.log,
+	port = 8090,
+	server = new Net.Server();
 
 server.listen(port, () => {
-    LS(`Server listening for connection requests on socket localhost:${port}.`);
+	LS(`Server listening for connection requests on socket localhost:${port}.`);
 });
 
 let chess,
-    voting = {}; //indexed by fen, supports 1-2 clients
+	voting = {}; //indexed by fen, supports 1-2 clients
 
 /**
  * Load chess-wasm
  */
 async function loadWasm() {
-    let instance = await Module();
-    chess = new instance.Chess();
-    LS('chess library loaded');
+	let instance = await Module();
+	chess = new instance.Chess();
+	LS('chess library loaded');
 }
 
 function vote(data)
 {
-    LS('vote, data=' + Stringify(data));
-    if (typeof data.fen == "string") { //needed because fen string here don't match fen strings in Python
+	LS('vote, data=' + Stringify(data));
+	if (typeof data.fen == "string") { //needed because fen string here don't match fen strings in Python
 	let lst = data.fen.split(" ");
 	data.fen = lst[0] + " " + lst[1] + " " + lst[5];
-    }
-    if (!(data.fen in voting) || typeof data.move != "string" || data.move.length > 5) {
-	LS('Not found');
-	return;
-    }
-    if (!data.time) {
-	LS('Old GUI, no voting');
-	return;
-    }
-    let entry = voting[data.fen],
-	move = data.move;
-    LS('entry: ' + Stringify(entry.votes) + ' ' + Stringify(entry.byIP));
-    if (!(move in entry.votes)) {
-	entry.votes[move] = 0;
-    }
-    if (data.ip in entry.byIP) {
-	if (entry.byIP[data.ip] == move)
-	{
-	    LS("Same move as earlier: " + move);
-	    return;
 	}
-	LS(`Reduce vote: ${entry.byIP[data.ip]} by ${data.ip}`);
-	entry.votes[entry.byIP[data.ip]]--;
-    }
-    entry.votes[move]++;
-    entry.byIP[data.ip] = move;
-    let msg = Stringify({
-        fen: data.fen,
-        votes: Object.entries(entry.votes),
-    });
-    LS(`Sending data: ${msg}.`);
-    LS('---');
-    entry.socket.write(msg.length.toString().padStart(4, " ") + msg);
+	if (!(data.fen in voting) || typeof data.move != "string" || data.move.length > 5)
+	{
+		LS('Not found');
+		return;
+	}
+	if (!data.time)
+	{
+		LS('Old GUI, no voting');
+		return;
+	}
+	let entry = voting[data.fen],
+	move = data.move;
+	LS('entry: ' + Stringify(entry.votes) + ' ' + Stringify(entry.byIP));
+	if (!(move in entry.votes))
+	{
+		entry.votes[move] = 0;
+	}
+	if (data.ip in entry.byIP)
+	{
+		if (entry.byIP[data.ip] == move)
+		{
+			LS("Same move as earlier: " + move);
+			return;
+		}
+		LS(`Reduce vote: ${entry.byIP[data.ip]} by ${data.ip}`);
+		entry.votes[entry.byIP[data.ip]]--;
+	}
+	entry.votes[move]++;
+	entry.byIP[data.ip] = move;
+	let msg = Stringify({
+		fen: data.fen,
+		votes: Object.entries(entry.votes),
+	});
+	LS(`Sending data: ${msg}.`);
+	LS('---');
+	entry.socket.write(msg.length.toString().padStart(4, " ") + msg);
 }
 
 server.on('connection', async socket => {

@@ -18,19 +18,20 @@
 /*
 globals
 _, A, Abs, addPlayerEval, AddTimeout, AnimationFrame, ArrayJS, Assign, assignMove, AttrsNS, audiobox, C, CacheId,
-cannotPopup, Chess, Class, Clear, ClearTimeout, COLOR, CreateNode, CreateSVG,
+CannotPopup, Chess, Class, Clear, ClearTimeout, COLOR, CreateNode, CreateSVG,
 DefaultInt, DefaultObject, DEV, EMPTY, Events, Exp, exports, Floor, formatEval, formatUnit, From, FromSeconds,
 GaussianRandom, getFenPly, getMovePly, global, HAS_GLOBAL, Hide, HTML, I8, Id, InsertNodes, IsDigit, IsObject, IsString,
 Keys,
-Lower, LS, Max, Min, mixHexColors, MoveFrom, MoveOrder, MoveTo, Now, Pad, Parent, PIECES, playSound, RandomInt, require,
-resizeText, Round,
-S, Show, Sign, socket_io, SP, splitMoveString, SQUARES, Style, T, TEXT, TextHTML, timeouts, touchEvent, U32, Undefined,
-updateSvg, Upper, Visible, window, Worker, Y, y_x
+Lower, LS, Max, Min, MixHexColors, MoveFrom, MoveOrder, MoveTo, Now, Pad, Parent, PIECES, PlaySound, RandomInt, require,
+ResizeText, Round,
+S, Show, Sign, socket_io, SP, splitMoveString, SQUARES, Style, T, TEXT, TextHTML, timeouts, ParseTouchEvent, U32, Undefined,
+UpdateSvg, Upper, Visible, window, Worker, Y, y_x
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['3d', 'chess', 'common', 'engine', 'global', 'graph'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -131,7 +132,7 @@ class XBoard
 	 * - size           // square size in px (resize will recalculate it)
 	 * - smooth         // smooth piece animation
 	 * - sub            //
-	 * - tab            // tab name to use with 'openTable' to make the board visible
+	 * - tab            // tab name to use with 'OpenTable' to make the board visible
 	 * - theme          // {ext: 'png', name: 'dilena', off: 15, size: 80}
 	 * - vis            // id of the visible element to know if the board is visible or not
 	 */
@@ -283,7 +284,7 @@ class XBoard
 	 * - faster than using setFen, as it won't have to recompute everything
 	 * @param {Move} move
 	 */
-	addMove(move) {
+	AddMove(move) {
 		this.animate(move, 1);
 	}
 
@@ -666,8 +667,7 @@ class XBoard
 			imps.sort((a, b) => a[0] - b[0]);
 			for (let [_, index, item] of imps)
 			{
-				if (item[0] || temp[index])
-					continue;
+				if (item[0] || temp[index]) continue;
 				item[0] = 1;
 				item[1] = index;
 				temp[index] = 1;
@@ -922,7 +922,7 @@ class XBoard
 				else
 				{
 					AttrsNS(CacheId(`mk${name}_${other_id}_1`), {
-						'fill': mixHexColors(head_color, scolor, head_mix),
+						'fill': MixHexColors(head_color, scolor, head_mix),
 					});
 					shown = false;
 					break;
@@ -949,7 +949,7 @@ class XBoard
 			if (ids.length)
 			{
 				let mix = (ids.length >= 2)? color_01 : Y[`arrow_color_${ids[0]}`];
-				shead = mixHexColors(head_color, mix, head_mix);
+				shead = MixHexColors(head_color, mix, head_mix);
 			}
 		}
 
@@ -959,8 +959,8 @@ class XBoard
 
 		// 4) show the arrow
 		let body = this.createArrow(id),
-			color_base = mixHexColors(Y['arrow_base_color'], scolor, Y['arrow_base_mix']),
-			color_head = shead || mixHexColors(head_color, scolor, head_mix),
+			color_base = MixHexColors(Y['arrow_base_color'], scolor, Y['arrow_base_mix']),
+			color_head = shead || MixHexColors(head_color, scolor, head_mix),
 			markers = A('marker', body),
 			paths = A('svg > path', body),
 			svg = this.svgs[id];
@@ -1040,7 +1040,7 @@ class XBoard
 		if (this.hook)
 			this.hook(this, 'ply', move);
 		if (this.manual)
-			this.destroyWorkers(true);
+			this.DestroyWorkers(true);
 	}
 
 	/**
@@ -1134,7 +1134,7 @@ class XBoard
 	 * @returns {string}
 	 */
 	chessLoad(fen) {
-		return this.chess.load(fen, false);
+		return this.chess.Load(fen, false);
 	}
 
 	/**
@@ -1160,7 +1160,7 @@ class XBoard
 		if (!fen)
 			return -20.5;
 		if (!no_load)
-			chess.load(fen, false);
+			chess.Load(fen, false);
 
 		// calculate
 		let checked = chess.checked(chess.turn()),
@@ -1201,11 +1201,11 @@ class XBoard
 		// handle UCI: e1g1 = O-O, e7e8q = promotion
 		if (length >= 4 && length <= 5 && IsDigit(text[1]) && IsDigit(text[3])
 				&& text[0] == Lower(text[0]) && text[2] == Lower(text[2]))
-			result = chess.moveUci(/** @type string */(text), true);
+			result = chess.MoveUci(/** @type string */(text), true);
 		else if (IsString(text))
-			result = chess.moveSan(/** @type string */(text), decorate, true);
+			result = chess.MoveSan(/** @type string */(text), decorate, true);
 		else
-			result = chess.moveObject(/** @type {!Object} */(text), true);
+			result = chess.MoveObject(/** @type {!Object} */(text), true);
 
 		if (result['from'] != result['to'])
 		{
@@ -1457,7 +1457,7 @@ class XBoard
 	/**
 	 * Create web workers
 	 */
-	createWorkers() {
+	CreateWorkers() {
 		if (!this.manual)
 			return;
 
@@ -1467,7 +1467,7 @@ class XBoard
 		if (DEV['engine'])
 			LS(`threads: ${this.workers.length} => ${number}`);
 
-		this.destroyWorkers();
+		this.DestroyWorkers();
 		if (!window.Worker)
 			return;
 
@@ -1568,7 +1568,7 @@ class XBoard
 	 * - useful when starting a new game, to make sure no code is running in the threads anymore
 	 * @param {boolean=} manual
 	 */
-	destroyWorkers(manual) {
+	DestroyWorkers(manual) {
 		if (!manual || this.thinking)
 		{
 			for (let worker of this.workers)
@@ -1600,7 +1600,7 @@ class XBoard
 
 		// disable right click
 		Events('[data-x]', 'contextmenu', e => {
-			if (cannotPopup())
+			if (CannotPopup())
 			{
 				SP(e);
 				return;
@@ -1672,7 +1672,7 @@ class XBoard
 					let rect = that.rect;
 					if (rect)
 					{
-						let change = touchEvent(e).change;
+						let change = ParseTouchEvent(e).change;
 						if (change.x < rect.left || change.x > rect.left + rect.width
 								|| change.y < rect.top || change.y > rect.bottom + rect.height)
 							that.release();
@@ -1807,7 +1807,7 @@ class XBoard
 		let move = this.setPly(ply, {animate: 1, manual: true});
 		this.setAi(false, 0);
 		this.setAi(false, 1);
-		this.destroyWorkers(true);
+		this.DestroyWorkers(true);
 		return move;
 	}
 
@@ -1926,10 +1926,10 @@ class XBoard
 	}
 
 	/**
-	 * Initialise the board
+	 * Initialize the board
 	 * - must be run before doing anything with it
 	 */
-	initialise() {
+	Initialize() {
 		let controls2 = Assign({}, CONTROLS),
 			root = this.node;
 		if (this.main_manual)
@@ -2029,11 +2029,11 @@ class XBoard
 		// single nodes
 		this.node_count = _('.count', root);
 
-		// initialise the pieces to zero
+		// initialize the pieces to zero
 		this.pieces = Assign({}, ...FIGURES.map(key => ({[key]: []})));
 
 		this.setFen(null);
-		updateSvg();
+		UpdateSvg();
 
 		if (this.hook)
 			this.eventHook(this.hook);
@@ -2165,11 +2165,11 @@ class XBoard
 			else
 				fen = START_FEN;
 
-		this.destroyWorkers(true);
-		this.reset(y_x, {evals: true, start_fen: fen});
+		this.DestroyWorkers(true);
+		this.Reset(y_x, {evals: true, start_fen: fen});
 
 		this.instant();
-		this.render(7);
+		this.Render(7);
 		this.chessFen();
 
 		if (this.hook)
@@ -2197,7 +2197,7 @@ class XBoard
 		if (this.main)
 		{
 			let prev_fen = this.moves.length? this.moves[this.moves.length - 1]['fen']: this.start_fen,
-				uci = this.chess.ucifyObject(move);
+				uci = this.chess.UcifyObject(move);
 			if ((now - this.move_time) * 1000 > TIMEOUT_vote)
 				socket_io.emit('vote', {'fen': prev_fen, 'move': uci, 'time': now});
 			this.arrow(3, move);
@@ -2238,7 +2238,7 @@ class XBoard
 			if (finished)
 			{
 				this.finished = true;
-				playSound(audiobox, Y['sound_draw']);
+				PlaySound(audiobox, Y['sound_draw']);
 				this.play(true, false, 'newMove');
 			}
 
@@ -2318,7 +2318,7 @@ class XBoard
 
 		// 3) update
 		this.setAi(false);
-		this.destroyWorkers();
+		this.DestroyWorkers();
 		this.newMove(obj);
 		return true;
 	}
@@ -2344,7 +2344,7 @@ class XBoard
 
 		if (stop && manual && this.manual)
 		{
-			this.destroyWorkers(true);
+			this.DestroyWorkers(true);
 			let players = this.players;
 			players[0].name = HUMAN;
 			players[1].name = HUMAN;
@@ -2368,7 +2368,7 @@ class XBoard
 	 * Render to the current target
 	 * @param {number=} dirty
 	 */
-	render(dirty) {
+	Render(dirty) {
 		if (dirty != undefined)
 			this.dirty |= dirty;
 
@@ -2378,8 +2378,8 @@ class XBoard
 		let func = {
 			'3d': this.render3d,
 			'canvas': this.renderCanvas,
-			'html': this.renderHtml,
-			'text': this.renderText,
+			'html': this.RenderHtml,
+			'text': this.RenderText,
 		}[this.mode];
 
 		if (func)
@@ -2417,7 +2417,7 @@ class XBoard
 	/**
 	 * 2d HTML rendering
 	 */
-	renderHtml() {
+	RenderHtml() {
 		let colors = this.colors,
 			dirty = this.dirty,
 			[num_row, num_col] = this.dims,
@@ -2476,7 +2476,7 @@ class XBoard
 		if (dirty & 2)
 		{
 			if (DEV['board'])
-				LS(`renderHtml: num_piece=${this.pieces.length}`);
+				LS(`RenderHtml: num_piece=${this.pieces.length}`);
 
 			let direct = true,
 				nodes = [],
@@ -2571,7 +2571,7 @@ class XBoard
 	 * 2d text rendering
 	 * @returns {string}
 	 */
-	renderText() {
+	RenderText() {
 		let grid = this.grid,
 			lines = [],
 			notation = CONSOLE_NULL[this.id]? this.notation : 0,
@@ -2623,7 +2623,7 @@ class XBoard
 	 * @param {boolean=} obj.render
 	 * @param {string=} obj.start_fen
 	 */
-	reset(section, {evals, instant, render, start_fen}={}) {
+	Reset(section, {evals, instant, render, start_fen}={}) {
 		if (this.checkLocked(null))
 			return;
 
@@ -2687,7 +2687,7 @@ class XBoard
 	 * @param {boolean=} obj.instant
 	 * @param {boolean=} obj.render
 	 */
-	resize(width, {instant, render=true}={}) {
+	Resize(width, {instant, render=true}={}) {
 		let node = this.node;
 		if (!width)
 		{
@@ -2725,7 +2725,7 @@ class XBoard
 		if (instant)
 			this.instant();
 		if (render)
-			this.render(2);
+			this.Render(2);
 	}
 
 	/**
@@ -2759,7 +2759,7 @@ class XBoard
 			return false;
 
 		if (render)
-			this.render(2);
+			this.Render(2);
 		return true;
 	}
 
@@ -2794,7 +2794,7 @@ class XBoard
 		{
 			let [type, param1, param2] = this.locked_obj;
 			this.locked_obj = null;
-			this.reset(y_x);
+			this.Reset(y_x);
 			if (type == 'move')
 				this.addMoves(param1, param2);
 			else if (type == 'text')
@@ -2885,7 +2885,7 @@ class XBoard
 		}
 
 		// update the FEN
-		// TODO: if delta = 1 => should addMove instead => faster
+		// TODO: if delta = 1 => should AddMove instead => faster
 		let move = this.moves[ply];
 		if (!move)
 			return null;
@@ -2955,7 +2955,7 @@ class XBoard
 				if (name[0] == 'm' && speed < 21)
 					continue;
 				AddTimeout(`ply${ply}+${name}_${this.id}`, () => {
-					playSound(audiobox, Y[`sound_${name}`], {interrupt: true, volume: volume});
+					PlaySound(audiobox, Y[`sound_${name}`], {interrupt: true, volume: volume});
 				}, (speed < 21)? 0 : delay + offset);
 			}
 		}
@@ -2989,7 +2989,7 @@ class XBoard
 
 		this.rotate = rotate;
 		this.instant();
-		this.render(7);
+		this.Render(7);
 		return true;
 	}
 
@@ -3073,9 +3073,9 @@ class XBoard
 			this.chess2 = new Chess();
 		if (!move.fen0)
 			move.fen0 = this.fen;
-		this.chess2.load(move.fen0);
+		this.chess2.Load(move.fen0);
 
-		let moves = ArrayJS(this.chess2.multiUci(move['pv'])),
+		let moves = ArrayJS(this.chess2.MultiUci(move['pv'])),
 			number = 0,
 			san_list = moves.map(move => {
 				let lines = [],
@@ -3087,7 +3087,7 @@ class XBoard
 					if (ply & 1)
 						lines.push('<i>...</i>');
 				}
-				lines.push(`<i class="real">${resizeText(move['m'], 4, 'mini-move')}</i>`);
+				lines.push(`<i class="real">${ResizeText(move['m'], 4, 'mini-move')}</i>`);
 				++number;
 				return lines.join('');
 			}).join('');
@@ -3120,7 +3120,7 @@ class XBoard
 		if (reply.lefts && reply.moves && !reply.lefts.every(item => !item))
 			return true;
 
-		// 1) first step => reinitialise things
+		// 1) first step => reinitialize things
 		if (!step)
 		{
 			if (this.thinking)
@@ -3135,10 +3135,10 @@ class XBoard
 			Clear(this.pv_strings);
 			Clear(this.scores);
 			this.setPlay(false);
-			this.createWorkers();
+			this.CreateWorkers();
 
 			// check moves
-			chess.load(fen, false);
+			chess.Load(fen, false);
 			moves = this.chessMoves();
 			num_move = moves.length;
 			if (!num_move)
@@ -3151,7 +3151,7 @@ class XBoard
 			let fen_set = new Set(Keys(this.fens).filter(key => this.fens[key] >= 2));
 			for (let move of moves)
 			{
-				chess.makeMove(move);
+				chess.MakeMove(move);
 				let splits = chess.fen().split(' '),
 					prune = `${splits[0]} ${splits[2]} ${splits[3]}`,
 					rule50 = splits[4] * 1,
@@ -3162,13 +3162,13 @@ class XBoard
 					let moves2 = this.chessMoves();
 					for (let move2 of moves2)
 					{
-						chess.makeMove(move2);
+						chess.MakeMove(move2);
 						let splits2 = chess.fen().split(' '),
 							prune2 = `${splits2[0]} ${splits2[2]} ${splits2[3]}`;
 						if (fen_set.has(prune2))
 						{
 							if (DEV['engine'])
-								LS(`DRAW WITH ${chess.ucifyMove(move)} THEN ${chess.ucifyMove(move2)}`);
+								LS(`DRAW WITH ${chess.UcifyMove(move)} THEN ${chess.UcifyMove(move2)}`);
 							draw = true;
 						}
 						chess.undo();
@@ -3176,8 +3176,8 @@ class XBoard
 				}
 				if (draw)
 				{
-					let uci = chess.ucifyMove(move);
-					move = chess.unpackMove(move);
+					let uci = chess.UcifyMove(move);
+					move = chess.UnpackMove(move);
 					Assign(move, {
 						'm': uci,
 						'score': -1,
@@ -3196,8 +3196,8 @@ class XBoard
 
 			// order moves based on the previous scores
 			let scores = this.scores;
-			moves.sort((a, b) => scores[chess.ucifyMove(a)] < scores[chess.ucifyMove(b)]? 1 : -1);
-			// LS(moves.map(move => `${chess.ucifyMove(move)}:${scores[chess.ucifyMove(move)]}`).join(' '));
+			moves.sort((a, b) => scores[chess.UcifyMove(a)] < scores[chess.UcifyMove(b)]? 1 : -1);
+			// LS(moves.map(move => `${chess.UcifyMove(move)}:${scores[chess.UcifyMove(move)]}`).join(' '));
 		}
 
 		// 3) setup combined reply
@@ -3206,8 +3206,8 @@ class XBoard
 			num_worker = this.workers.length,
 			options = Y[`game_options_${scolor}`];
 
-		chess.configure(this.frc, options, -1);
-		let params = chess.params(),
+		chess.Configure(this.frc, options, -1);
+		let params = chess.Params(),
 			min_depth = params[0],
 			search_mode = params[3],
 			max_time = params[4];
@@ -3246,7 +3246,7 @@ class XBoard
 		if (search_mode == 0 || (!min_depth && !max_time) || num_worker < 1 || num_move < 2)
 		{
 			let id = RandomInt(num_move),
-				move = chess.unpackMove(moves[id]);
+				move = chess.UnpackMove(moves[id]);
 			Assign(move, {
 				'depth': '-',
 				'score': '-',
@@ -3275,7 +3275,7 @@ class XBoard
 		for (let i = 0; i < num_move; ++i)
 		{
 			let move = moves[i],
-				uci = chess.ucifyMove(move);
+				uci = chess.UcifyMove(move);
 			if (specials.has(uci))
 				continue;
 			let id = i % num_worker;
@@ -3390,7 +3390,7 @@ class XBoard
 		else
 		{
 			TEXT(mini.left, player.sleft);
-			TextHTML(mini.short, resizeText(player.short, 15));
+			TextHTML(mini.short, ResizeText(player.short, 15));
 			TEXT(mini.time, player.stime);
 		}
 	}
@@ -3457,7 +3457,7 @@ class XBoard
 				}
 				else
 					tag = 'i';
-				text = resizeText(turn + '', 2, 'mini-turn');
+				text = ResizeText(turn + '', 2, 'mini-turn');
 			}
 			else if (id4 == 2)
 			{
@@ -3474,7 +3474,7 @@ class XBoard
 				};
 				tag = 'a';
 				if (text)
-					text = resizeText(text, 4, 'mini-move');
+					text = ResizeText(text, 4, 'mini-move');
 				else
 					text = '';
 			}
@@ -3522,7 +3522,7 @@ class XBoard
 
 			list[1] = text;
 			list[2] = flag;
-			text = resizeText(text, 4, 'mini-move');
+			text = ResizeText(text, 4, 'mini-move');
 
 			// text
 			if (node)

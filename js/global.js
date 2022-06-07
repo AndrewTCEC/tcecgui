@@ -9,12 +9,13 @@
 /*
 globals
 Abs, Assign, Atan, Clamp, DEFAULTS, Exp, exports, Floor, FormatUnit, global, HTML, IsDigit, IsString, Keys,
-Max, Min, node_modal, Pow, require, saveDefault, Split, vi_canClosePopups:true, vi_resetOldSettingsSpecial:true, Y
+Max, Min, node_modal, Pow, require, SaveDefault, Split, vi_CanClosePopups:true, vi_ResetOldSettingsSpecial:true, Y
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['common', 'engine'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -27,7 +28,7 @@ let HOST_ARCHIVE,
 	SF_COEFF_BS = [-3.37154371, 28.44489198, -56.67657741,  72.05858751],
 	SF_PAWN_VALUE = 2.06,
 	VERSION = '20210802',
-	vi_closePopups,
+	vi_ClosePopups,
 	xboards = {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,10 +119,10 @@ function calculateFeatureQ(feature, eval_, ply)
  * Can close popups = first step in "close popups"
  * @returns {boolean}
  */
-function canClosePopups()
+function CanClosePopups()
 {
-	if (vi_closePopups)
-		vi_closePopups('popup-fen', 'fen', {type: 'pointerleave'});
+	if (vi_ClosePopups)
+		vi_ClosePopups('popup-fen', 'fen', {type: 'pointerleave'});
 
 	// empty the content to prevent controls for still interacting with the popup (ex: SELECT)
 	HTML(node_modal, '');
@@ -364,7 +365,7 @@ function parseTime(time)
  * @param {string} version
  * @param {!Array<string>} keys
  */
-function resetOldSettingsSpecial(version, keys)
+function ResetOldSettingsSpecial(version, keys)
 {
 	if (version < '20200930')
 		keys.push('game_wasm');
@@ -381,8 +382,8 @@ function resetOldSettingsSpecial(version, keys)
 		keys.push('boom_threshold');
 	if (version < '20210127b')
 	{
-		saveDefault('arrow_color_01', Y['arrow_combine_01']);
-		saveDefault('arrow_color_23', Y['arrow_combine_23']);
+		SaveDefault('arrow_color_01', Y['arrow_combine_01']);
+		SaveDefault('arrow_color_23', Y['arrow_combine_23']);
 	}
 }
 
@@ -462,18 +463,19 @@ function stoofCpToScore(cp)
 //////////
 
 /**
- * Initialise structures with global data
+ * Initialize structures with global data
  */
-function startupGlobal()
+function StartupGlobal()
 {
-	vi_canClosePopups = canClosePopups;
-	vi_resetOldSettingsSpecial = resetOldSettingsSpecial;
+	vi_CanClosePopups = CanClosePopups;
+	vi_ResetOldSettingsSpecial = ResetOldSettingsSpecial;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
-if (typeof exports != 'undefined') {
+if (typeof exports != 'undefined')
+{
 	Assign(exports, {
 		addPlayerEval: addPlayerEval,
 		allieCpToScore: allieCpToScore,

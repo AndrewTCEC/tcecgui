@@ -704,7 +704,8 @@ Color.prototype.setChannel = function (space, index, val) {
 	return this;
 };
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined')
+{
 	window.Color = Color;
 }
 
@@ -1252,9 +1253,7 @@ var exports$2 = {
 			result.push(sqrt);
 		}
 
-		result.sort(function(a, b) {
-			return a - b;
-		}).pop();
+		result.sort(function(a, b) { return a - b; }).pop();
 		return result;
 	},
 };
@@ -1269,7 +1268,7 @@ helpers.canvas = canvas;
 helpers.options = options;
 helpers.math = math;
 
-function interpolate(start, view, model, ease)
+function Interpolate(start, view, model, ease)
 {
 	var keys = Keys(model);
 	var i, ilen, key, actual, origin, target, type, c0, c1;
@@ -1375,7 +1374,7 @@ Assign(Element.prototype, {
 			start = me._start = {};
 		}
 
-		interpolate(start, view, model, ease);
+		Interpolate(start, view, model, ease);
 
 		return me;
 	},
@@ -1824,9 +1823,8 @@ Assign(DatasetController.prototype, {
 		//     me.getDataset(),
 		// ], {
 		//     merger: function(key, target, source) {
-		//         if (key !== '_meta' && key !== 'data') {
+		//         if (key !== '_meta' && key !== 'data')
 		//             helpers._merger(key, target, source);
-		//         }
 		//     }
 		// });
 	},
@@ -2325,7 +2323,7 @@ var element_point = Element.extend({
 		};
 	},
 
-	getArea: function() {
+	GetArea: function() {
 		return PI * Pow(this._view.radius, 2);
 	},
 
@@ -3655,7 +3653,7 @@ function throttled(fn, thisArg)
 	};
 }
 
-function createDiv(cls)
+function CreateDiv(cls)
 {
 	var el = document.createElement('div');
 	el.className = cls || '';
@@ -3669,12 +3667,12 @@ function createResizer(handler)
 
 	// NOTE(SB) Don't use innerHTML because it could be considered unsafe.
 	// https://github.com/chartjs/Chart.js/issues/5902
-	var resizer = createDiv(CSS_SIZE_MONITOR);
-	var expand = createDiv(CSS_SIZE_MONITOR + '-expand');
-	var shrink = createDiv(CSS_SIZE_MONITOR + '-shrink');
+	var resizer = CreateDiv(CSS_SIZE_MONITOR);
+	var expand = CreateDiv(CSS_SIZE_MONITOR + '-expand');
+	var shrink = CreateDiv(CSS_SIZE_MONITOR + '-shrink');
 
-	expand.appendChild(createDiv());
-	shrink.appendChild(createDiv());
+	expand.appendChild(CreateDiv());
+	shrink.appendChild(CreateDiv());
 
 	resizer.appendChild(expand);
 	resizer.appendChild(shrink);
@@ -6053,15 +6051,10 @@ Assign(Chart.prototype, /** @lends Chart */ {
 		var i, ilen;
 
 		for (i = 0, ilen = datasets.length; i < ilen; ++i)
-		{
 			if (!filterVisible || me.isDatasetVisible(i))
-			{
 				result.push(me.getDatasetMeta(i));
-			}
-		}
 
 		result.sort(compare2Level('order', 'index'));
-
 		return result;
 	},
 
@@ -8628,10 +8621,12 @@ function generateTicks$1(generationOptions, dataRange)
 		//         continue;
 		//     let div = Pow(10, Floor(base - i)),
 		//         pow2 = Round(pow / div) * div;
-		//     if (Abs(pow2 / (first + pow2) - 0.5) > 0.005) {
+		//     if (Abs(pow2 / (first + pow2) - 0.5) > 0.005)
+		//     {
 		//         div = Pow(10, Floor(base - i)) / 2;
 		//         pow2 = Round(pow / div) * div;
-		//         if (Abs(pow2 / (first + pow2) - 0.5) <= 0.005) {
+		//         if (Abs(pow2 / (first + pow2) - 0.5) <= 0.005)
+		//		   {
 		//             // LS(`${i} : ${pow} : ${pow2} : ${Abs(pow2 / (first + pow2) - 0.5)}`);
 		//             return pow2;
 		//         }
@@ -8808,7 +8803,8 @@ var scale_custom = core_scale.extend({
 
 		value = +me.getRightValue(value);
 
-		// if (value > me.min && value > 0) {
+		// if (value > me.min && value > 0)
+		// {
 			let [func] = me.options.funcs;
 			decimal = (func(value) - me._startValue) / me._valueRange + me._valueOffset;
 		// }

@@ -92,47 +92,35 @@ let _TEST = false,
 
 function setArgs()
 {
-   if (argv.port == undefined)
-   {
-	  portnum = 8000;
-   }
-   else
-   {
-	  portnum = argv.port;
-   }
+	if (argv.port == undefined)
+		portnum = 8000;
+	else
+		portnum = argv.port;
 
-   if (argv.finish || argv.addentry)
-   {
-	  portnum = 0;
-   }
+	if (argv.finish || argv.addentry)
+		portnum = 0;
 
-   if (argv.finish)
-   {
-	  jsonMenuData = JSON.parse(fs.readFileSync(gameJson, "utf-8"));
-	  var upJson = updateJSON();
-	  console.log ("upJson is :" + upJson.newaddedid);
-	  globalid = upJson.newaddedid;
-   }
-   else
-   {
-	  globalid = 'current';
-   }
+	if (argv.finish)
+	{
+		jsonMenuData = JSON.parse(fs.readFileSync(gameJson, "utf-8"));
+		var upJson = updateJSON();
+		console.log("upJson is :" + upJson.newaddedid);
+		globalid = upJson.newaddedid;
+	}
+	else
+		globalid = 'current';
 
-   if (argv.id)
-   {
-	  globalid = argv.id;
-   }
+	if (argv.id)
+		globalid = argv.id;
 
-   if (argv.frc)
-   {
-	  frc = 1;
-   }
+	if (argv.frc)
+		frc = 1;
 
-   retPgn = checkLatestArchive();
-   console.log ("End of setArgs: port is :" + portnum);
+	retPgn = checkLatestArchive();
+	console.log("End of setArgs: port is :" + portnum);
 }
 
-function startServer()
+function StartServer()
 {
    if (!portnum)
    {
@@ -192,9 +180,8 @@ function startServer()
 	  var liveData = fs.readFileSync('live.json');
 	  var liveJsonData = JSON.parse(liveData);
 
-	  if (liveJsonData.Moves.length > 0) {
+	  if (liveJsonData.Moves.length > 0)
 		 currentFen = liveJsonData.Moves[(liveJsonData.Moves.length - 1)].fen;
-	  }
 
 	  res.setHeader('Content-Type', 'application/json');
 	  res.status(200).send(currentFen);
@@ -408,7 +395,8 @@ function getDeltaPgn(pgnX)
    }
    pgnX.gameChanged = 0;
 
-   if (pgnX && pgnX.Moves && (pgnX.Moves.length - numMovesToSend) > 0) {
+   if (pgnX && pgnX.Moves && (pgnX.Moves.length - numMovesToSend) > 0)
+   {
 	  pgnX.Moves.splice(0, pgnX.Moves.length - numMovesToSend);
 	  pgnX.lastMoveLoaded = maxKey - numMovesToSend;
    }
@@ -824,7 +812,7 @@ function Main()
    }
    if (portnum)
    {
-	  startServer();
+	  StartServer();
 	  startWatcherFast();
 	  startWatcherSlow();
 	  addLatestArch ();

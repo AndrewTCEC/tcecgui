@@ -11,12 +11,13 @@ globals
 _, Abs, AnimationFrame, Assign, Audio, C, CameraControls,
 DefaultInt, DEV, Events, Exp, exports, Format, global, has_clicked, HTML, Id, IsArray, IsString, KEY_TIMES, Keys, KEYS,
 LoadLibrary, LS, navigator, node_modal, node_overlay, Now, require,
-S, setModalEvents, Show, T:true, THREE, Undefined, Vector2:true, Visible, window, Y, y_x
+S, SetModalEvents, Show, T:true, THREE, Undefined, Vector2:true, Visible, window, Y, y_x
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined' && typeof require != 'undefined') {
+if (typeof global != 'undefined' && typeof require != 'undefined')
+{
 	['common', 'engine'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -172,26 +173,26 @@ let	button_repeat,
 	VECTOR_Y,
 	VECTOR_Z,
 	VECTORS,
-	vi_animateObjects,
-	vi_canPause = () => true,
-	vi_canRenderSimulate = () => [true, true],
-	vi_gameActionKey,
-	vi_gameActionKeyup,
-	vi_gameActions,
-	vi_init3dAfter,
-	vi_initLightsAfter,
-	vi_postRender,
-	vi_postSimulation,
-	vi_preRender,
-	vi_preSimulation,
-	vi_randomPosition,
-	vi_resize3dSpecial,
-	vi_showModalAfter,
-	vi_simulateObject,
-	vi_updateCamera,
-	vi_updateDebugSpecial,
-	vi_updateLightSettingsSpecial,
-	vi_updateRendererAfter,
+	vi_AnimateObjects,
+	vi_CanPause = () => true,
+	vi_CanRenderSimulate = () => [true, true],
+	vi_GameActionKey,
+	vi_GameActionKeyup,
+	vi_GameActions,
+	vi_Init3dAfter,
+	vi_InitLightsAfter,
+	vi_PostRender,
+	vi_PostSimulation,
+	vi_PreRender,
+	vi_PreSimulation,
+	vi_RandomPosition,
+	vi_Resize3dSpecial,
+	vi_ShowModalAfter,
+	vi_SimulateObject,
+	vi_UpdateCamera,
+	vi_UpdateDebugSpecial,
+	vi_UpdateLightSettingsSpecial,
+	vi_UpdateRendererAfter,
 	world,
 	world_transform,
 	y_three;
@@ -298,7 +299,7 @@ let Cube;
  * @param {Cube} cube
  * @returns {boolean}
  */
-function addCube(cube)
+function AddCube(cube)
 {
 	const index = cubes.indexOf(cube);
 	if (index >= 0)
@@ -312,7 +313,7 @@ function addCube(cube)
  * @param {string} name
  * @returns {Light}
  */
-function createLight(name)
+function CreateLight(name)
 {
 	const light = /** @type {Light} */(new T.DirectionalLight(0xfff0f0, 4));
 	light.name = name;
@@ -328,7 +329,7 @@ function createLight(name)
  * + delete its children
  * @param {Cube} cube
  */
-function deleteCube(cube)
+function DeleteCube(cube)
 {
 	const index = cubes.indexOf(cube);
 	if (index >= 0)
@@ -342,18 +343,18 @@ function deleteCube(cube)
 		parent.remove(cube.arrow_group);
 		parent.remove(cube.point_mesh);
 	}
-	removeObjects(cube);
+	RemoveObjects(cube);
 }
 
 
 /**
- * Initialise the 3D engine:
+ * Initialize the 3D engine:
  * + create the scene
  * + load the ship model
  * + create the renderer
  * @param {boolean=} force true if the 3d library has been loaded + request a render
  */
-function init3d(force)
+function Init3d(force)
 {
 	if (Vector3)
 		return;
@@ -363,7 +364,7 @@ function init3d(force)
 		return;
 
 	// vars
-	updateThree();
+	UpdateThree();
 	Object3D = T.Object3D;
 	Quaternion = T.Quaternion;
 	Vector2 = T.Vector2;
@@ -403,33 +404,33 @@ function init3d(force)
 	// scene
 	scene = new T.Scene();
 	scene.background = new T.Color(0, 0, 0);
-	initLights();
+	InitLights();
 
 	// renderer
-	initRenderer();
+	InitRenderer();
 
-	if (vi_init3dAfter)
-		vi_init3dAfter();
+	if (vi_Init3dAfter)
+		vi_Init3dAfter();
 
-	resize3d();
+	Resize3d();
 	if (force)
-		AnimationFrame('render', render);
+		AnimationFrame('Render', Render);
 }
 
 /**
- * Initialise the CSM
+ * Initialize the CSM
  * @param {Object} obj
  * @param {boolean=} obj.force
  * @param {number=} obj.intensity
  */
-function initCSM({force, intensity=2}={})
+function InitCSM({force, intensity=2}={})
 {
 }
 
 /**
- * Initialise the lights
+ * Initialize the lights
  */
-function initLights()
+function InitLights()
 {
 	// ambient
 	const value = Undefined(Y['ambient_light'], 1);
@@ -450,23 +451,23 @@ function initLights()
 	scene.add(light_fill2);
 
 	// sun
-	light_sun = createLight('direction');
+	light_sun = CreateLight('direction');
 	light_sun.origin = light_sun.position.clone();
 	scene.add(light_sun);
 	light_sun_obj = new_Object3d();
 	light_sun_obj.name = 'light_sun_obj';
 	scene.add(light_sun_obj);
 
-	updateLightSettings();
+	UpdateLightSettings();
 
-	if (vi_initLightsAfter)
-		vi_initLightsAfter();
+	if (vi_InitLightsAfter)
+		vi_InitLightsAfter();
 }
 
 /**
  * Create a new WebGL renderer
  */
-function initRenderer()
+function InitRenderer()
 {
 	const context = node_canvas.getContext('webgl2') || node_canvas.getContext('webgl');
 	renderer = new T.WebGLRenderer({
@@ -490,7 +491,7 @@ function initRenderer()
  * @param {Object3D} part
  * @param {number} epsilon
  */
-function interpolate(part, epsilon)
+function Interpolate(part, epsilon)
 {
 	if (!part)
 		return;
@@ -508,7 +509,7 @@ function interpolate(part, epsilon)
  * Restore the latest position/quaternion
  * @param {Object3D} part
  */
-function interpolateRestore(part)
+function InterpolateRestore(part)
 {
 	if (!part) return;
 	if (part.pos3) part.position.copy(part.pos3);
@@ -519,7 +520,7 @@ function interpolateRestore(part)
  * Store previous position/quaternion
  * @param {Object3D} part
  */
-function interpolateStore(part)
+function InterpolateStore(part)
 {
 	if (!part) return;
 	if (part.pos2) part.pos2.copy(part.position);
@@ -532,15 +533,14 @@ function interpolateStore(part)
  * @param {string} filename
  * @param {Function} callback
  */
-function loadModel(name, filename, callback)
+function LoadModel(name, filename, callback)
 {
 	model_filenames[name] = filename;
 
 	// 0) need T
 	if (!T)
 	{
-		if (callback)
-			callback(null);
+		if (callback) callback(null);
 		return;
 	}
 
@@ -548,8 +548,7 @@ function loadModel(name, filename, callback)
 	const model = models[name];
 	if (model)
 	{
-		if (callback)
-			callback(model, true);
+		if (callback) callback(model, true);
 		return;
 	}
 	model_remains.add(name);
@@ -582,8 +581,7 @@ function loadModel(name, filename, callback)
 		},
 		err => {
 			LS(err);
-			if (callback)
-				callback(null);
+			if (callback) callback(null);
 		}
 	);
 }
@@ -639,7 +637,7 @@ function new_Vector3(x, y, z)
  * @param {!Array<Object>} targets
  * @returns {Object}
  */
-function pickObject(point, targets)
+function PickObject(point, targets)
 {
 	const rect = parent_3d.getBoundingClientRect(),
 		pos = {
@@ -665,7 +663,7 @@ function pickObject(point, targets)
  * Dispose materials
  * @param {Object|Array<Object>=} materials
  */
-function removeMaterial(materials)
+function RemoveMaterial(materials)
 {
 	if (!materials)
 		return;
@@ -687,30 +685,30 @@ function removeMaterial(materials)
  * Remove mesh geometry + material
  * @param {Object} mesh
  */
-function removeMeshData(mesh)
+function RemoveMeshData(mesh)
 {
 	if (!mesh || !mesh.isMesh)
 		return;
 	const user_data = mesh.userData;
 	if (mesh.geometry)
 		mesh.geometry.dispose();
-	removeMaterial(mesh.material);
-	removeMaterial(user_data.material_tex);
-	removeMaterial(user_data.material_none);
+	RemoveMaterial(mesh.material);
+	RemoveMaterial(user_data.material_tex);
+	RemoveMaterial(user_data.material_none);
 }
 
 /**
  * Remove + dispose objects
  * @param {Object3D} parent
  */
-function removeObjects(parent)
+function RemoveObjects(parent)
 {
 	if (!parent)
 		return;
 
 	// 1) dispose geometries + materials
-	parent.traverse(child => removeMeshData(child));
-	removeMeshData(parent);
+	parent.traverse(child => RemoveMeshData(child));
+	RemoveMeshData(parent);
 
 	// 2) remove objects
 	const removes = [];
@@ -727,14 +725,14 @@ function removeObjects(parent)
 /**
  * Render the 3D scene
  */
-function render()
+function Render()
 {
 	if (!cube || !clock || !T || !y_three)
 		return;
 
-	const [can_render, can_simulate] = vi_canRenderSimulate();
+	const [can_render, can_simulate] = vi_CanRenderSimulate();
 	if (!can_render)
-		pause(1);
+		Pause(1);
 
 	let has_controls,
 		delta = clock.getDelta(),
@@ -748,10 +746,10 @@ function render()
 	// moved the camera with the mouse?
 	if (controls)
 	{
-		controls.enabled = (is_paused || camera_id == CAMERA_STATIC) && !isOverlayVisible();
+		controls.enabled = (is_paused || camera_id == CAMERA_STATIC) && !IsOverlayVisible();
 		if (controls.enabled)
 		{
-			updateCameraControls();
+			UpdateCameraControls();
 			has_controls = controls.update(delta);
 			if (has_controls)
 			{
@@ -783,13 +781,13 @@ function render()
 
 		if (can_simulate)
 		{
-			if (vi_preSimulation)
-				vi_preSimulation();
-			gamepadUpdate();
+			if (vi_PreSimulation)
+				vi_PreSimulation();
+			GamepadUpdate();
 
 			if (!is_paused)
 			{
-				updateTime(delta);
+				UpdateTime(delta);
 
 				let step = 0;
 				clock2.start();
@@ -797,8 +795,8 @@ function render()
 				while (deltas[1] + 0.05 / SIMULATION_HZ < now2)
 				{
 					now = deltas[1];
-					if (vi_animateObjects)
-						vi_animateObjects();
+					if (vi_AnimateObjects)
+						vi_AnimateObjects();
 
 					// objects
 					for (const cube of cubes)
@@ -806,19 +804,19 @@ function render()
 						if (!cube.visible)
 							continue;
 
-						interpolateStore(cube);
+						InterpolateStore(cube);
 						for (const part of PARTS)
-							interpolateStore(cube[part]);
+							InterpolateStore(cube[part]);
 
 						// game step
-						if (vi_simulateObject)
-							vi_simulateObject(cube);
+						if (vi_SimulateObject)
+							vi_SimulateObject(cube);
 					}
 
 					// camera
-					interpolateStore(camera);
-					if (vi_updateCamera)
-						vi_updateCamera(camera_target);
+					InterpolateStore(camera);
+					if (vi_UpdateCamera)
+						vi_UpdateCamera(camera_target);
 
 					if (camera_id != CAMERA_STATIC)
 					{
@@ -834,7 +832,7 @@ function render()
 				STEPS[step] = (STEPS[step] || 0) + 1;
 
 				if (is_octo)
-					updatePhysics(delta);
+					UpdatePhysics(delta);
 				else
 					epsilon = (deltas[1] - now2) * SIMULATION_HZ;
 
@@ -848,8 +846,8 @@ function render()
 				}
 			}
 
-			if (vi_postSimulation)
-				vi_postSimulation();
+			if (vi_PostSimulation)
+				vi_PostSimulation();
 		}
 	}
 
@@ -869,45 +867,45 @@ function render()
 		--dirty;
 	if (dirty)
 	{
-		// interpolate?
+		// Interpolate?
 		if (epsilon > 0)
 		{
 			for (const cube of cubes)
 			{
-				interpolate(cube, epsilon);
-				for (const part of PARTS) interpolate(cube[part], epsilon);
+				Interpolate(cube, epsilon);
+				for (const part of PARTS) Interpolate(cube[part], epsilon);
 			}
-			interpolate(camera, epsilon);
+			Interpolate(camera, epsilon);
 		}
 
 		// light + shadows
-		updateLight();
+		UpdateLight();
 
 		// actual render
-		if (vi_preRender)
-			vi_preRender();
+		if (vi_PreRender)
+			vi_PreRender();
 
 		if (Y['orthographic'])
 		{
-			updateOrthoCamera();
+			UpdateOrthoCamera();
 			renderer.render(scene, ortho_camera);
 		}
 		else
 			renderer.render(scene, camera);
 
 		++rendered;
-		if (vi_postRender)
-			vi_postRender();
+		if (vi_PostRender)
+			vi_PostRender();
 
 		// undo interpolation
 		if (epsilon > 0)
 		{
 			for (const cube of cubes)
 			{
-				interpolateRestore(cube);
-				for (const part of PARTS) interpolateRestore(cube[part]);
+				InterpolateRestore(cube);
+				for (const part of PARTS) InterpolateRestore(cube[part]);
 			}
-			interpolateRestore(camera);
+			InterpolateRestore(camera);
 		}
 
 		// pause next frame?
@@ -915,18 +913,18 @@ function render()
 		{
 			if (controls) controls.enabled = true;
 			dirty = 0;
-			pause(1);
+			Pause(1);
 		}
 
-		if (vi_gameActions)
-			vi_gameActions();
+		if (vi_GameActions)
+			vi_GameActions();
 	}
 
 	if (stats)
 		stats.end();
 
 	if (dirty)
-		AnimationFrame('render', render);
+		AnimationFrame('Render', Render);
 	last_frame = frame;
 }
 
@@ -934,14 +932,12 @@ function render()
  * Request a render
  * @param {Object|number=} timer
  */
-function requestRender(timer)
+function RequestRender(timer)
 {
-	if (dirty & 4)
-		return;
-	if (dirty && (!timer || isNaN(timer)))
-		return;
+	if (dirty & 4) return;
+	if (dirty && (!timer || isNaN(timer))) return;
 	dirty = 2;
-	AnimationFrame('render', render);
+	AnimationFrame('Render', Render);
 }
 
 /**
@@ -950,7 +946,7 @@ function requestRender(timer)
  * + create the camera controls
  * @param {boolean=} no_csm
  */
-function resize3d(no_csm)
+function Resize3d(no_csm)
 {
 	if (!three_loaded)
 		return;
@@ -958,8 +954,8 @@ function resize3d(no_csm)
 	let height = parent_3d.clientHeight,
 		width = parent_3d.clientWidth;
 
-	if (vi_resize3dSpecial)
-		[width, height] = vi_resize3dSpecial();
+	if (vi_Resize3dSpecial)
+		[width, height] = vi_Resize3dSpecial();
 
 	// round it to multiple of 10
 	width -= 5;
@@ -968,7 +964,7 @@ function resize3d(no_csm)
 	if (renderer)
 	{
 		renderer.setSize(width, height);
-		updateRenderer();
+		UpdateRenderer();
 	}
 
 	// camera + controls
@@ -983,8 +979,8 @@ function resize3d(no_csm)
 		camera = new T.PerspectiveCamera(60, width / height, 0.1, 40000);
 		camera.rotation.reorder('ZXY');
 
-		if (vi_randomPosition)
-			camera.position.copy(vi_randomPosition(1));
+		if (vi_RandomPosition)
+			camera.position.copy(vi_RandomPosition(1));
 
 		Assign(camera, {
 			pos2: camera.position.clone(),
@@ -998,7 +994,7 @@ function resize3d(no_csm)
 	camera.width = width;
 
 	if (!no_csm)
-		initCSM();
+		InitCSM();
 
 	if (renderer && !controls && use_controls)
 	{
@@ -1009,8 +1005,8 @@ function resize3d(no_csm)
 			controls = new CameraControls(camera, renderer.domElement);
 			controls.dampingFactor = 0.1;
 			controls.dollyTransition = true;
-			controls.addEventListener('control', () => requestRender());
-			controls.addEventListener('controlstart', () => requestRender());
+			controls.addEventListener('control', () => RequestRender());
+			controls.addEventListener('controlstart', () => RequestRender());
 			controls.update();
 		}
 	}
@@ -1019,7 +1015,7 @@ function resize3d(no_csm)
 /**
  * Update the light target
  */
-function updateLight()
+function UpdateLight()
 {
 	if (csm || !light_sun_obj)
 		return;
@@ -1033,14 +1029,14 @@ function updateLight()
 /**
  * Update the light shadow settings
  */
-function updateLightSettings()
+function UpdateLightSettings()
 {
 	if (!light_sun)
 		return;
 
 	// 1) get settings
 	const [main_intensity, under_intensity, quality] =
-			vi_updateLightSettingsSpecial? vi_updateLightSettingsSpecial() : [1, 1, Y['shadow']];
+			vi_UpdateLightSettingsSpecial? vi_UpdateLightSettingsSpecial() : [1, 1, Y['shadow']];
 
 	if (light_under)
 		light_under.intensity = under_intensity;
@@ -1058,11 +1054,11 @@ function updateLightSettings()
 
 		// HACK: remove the old light + create a new one
 		scene.remove(light_sun);
-		light_sun = createLight(quality);
+		light_sun = CreateLight(quality);
 		scene.add(light_sun);
 	}
 
-	updateLightShadow(light_sun, quality);
+	UpdateLightShadow(light_sun, quality);
 }
 
 /**
@@ -1071,7 +1067,7 @@ function updateLightSettings()
  * @param {string} quality
  * @param {number=} new_range
  */
-function updateLightShadow(light, quality, new_range)
+function UpdateLightShadow(light, quality, new_range)
 {
 	const shadow = light.shadow;
 	let [radius, range, size] = SHADOW_QUALITIES[quality] || SHADOW_QUALITIES.off;
@@ -1100,13 +1096,13 @@ function updateLightShadow(light, quality, new_range)
 
 	// csm
 	csm_size = size;
-	initCSM();
+	InitCSM();
 }
 
 /**
- * Synchronise the orthographic camera
+ * Synchronize the orthographic camera
  */
-function updateOrthoCamera()
+function UpdateOrthoCamera()
 {
 	const aspect = camera.aspect,
 		size = (camera_target || cube).position.distanceTo(camera.position),
@@ -1125,7 +1121,7 @@ function updateOrthoCamera()
 /**
  * Update some renderer settings depending on the page
  */
-function updateRenderer()
+function UpdateRenderer()
 {
 	if (renderer)
 	{
@@ -1140,17 +1136,17 @@ function updateRenderer()
 		renderer.setPixelRatio(window.devicePixelRatio / ratio);
 		renderer.shadowMap.enabled = !!Y['shadow'];
 	}
-	updateLightSettings();
+	UpdateLightSettings();
 
-	if (vi_updateRendererAfter)
-		vi_updateRendererAfter();
+	if (vi_UpdateRendererAfter)
+		vi_UpdateRendererAfter();
 }
 
 /**
- * Synchronise the time
+ * Synchronize the time
  * @param {number} delta
  */
-function updateTime(delta)
+function UpdateTime(delta)
 {
 	deltas[0] += delta * SIMULATION_HZ / 60;
 	deltas[2] += delta;
@@ -1169,7 +1165,7 @@ function updateTime(delta)
  * @param {Object=} target
  * @returns {!Object}
  */
-function threeQuat(quaternion, target)
+function ThreeQuat(quaternion, target)
 {
 	target = target || t_quat;
 	target.set(quaternion.x(), quaternion.y(), quaternion.z(), quaternion.w());
@@ -1182,7 +1178,7 @@ function threeQuat(quaternion, target)
  * @param {Vector3=} target
  * @returns {Vector3}
  */
-function threeVector(vector, target)
+function ThreeVector(vector, target)
 {
 	target = target || t_vector;
 	target.set(vector.x(), vector.y(), vector.z());
@@ -1193,7 +1189,7 @@ function threeVector(vector, target)
  * Update physics
  * @param {number} delta
  **/
-function updatePhysics(delta)
+function UpdatePhysics(delta)
 {
 	if (!world)
 		return;
@@ -1214,8 +1210,8 @@ function updatePhysics(delta)
 		state.getWorldTransform(world_transform);
 		const pos = world_transform.getOrigin(),
 			quat = world_transform.getRotation();
-		threeVector(pos, body.position);
-		threeQuat(quat, body.quaternion);
+		ThreeVector(pos, body.position);
+		ThreeQuat(quat, body.quaternion);
 	}
 }
 
@@ -1226,19 +1222,19 @@ function updatePhysics(delta)
  * Pause or unpause or toggle pause
  * @param {number} mode 0:unpause, 1:pause, 2:toggle
  */
-function pause(mode)
+function Pause(mode)
 {
 	switch (mode)
 	{
 	case 0: is_paused = false; break;
 	case 1:
-		if (vi_canPause())
+		if (vi_CanPause())
 			is_paused = true;
 		break;
 	case 2:
 		if (is_paused)
 			is_paused = false;
-		else if (vi_canPause())
+		else if (vi_CanPause())
 			is_paused = true;
 		break;
 	}
@@ -1249,7 +1245,7 @@ function pause(mode)
  * @param {Cube} cube
  * @param {!Object} keys keys being pushed
  */
-function forgetKeys(cube, keys)
+function ForgetKeys(cube, keys)
 {
 	const cube_keys = cube.keys || [];
 	let id = cube_keys.length - 1,
@@ -1274,7 +1270,7 @@ function forgetKeys(cube, keys)
 /**
  * Check gamepad inputs
  */
-function gamepadUpdate()
+function GamepadUpdate()
 {
 	const axis_trigger = Y['axis_trigger'],
 		dead_zone = Y['axis_dead_zone'],
@@ -1294,8 +1290,8 @@ function gamepadUpdate()
 			{
 				if (!buttons[id])
 				{
-					if (vi_gameActionKey)
-						vi_gameActionKey(code);
+					if (vi_GameActionKey)
+						vi_GameActionKey(code);
 					buttons[id] = time;
 					KEYS[code] = 1;
 					KEY_TIMES[code] = Now(1);
@@ -1303,8 +1299,8 @@ function gamepadUpdate()
 			}
 			else if (buttons[id])
 			{
-				if (vi_gameActionKeyup)
-					vi_gameActionKeyup(code);
+				if (vi_GameActionKeyup)
+					vi_GameActionKeyup(code);
 				buttons[id] = 0;
 				KEYS[code] = 0;
 			}
@@ -1320,9 +1316,9 @@ function gamepadUpdate()
 
 			if (absolute >= dead_zone)
 			{
-				if (vi_gameActionKey && absolute >= axis_trigger && (!KEYS[code] || KEYS[code] < axis_trigger))
+				if (vi_GameActionKey && absolute >= axis_trigger && (!KEYS[code] || KEYS[code] < axis_trigger))
 				{
-					vi_gameActionKey(code, true);
+					vi_GameActionKey(code, true);
 					const invert = BUTTON_INVERSES[code];
 					if (invert)
 						buttons[invert] = time;
@@ -1332,9 +1328,9 @@ function gamepadUpdate()
 			}
 			else if (Abs(axes[id]) >= dead_zone)
 			{
-				if (vi_gameActionKeyup && KEYS[code])
+				if (vi_GameActionKeyup && KEYS[code])
 				{
-					vi_gameActionKeyup(code);
+					vi_GameActionKeyup(code);
 					const invert = BUTTON_INVERSES[code];
 					if (invert)
 						buttons[invert] = 0;
@@ -1365,7 +1361,7 @@ function gamepadUpdate()
  * @param {number=} obj.volume
  * @returns {boolean}
  */
-function playSound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended, onloaded, onplay, start=0, voice, volume=1}={})
+function PlaySound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended, onloaded, onplay, start=0, voice, volume=1}={})
 {
 	if (!has_clicked || !cube || !cube.sounds || Y['silent_mode'])
 		return false;
@@ -1401,8 +1397,7 @@ function playSound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended,
 	// negative volume to stop
 	if (volume < 0.001)
 	{
-		if (audio)
-			audio.pause();
+		if (audio) audio.pause();
 		return false;
 	}
 
@@ -1456,7 +1451,7 @@ function playSound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended,
  * Slow down the camera when holding shift
  * @returns {number}
  */
-function updateCameraControls()
+function UpdateCameraControls()
 {
 	let factor;
 	if (KEYS[16])
@@ -1479,16 +1474,16 @@ function updateCameraControls()
 /**
  * Check gamepad inputs at regular intervals when the menu is visible
  */
-function gamepadModal()
+function GamepadModal()
 {
 	const time = Now(1);
 	if (time < last_gamepad_time)
 	{
-		AnimationFrame('gamepad', gamepadModal);
+		AnimationFrame('gamepad', GamepadModal);
 		return;
 	}
 
-	if (!isOverlayVisible())
+	if (!IsOverlayVisible())
 	{
 		if (is_paused)
 			[37, 38, 39, 40].forEach(code => {
@@ -1516,16 +1511,16 @@ function gamepadModal()
 		}
 	});
 
-	gamepadUpdate();
+	GamepadUpdate();
 	last_gamepad_time = time + 0.05;
-	AnimationFrame('gamepad', gamepadModal);
+	AnimationFrame('gamepad', GamepadModal);
 }
 
 /**
  * Check if the overlay is visible
  * @returns {boolean}
  */
-function isOverlayVisible()
+function IsOverlayVisible()
 {
 	return !node_overlay || !!Visible(node_overlay);
 }
@@ -1533,20 +1528,20 @@ function isOverlayVisible()
 /**
  * Close the modal and resume the game
  */
-function resumeGame()
+function ResumeGame()
 {
-	pause(0);
-	if (isOverlayVisible())
-		showModal();
+	Pause(0);
+	if (IsOverlayVisible())
+		ShowModal();
 }
 
 /**
  * Show the menu
  * + pause the game unless the session has ended
  */
-function showMenu()
+function ShowMenu()
 {
-	showModal(true);
+	ShowModal(true);
 }
 
 /**
@@ -1555,21 +1550,21 @@ function showMenu()
  * @param {string=} text use this text
  * @param {string=} name
  */
-function showModal(show, text, name)
+function ShowModal(show, text, name)
 {
 	S(node_overlay, show);
 
 	if (show)
 	{
 		last_gamepad_time = Now(1) + 0.3;
-		AnimationFrame('gamepad', gamepadModal);
-		setModalEvents();
-		if (vi_gameActionKey)
-			vi_gameActionKey(0);
+		AnimationFrame('gamepad', GamepadModal);
+		SetModalEvents();
+		if (vi_GameActionKey)
+			vi_GameActionKey(0);
 	}
 
-	if (vi_showModalAfter)
-		vi_showModalAfter(show, text, name);
+	if (vi_ShowModalAfter)
+		vi_ShowModalAfter(show, text, name);
 
 	modal_name = name;
 }
@@ -1577,20 +1572,20 @@ function showModal(show, text, name)
 /**
  * Toggle the modal menu
  */
-function toggleModal()
+function ToggleModal()
 {
 	if (_('[data-t="BACK"]', node_modal))
-		showModal(true);
-	else if (isOverlayVisible())
-		resumeGame();
+		ShowModal(true);
+	else if (IsOverlayVisible())
+		ResumeGame();
 	else
-		showModal(true);
+		ShowModal(true);
 }
 
 /**
  * Update debug information
  */
-function updateDebug()
+function UpdateDebug()
 {
 	const cube = camera_target || cubes.find(item => !!(item && item.see));
 	if (!cube)
@@ -1624,14 +1619,12 @@ function updateDebug()
 		if (debug_keys.length)
 		{
 			lines.push('&nbsp;');
-			debug_keys.forEach(key => {
-				lines.push(`${key}=${Format(debugs[key], sep)}`);
-			});
+			debug_keys.forEach(key => lines.push(`${key}=${Format(debugs[key], sep)}`));
 		}
 	}
 
-	if (vi_updateDebugSpecial)
-		lines.push(...vi_updateDebugSpecial());
+	if (vi_UpdateDebugSpecial)
+		lines.push(...vi_UpdateDebugSpecial());
 
 	HTML(node_debug, `<div>${lines.join('</div><div>')}</div>`);
 }
@@ -1639,7 +1632,7 @@ function updateDebug()
 /**
  * Update the T global variable
  */
-function updateThree()
+function UpdateThree()
 {
 	if (!T)
 		T = window['T'] || window['THREE'];
@@ -1651,7 +1644,7 @@ function updateThree()
 /**
  * 3d UI events
  */
-function set3dEvents()
+function Set3dEvents()
 {
 	// controller
 	Events(window, 'gamepadconnected', e => {
@@ -1668,7 +1661,7 @@ function set3dEvents()
 	});
 
 	// game menu
-	C('#menu', toggleModal);
+	C('#menu', ToggleModal);
 }
 
 // STARTUP
@@ -1677,34 +1670,35 @@ function set3dEvents()
 /**
  * Start the 3D engine
  */
-function start3d()
+function Start3d()
 {
 	parent_3d = _('body');
 	if (T)
-		init3d(true);
+		Init3d(true);
 	else
-		LoadLibrary('./js/4d_.js?version=1', () => init3d(true));
+		LoadLibrary('./js/4d_.js?version=1', () => Init3d(true));
 }
 
 /**
- * Initialise structures
+ * Initialize structures
  */
-function startup3d()
+function Startup3d()
 {
 	node_canvas = Id('canvas');
 	node_debug = Id('debug');
-	updateThree();
+	UpdateThree();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
-if (typeof exports != 'undefined') {
+if (typeof exports != 'undefined')
+{
 	Assign(exports, {
-		addCube: addCube,
+		AddCube: AddCube,
 		audiobox: audiobox,
-		deleteCube: deleteCube,
-		playSound: playSound,
+		DeleteCube: DeleteCube,
+		PlaySound: PlaySound,
 		SHADOW_QUALITIES: SHADOW_QUALITIES,
 		y_three: y_three,
 	});

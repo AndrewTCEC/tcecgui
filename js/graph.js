@@ -7,13 +7,14 @@
 globals
 _, A, Abs, AddTimeout, Assign, C, CacheId, calculateFeatureQ, Clamp, CreateNode,
 DefaultObject, DEFAULTS, DEV, Exp, exports, fixMoveFormat, Floor, formatUnit, FromSeconds, getMovePly, global, Keys,
-Log, Log10, LS, Max, Merge, Min, mixHexColors, Pad, Pow, require, Round,
-S, saveOption, Sign, Style, translateExpression, Visible, window, xboards, Y, y_x, Z
+Log, Log10, LS, Max, Merge, Min, MixHexColors, Pad, Pow, require, Round,
+S, SaveOption, Sign, Style, TranslateExpression, Visible, window, xboards, Y, y_x, Z
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['common', 'engine', 'global'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -185,13 +186,13 @@ function createChartData()
 		color1 = Y['graph_color_1'],
 		color2 = Y['graph_color_2'],
 		color3 = Y['graph_color_3'],
-		extra0 = mixHexColors(color0, '#007fff', 0.2),
-		extra1 = mixHexColors(color1, '#007fff', 0.75);
+		extra0 = MixHexColors(color0, '#007fff', 0.2),
+		extra1 = MixHexColors(color1, '#007fff', 0.75);
 
 	let datasets = {
 		'agree': [
 			newDataset('{white} + {black}', color0),
-			newDataset('{blue} + {red}', mixHexColors(color2, color3, 0.5)),
+			newDataset('{blue} + {red}', MixHexColors(color2, color3, 0.5)),
 		],
 		'depth': [
 			newDataset('depth', color0),
@@ -265,8 +266,8 @@ function createCharts()
 		let hits = formatUnit(getTooltipData(item, data).y);
 		return hits;
 	});
-	newChart('time', true, formatTime, 0, (item, data) => {
-		return formatTime(getTooltipData(item, data).y);
+	newChart('time', true, FormatTime, 0, (item, data) => {
+		return FormatTime(getTooltipData(item, data).y);
 	}, {backgroundColor: 'rgb(10, 10, 10)'}, 2);
 
 	// 2) click events
@@ -296,7 +297,7 @@ function createCharts()
 	updateChartOptions(null, 3);
 
 	// settings
-	saveOption('scales');
+	SaveOption('scales');
 	DEFAULTS['scales'] = DEFAULT_SCALES;
 }
 
@@ -325,7 +326,7 @@ function fixLabels(labels)
  * @param {number} seconds
  * @returns {string}
  */
-function formatTime(seconds)
+function FormatTime(seconds)
 {
 	let [hour, min, sec] = FromSeconds(seconds);
 	return (hour > 0)? `${hour}h${Pad(min)}` : (min > 0)? `${min}:${Pad(sec)}` : sec + '';
@@ -503,7 +504,7 @@ function newDataset(label, color, yaxis, dico)
 		borderColor: color,
 		data: [],
 		fill: false,
-		label: translateExpression(label),
+		label: TranslateExpression(label),
 		lineTension: Y['graph_tension'],
 		pointHitRadius: 4,
 		yAxisID: yaxis,
@@ -723,7 +724,7 @@ function updateChartOptions(name, mode)
 			let agree = (chart_data['agree'] || {}).datasets;
 			if (agree && agree[1])
 			{
-				let mix = mixHexColors(Y['graph_color_2'], Y['graph_color_3'], 0.5);
+				let mix = MixHexColors(Y['graph_color_2'], Y['graph_color_3'], 0.5);
 				Assign(agree[1], {
 					backgroundColor: mix,
 					borderColor: mix,
@@ -1158,16 +1159,17 @@ function initGraph()
 
 /**
  * Startup graphs
- * - initialise global variables
+ * - initialize global variables
  */
-function startupGraph()
+function StartupGraph()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // <<
-if (typeof exports != 'undefined') {
+if (typeof exports != 'undefined')
+{
 	Assign(exports, {
 		calculateWin: calculateWin,
 		chart_data: chart_data,

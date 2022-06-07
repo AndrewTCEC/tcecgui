@@ -1,9 +1,9 @@
 // script.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-04-03
+// @version 2022-06-06
 /*
 globals
-startup, window
+Startup, window
 */
 'use strict';
 
@@ -22,5 +22,5 @@ window.onload = function() {
 	// @import {startup.js}
 	// @import {config.js}
 
-	startup();
+	Startup();
 };

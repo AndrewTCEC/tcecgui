@@ -13,14 +13,14 @@ expect, global, require, test
 
 const {Assign, CACHE_IDS, Clear, CreateNode, Id} = require('./common.js'),
 	{
-		addHistory, addMove, AUTO_ON_OFF, cannotClick, cannotPopup, createFieldValue, createPageArray, createSvgIcon,
-		createUrlList, DEFAULTS, detectDevice, DEV, DEV_NAMES, doneTouch, fillCombo, findArea, getArea,
-		getChangedTouches, getFloat, getInt, getObject, getString, guessTypes, handlePing, ICONS, importSettings, KEYS,
-		LANGUAGES, letterSelector, loadDefaults, mergeSettings, mixHexColors, ON_OFF, optionNumber, parseDev, ping_diff,
-		ping_values, pings, resetDefault, resetDefaults, resetSettings, resizeText, restoreHistory, sanitiseData,
-		saveDefault, saveOption, server_diffs, setSection, showPopup, showSettings, stopDrag, touch_moves, touchEvent,
-		touchHandle, translate, translateDefault, translateExpression, translateNode, translateNodes, translates, TYPES,
-		updateSvg, X_SETTINGS, Y, y_states, Z,
+		AddHistory, AddMove, AUTO_ON_OFF, CannotClick, CannotPopup, CreateFieldValue, CreatePageArray, CreateSvgIcon,
+		CreateUrlList, DEFAULTS, DetectDevice, DEV, DEV_NAMES, DoneTouch, FillCombo, FindArea, GetArea,
+		GetChangedTouches, GetFloat, GetInt, GetObject, GetString, GuessTypes, HandlePing, ICONS, ImportSettings, KEYS,
+		LANGUAGES, LetterSelector, LoadDefaults, MergeSettings, MixHexColors, ON_OFF, OptionNumber, ParseDev, ping_diff,
+		ping_values, pings, ResetDefault, ResetDefaults, ResetSettings, ResizeText, RestoreHistory, SanitizeData,
+		SaveDefault, SaveOption, server_diffs, SetSection, ShowPopup, ShowSettings, StopDrag, touch_moves, ParseTouchEvent,
+		HandleTouch, translate, TranslateDefault, TranslateExpression, TranslateNode, TranslateNodes, translates, TYPES,
+		UpdateSvg, X_SETTINGS, Y, y_states, Z,
 	} = require('./engine.js');
 
 Assign(DEFAULTS, {
@@ -78,30 +78,30 @@ global.SP = () => {};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// addHistory
+// AddHistory
 [
 	{chat_height: 10, twitch_chat: 1},
 ].forEach((y, id) => {
-	test(`addHistory:${id}`, () => {
+	test(`AddHistory:${id}`, () => {
 		const length = y_states.length;
 		Assign(Y, y);
-		addHistory();
+		AddHistory();
 		expect(y_states.length).toBe(length + 1);
 	});
 });
 
-// addMove
+// AddMove
 [
 	[null, {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
 	[[5, 5, 1, 100], {x: 10, y: 8}, 150, 1, 1, [5, 3], [[5, 3, 50]]],
 	[[5, 5, 0, 100], {x: 10, y: 8}, 150, 1, 1, [0, 0], []],
 ].forEach(([drag, change, stamp, ratio_x, ratio_y, answer, answer_array], id) => {
-	test(`addMove:${id}`, () => {
+	test(`AddMove:${id}`, () => {
 		if (!drag)
-			stopDrag();
+			StopDrag();
 		else
 		{
-			touchHandle({
+			HandleTouch({
 				buttons: drag[2],
 				clientX: drag[0],
 				clientY: drag[1],
@@ -111,40 +111,40 @@ global.SP = () => {};
 				type: 'pointerdown',
 			});
 		}
-		expect(addMove(change, stamp, ratio_x, ratio_y)).toEqual(answer);
+		expect(AddMove(change, stamp, ratio_x, ratio_y)).toEqual(answer);
 		expect(touch_moves).toEqual(answer_array);
 		touch_moves.length = 0;
 	});
 });
 
-// cannotClick
+// CannotClick
 [
 	[0, true],
 	[-0.4, true],
 	[-0.6, false],
 	[-1, false],
 ].forEach(([delta, answer], id) => {
-	test(`cannotClick:${id}`, () => {
-		doneTouch(delta);
-		expect(cannotClick()).toBe(answer);
+	test(`CannotClick:${id}`, () => {
+		DoneTouch(delta);
+		expect(CannotClick()).toBe(answer);
 	});
 });
 
-// cannotPopup
+// CannotPopup
 [
 	[{popup_right_click: 0}, {17: 0}, true],
 	[{popup_right_click: 0}, {17: 1}, true],
 	[{popup_right_click: 1}, {17: 0}, false],
 	[{popup_right_click: 1}, {17: 1}, true],
 ].forEach(([y, keys, answer], id) => {
-	test(`cannotPopup:${id}`, () => {
+	test(`CannotPopup:${id}`, () => {
 		Assign(Y, y);
 		Assign(KEYS, keys);
-		expect(!!cannotPopup()).toBe(answer);
+		expect(!!CannotPopup()).toBe(answer);
 	});
 });
 
-// createFieldValue
+// CreateFieldValue
 [
 	['G#', ['g', 'G#']],
 	['wev=Ev', ['wev', 'Ev']],
@@ -167,12 +167,12 @@ global.SP = () => {};
 	['rmobility_result=rMobility', ['rmobility_result', 'rMobility']],
 	['rmobility_score=rMobility <hsub>[{Diff}]</hsub>', ['rmobility_score', 'rMobility <hsub>[{Diff}]</hsub>']],
 ].forEach(([text, answer], id) => {
-	test(`createFieldValue:${id}`, () => {
-		expect(createFieldValue(text)).toEqual(answer);
+	test(`CreateFieldValue:${id}`, () => {
+		expect(CreateFieldValue(text)).toEqual(answer);
 	});
 });
 
-// createPageArray
+// CreatePageArray
 [
 	[1, 0, 0, [2]],
 	[2, 0, 0, [2, 2]],
@@ -193,12 +193,12 @@ global.SP = () => {};
 	[9, 6, 2, [2, 1, 0, 0, 2, 2, 2, 2, 2]],
 	[9, 5, 4, [2, 2, 2, 2, 2, 2, 2, 2, 2]],
 ].forEach(([num_page, page, extra, answer], id) => {
-	test(`createPageArray:${id}`, () => {
-		expect(createPageArray(num_page, page, extra)).toEqual(answer);
+	test(`CreatePageArray:${id}`, () => {
+		expect(CreatePageArray(num_page, page, extra)).toEqual(answer);
 	});
 });
 
-// createSvgIcon
+// CreateSvgIcon
 [
 	['', ''],
 	['next', ''],
@@ -209,32 +209,32 @@ global.SP = () => {};
 		+ '</svg>',
 	],
 ].forEach(([name, answer], id) => {
-	test(`createSvgIcon:${id}`, () => {
-		expect(createSvgIcon(name)).toEqual(answer);
+	test(`CreateSvgIcon:${id}`, () => {
+		expect(CreateSvgIcon(name)).toEqual(answer);
 	});
 });
 
-// createUrlList
+// CreateUrlList
 [
 	[null, ''],
 	[{}, '<v class="fastart"></v>'],
 	[{a: 1}, '<v class="fastart"><hr></v>'],
 ].forEach(([dico, answer], id) => {
-	test(`createUrlList:${id}`, () => {
-		expect(createUrlList(dico)).toEqual(answer);
+	test(`CreateUrlList:${id}`, () => {
+		expect(CreateUrlList(dico)).toEqual(answer);
 	});
 });
 
-// detectDevice
+// DetectDevice
 [
 	{iphone: false, mobile: false, os: '?'},
 ].forEach((answer, id) => {
-	test(`detectDevice:${id}`, () => {
-		expect(detectDevice()).toEqual(answer);
+	test(`DetectDevice:${id}`, () => {
+		expect(DetectDevice()).toEqual(answer);
 	});
 });
 
-// fillCombo
+// FillCombo
 [
 	[
 		'', null, ['wipeout', 'wipeout x'], 'wipeout', {no_translate: true},
@@ -260,26 +260,26 @@ global.SP = () => {};
 		'<select id="cog"></select>',
 	],
 ].forEach(([html, letter, values, select, options, answer], id) => {
-	test(`fillCombo:${id}`, () => {
+	test(`FillCombo:${id}`, () => {
 		const soup = CreateNode('a', html);
 		options.parent = soup;
-		fillCombo((letter == null)? soup : letter, values, select, options);
+		FillCombo((letter == null)? soup : letter, values, select, options);
 		expect(soup.innerHTML).toEqual(answer);
 	});
 });
 
 
-// findArea
+// FindArea
 [
 	['test', {id: -1}],
 	['shortcut_2', {area: ['shortcut_2', 1, 1], id: 2, key: 'right0'}],
 ].forEach(([name, answer], id) => {
-	test(`findArea:${id}`, () => {
-		expect(findArea(name)).toEqual(answer);
+	test(`FindArea:${id}`, () => {
+		expect(FindArea(name)).toEqual(answer);
 	});
 });
 
-// getArea
+// GetArea
 [
 	['<div id="area"><a id="child"></a></div>', null],
 	['<v id="area" class="area"><a id="child"></a></v>', 'area'],
@@ -287,15 +287,15 @@ global.SP = () => {};
 	['<v id="area" class="area2"><div><a id="child"></a></div></v>', null],
 	['<v id="area" class="area"><div><a id="child2"></a></div></v>', null],
 ].forEach(([html, answer], id) => {
-	test(`getArea:${id}`, () => {
+	test(`GetArea:${id}`, () => {
 		const soup = CreateNode('div', html),
 			area = answer? Id(answer, soup) : null,
 			node = Id('child', soup);
-		expect(getArea(node)).toEqual(area);
+		expect(GetArea(node)).toEqual(area);
 	});
 });
 
-// getChangedTouches
+// GetChangedTouches
 [
 	[{}, [{x: undefined, y: undefined}]],
 	[{clientX: 50, clientY: 60}, [{x: 50, y: 60}]],
@@ -303,12 +303,12 @@ global.SP = () => {};
 	[{touches: [{clientX: 100, clientY: 70}, {clientX: 90, clientY: 60}]}, [{x: 100, y: 70}, {x: 90, y: 60}]],
 	[{changedTouches: [{clientX: 5, clientY: 6}], touches: [{clientX: 90, clientY: 60}]}, [{x: 5, y: 6}]],
 ].forEach(([e, answer], id) => {
-	test(`getChangedTouches:${id}`, () => {
-		expect(getChangedTouches(e)).toEqual(answer);
+	test(`GetChangedTouches:${id}`, () => {
+		expect(GetChangedTouches(e)).toEqual(answer);
 	});
 });
 
-// getFloat
+// GetFloat
 [
 	['x', '', 6.1, 6.1],
 	['x', null, undefined, undefined],
@@ -325,13 +325,13 @@ global.SP = () => {};
 	['x', 'live', 9.4, 9.4],
 	['x', 'live', {error: 1}, {error: 1}],
 ].forEach(([name, value, def, answer], id) => {
-	test(`getFloat:${id}`, () => {
-		saveOption(name, value);
-		expect(getFloat(name, def)).toEqual(answer);
+	test(`GetFloat:${id}`, () => {
+		SaveOption(name, value);
+		expect(GetFloat(name, def)).toEqual(answer);
 	});
 });
 
-// getInt
+// GetInt
 [
 	['x', '', 6, true, 6],
 	['x', null, undefined, false, 'null'],
@@ -348,13 +348,13 @@ global.SP = () => {};
 	['x', 'live', 9, false, 'live'],
 	['x', 'live', 9, true, 9],
 ].forEach(([name, value, def, force, answer], id) => {
-	test(`getInt:${id}`, () => {
-		saveOption(name, value);
-		expect(getInt(name, def, force)).toEqual(answer);
+	test(`GetInt:${id}`, () => {
+		SaveOption(name, value);
+		expect(GetInt(name, def, force)).toEqual(answer);
 	});
 });
 
-// getObject
+// GetObject
 [
 	['x', '', {good: true}, {good: true}],
 	['x', null, undefined, null],
@@ -371,13 +371,13 @@ global.SP = () => {};
 	['x', 'live', 9.3, 9.3],
 	['x', 'live', {error: 1}, {error: 1}],
 ].forEach(([name, value, def, answer], id) => {
-	test(`getObject:${id}`, () => {
-		saveOption(name, value);
-		expect(getObject(name, def)).toEqual(answer);
+	test(`GetObject:${id}`, () => {
+		SaveOption(name, value);
+		expect(GetObject(name, def)).toEqual(answer);
 	});
 });
 
-// getString
+// GetString
 [
 	['x', 'undefined', 'good', 'good'],
 	['x', null, undefined, 'null'],
@@ -394,13 +394,13 @@ global.SP = () => {};
 	['x', 'live', 9.3, 'live'],
 	['x', 'live', {error: 1}, 'live'],
 ].forEach(([name, value, def, answer], id) => {
-	test(`getString:${id}`, () => {
-		saveOption(name, value);
-		expect(getString(name, def)).toEqual(answer);
+	test(`GetString:${id}`, () => {
+		SaveOption(name, value);
+		expect(GetString(name, def)).toEqual(answer);
 	});
 });
 
-// guessTypes
+// GuessTypes
 [
 	[
 		{
@@ -458,13 +458,13 @@ global.SP = () => {};
 		},
 	],
 ].forEach(([settings, answer], id) => {
-	test(`guessTypes:${id}`, () => {
-		guessTypes(settings);
+	test(`GuessTypes:${id}`, () => {
+		GuessTypes(settings);
 		expect(TYPES).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// handlePing
+// HandlePing
 [
 	[1627143725985, [58123, 63462], [75, 75, 5264]],
 	[1627143726863, [59130, 64339], [10, 10, 5199]],
@@ -489,7 +489,7 @@ global.SP = () => {};
 	[1627143810544, [11701, 16931], [29, 51, 5217]],
 	[1627143822904, [24001, 29309], [59, 55, 5216]],
 ].forEach(([pong_time, data, answer], id) => {
-	test(`handlePing:${id}`, () => {
+	test(`HandlePing:${id}`, () => {
 		if (id == 0)
 		{
 			pings.fill(0);
@@ -497,48 +497,48 @@ global.SP = () => {};
 			server_diffs.fill(0);
 		}
 		pings[1] = pong_time;
-		handlePing(data);
+		HandlePing(data);
 		expect(ping_diff).toEqual(answer);
 	});
 });
 
-// importSettings
+// ImportSettings
 [
 	[{}, true, {}],
 	[{width: 100}, undefined, {width: 100}],
 	[{height: '500px'}, undefined, {height: '500px', width: 100}],
 ].forEach(([data, reset, answer], id) => {
-	test(`importSettings:${id}`, () => {
-		importSettings(data, reset);
+	test(`ImportSettings:${id}`, () => {
+		ImportSettings(data, reset);
 		expect(Y).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// letterSelector
+// LetterSelector
 [
 	['g', '#cog'],
 	['t', '#cot'],
 	['#track', '#track'],
 	['track', 'track'],
 ].forEach(([letter, answer], id) => {
-	test(`letterSelector:${id}`, () => {
-		expect(letterSelector(letter)).toEqual(answer);
+	test(`LetterSelector:${id}`, () => {
+		expect(LetterSelector(letter)).toEqual(answer);
 	});
 });
 
-// loadDefaults
+// LoadDefaults
 [
 	{language: 'eng', limit: 20},
 ].forEach((answer, id) => {
-	test(`loadDefaults:${id}`, () => {
+	test(`LoadDefaults:${id}`, () => {
 		Clear(Y);
-		guessTypes(DEFAULTS);
-		loadDefaults();
+		GuessTypes(DEFAULTS);
+		LoadDefaults();
 		expect(Y).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// mergeSettings
+// MergeSettings
 [
 	[{}, {}, {}, {}],
 	[{advanced: {debug: ''}}, {advanced: {debug: ''}}, {}, {}],
@@ -580,12 +580,12 @@ global.SP = () => {};
 				source_color: {
 					_multi: 2,
 					source_color: [{type: 'color'}, '#ffb400'],
-					source_opacity: optionNumber(0.7, 0, 1, 0.01),
+					source_opacity: OptionNumber(0.7, 0, 1, 0.01),
 				},
 				turn_color: {
 					_multi: 2,
 					turn_color: [{type: 'color'}, '#ff5a00'],
-					turn_opacity: optionNumber(0, 0, 1, 0.01),
+					turn_opacity: OptionNumber(0, 0, 1, 0.01),
 				},
 			},
 		},
@@ -607,12 +607,12 @@ global.SP = () => {};
 				source_color: {
 					_multi: 2,
 					source_color: [{type: 'color'}, '#ffb400'],
-					source_opacity: optionNumber(0.7, 0, 1, 0.01),
+					source_opacity: OptionNumber(0.7, 0, 1, 0.01),
 				},
 				turn_color: {
 					_multi: 2,
 					turn_color: [{type: 'color'}, '#ff5a00'],
-					turn_opacity: optionNumber(0, 0, 1, 0.01),
+					turn_opacity: OptionNumber(0, 0, 1, 0.01),
 				},
 			},
 		},
@@ -626,15 +626,15 @@ global.SP = () => {};
 		},
 	],
 ].forEach(([x_settings, answer, answer_def, answer_type], id) => {
-	test(`mergeSettings:${id}`, () => {
-		mergeSettings(x_settings);
+	test(`MergeSettings:${id}`, () => {
+		MergeSettings(x_settings);
 		expect(X_SETTINGS).toEqual(answer);
 		expect(DEFAULTS).toEqual(expect.objectContaining(answer_def));
 		expect(TYPES).toEqual(expect.objectContaining(answer_type));
 	});
 });
 
-// mixHexColors
+// MixHexColors
 [
 	['#ffffff', '#000000', 0.5, '#808080'],
 	['#000000', '#ffffff', 0.5, '#808080'],
@@ -644,12 +644,12 @@ global.SP = () => {};
 	['#ff0000', '#0000ff', 1, '#0000ff'],
 	['#ff0000', '#0000ff', 2, '#0000ff'],
 ].forEach(([color1, color2, mix, answer], id) => {
-	test(`mixHexColors:${id}`, () => {
-		expect(mixHexColors(color1, color2, mix)).toEqual(answer);
+	test(`MixHexColors:${id}`, () => {
+		expect(MixHexColors(color1, color2, mix)).toEqual(answer);
 	});
 });
 
-// optionNumber
+// OptionNumber
 [
 	[150, 0, 2000, undefined, undefined, undefined, [{max: 2000, min: 0, step: 1, type: 'number'}, 150, '']],
 	[-200, -1000, 1000, undefined, undefined, undefined, [{max: 1000, min: -1000, step: 1, type: 'number'}, -200, '']],
@@ -657,13 +657,13 @@ global.SP = () => {};
 	[0.055, 0, 0.4, 0.001, undefined, undefined, [{max: 0.4, min: 0, step: 0.001, type: 'number'}, 0.055, '']],
 	[0.7, 0, 1, 0.01, {}, 'mix', [{max: 1, min: 0, step: 0.01, type: 'number'}, 0.7, 'mix']],
 ].forEach(([def, min, max, step, options, help, answer], id) => {
-	test(`optionNumber:${id}`, () => {
-		expect(optionNumber(def, min, max, step, options, help)).toEqual(answer);
+	test(`OptionNumber:${id}`, () => {
+		expect(OptionNumber(def, min, max, step, options, help)).toEqual(answer);
 	});
 });
 
 
-// parseDev
+// ParseDev
 [
 	['', {}],
 	['E', {engine: 1}],
@@ -678,14 +678,14 @@ global.SP = () => {};
 	['E5S100Z', {}],
 	['E5S100Zw3', {wasm: 3, wasm2: 3}],
 ].forEach(([dev, answer], id) => {
-	test(`parseDev:${id}`, () => {
+	test(`ParseDev:${id}`, () => {
 		Y.dev = dev;
-		parseDev();
+		ParseDev();
 		expect(DEV).toEqual(answer);
 	});
 });
 
-// resetDefault
+// ResetDefault
 [
 	['language', undefined, 'eng'],
 	['language', 'fra', 'eng'],
@@ -693,15 +693,15 @@ global.SP = () => {};
 	['limit', 500, 20],
 	['limit', undefined, 20],
 ].forEach(([name, value, answer], id) => {
-	test(`resetDefault:${id}`, () => {
+	test(`ResetDefault:${id}`, () => {
 		Y[name] = value;
-		expect(resetDefault(name)).toEqual(answer);
+		expect(ResetDefault(name)).toEqual(answer);
 		expect(Y[name]).toEqual(answer);
-		expect(getString(name)).toBeUndefined();
+		expect(GetString(name)).toBeUndefined();
 	});
 });
 
-// resetDefaults
+// ResetDefaults
 [
 	[{language: 'fra', limit: 40, skip: 10}, /language|limit/, {language: 'eng', limit: 20, skip: 10}],
 	[{language: 'fra', limit: 40, skip: 10}, /language/, {language: 'eng', limit: 40, skip: 10}],
@@ -712,25 +712,25 @@ global.SP = () => {};
 		{background_color: '#000000', background_image: '', background_opacity: 0},
 	],
 ].forEach(([y, pattern, answer], id) => {
-	test(`resetDefaults:${id}`, () => {
+	test(`ResetDefaults:${id}`, () => {
 		Assign(Y, y);
-		resetDefaults(pattern);
+		ResetDefaults(pattern);
 		expect(Y).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// resetSettings
+// ResetSettings
 [
 	[{'language': 'fra', 'theme': 'dark'}, true, {language: 'eng', theme: ''}],
 ].forEach(([data, reset, answer], id) => {
-	test(`resetSettings:${id}`, () => {
+	test(`ResetSettings:${id}`, () => {
 		Assign(Y, data);
-		resetSettings(data, reset);
+		ResetSettings(data, reset);
 		expect(Y).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// resizeText
+// ResizeText
 [
 	[null, 4, undefined, null],
 	[12, 2, undefined, '12'],
@@ -746,27 +746,27 @@ global.SP = () => {};
 	['KomodoDragonArmageddon', 0, undefined, 'KomodoDragonArmageddon'],
 	['KomodoDragonArmageddon', 15, undefined, '<span class="resize">KomodoDragonArmageddon</span>'],
 ].forEach(([text, resize, class_, answer], id) => {
-	test(`resizeText:${id}`, () => {
-		expect(resizeText(text, resize, class_)).toEqual(answer);
+	test(`ResizeText:${id}`, () => {
+		expect(ResizeText(text, resize, class_)).toEqual(answer);
 	});
 });
 
-// restoreHistory
+// RestoreHistory
 [
 	[{theme: 'light', volume: 5}, {theme: 'dark', volume: 10}],
 ].forEach(([y, y2], id) => {
-	test(`restoreHistory:${id}`, () => {
+	test(`RestoreHistory:${id}`, () => {
 		Assign(Y, y);
-		addHistory();
+		AddHistory();
 		Assign(Y, y2);
-		addHistory();
+		AddHistory();
 		expect(Y).toEqual(expect.objectContaining(y2));
-		restoreHistory(-1);
+		RestoreHistory(-1);
 		expect(Y).toEqual(expect.objectContaining(y));
 	});
 });
 
-// sanitiseData
+// SanitizeData
 [
 	[{width: ''}, {width: 600}, {width: 'f'}, {width: 600}],
 	[{width: '700.5'}, {width: 600}, {width: 'f'}, {width: 700.5}],
@@ -774,16 +774,16 @@ global.SP = () => {};
 	[{width: 700.5}, {width: 600}, {width: 'i'}, {width: 700.5}],
 	[{width: '700.5'}, {width: undefined}, {width: undefined}, {width: '700.5'}],
 ].forEach(([y, defaults, types, answer], id) => {
-	test(`sanitiseData:${id}`, () => {
+	test(`SanitizeData:${id}`, () => {
 		Assign(Y, y);
 		Assign(DEFAULTS, defaults);
 		Assign(TYPES, types);
-		sanitiseData();
+		SanitizeData();
 		expect(Y).toEqual(expect.objectContaining(answer));
 	});
 });
 
-// saveDefault
+// SaveDefault
 [
 	['language', undefined, 'eng', undefined],
 	['language', 'eng', 'eng', undefined],
@@ -795,26 +795,26 @@ global.SP = () => {};
 	['limit', 20, 20, undefined],
 	['limit', undefined, 20, undefined],
 ].forEach(([name, value, answer, answer_storage], id) => {
-	test(`saveDefault:${id}`, () => {
-		saveDefault(name, value);
+	test(`SaveDefault:${id}`, () => {
+		SaveDefault(name, value);
 		expect(Y[name]).toEqual(answer);
-		expect(getString(name)).toEqual(answer_storage);
+		expect(GetString(name)).toEqual(answer_storage);
 	});
 });
 
-// saveOption
+// SaveOption
 [
 	['width', 100, '100'],
 	['x', 'live', 'live'],
 ].forEach(([name, value, answer], id) => {
-	test(`saveOption:${id}`, () => {
-		saveOption(name, value);
+	test(`SaveOption:${id}`, () => {
+		SaveOption(name, value);
 		expect(Y[name]).toEqual(value);
-		expect(getString(name)).toEqual(answer);
+		expect(GetString(name)).toEqual(answer);
 	});
 });
 
-// setSection
+// SetSection
 [
 	['app', '', ['app', '']],
 	[null, undefined, ['app', '']],
@@ -824,14 +824,14 @@ global.SP = () => {};
 	['live', null, ['live', 'pva']],
 	[null, '', ['live', '']],
 ].forEach(([section, subsection, answer], id) => {
-	test(`setSection:${id}`, () => {
-		setSection(section, subsection);
+	test(`SetSection:${id}`, () => {
+		SetSection(section, subsection);
 		expect(Y.x).toEqual(answer[0]);
 		expect(Z.s).toEqual(answer[1]);
 	});
 });
 
-// showPopup
+// ShowPopup
 [
 	['me', true, {node_id: 'pop'}, '<a id="pop" data-id="" data-name="me" data-x=":me" style="transform: unset;" data-ev="1"></a>'],
 	['me', true, {center: 1, html: 'hi', node_id: 'pop'}, '<a id="pop" data-id="" data-name="me" data-x=":me" style="transform: unset;" data-ev="1">hi</a>'],
@@ -848,17 +848,17 @@ global.SP = () => {};
 		'<a id="modal" data-id="" data-name="me" data-x=":me" style="transform: translate(0%, 0%) translate(508px, 384px);" data-center="1" data-my="" data-xy="150,120" class="instant popup-show popup-enable" data-ev="1">hi</a>',
 	],
 ].forEach(([name, show, options, answer], id) => {
-	test(`showPopup:${id}`, () => {
+	test(`ShowPopup:${id}`, () => {
 		Clear(CACHE_IDS);
 		const html = `<a id="${options.node_id}"></a>`,
 			soup = CreateNode('div', html);
 		options.parent = soup;
-		showPopup(name, show, options);
+		ShowPopup(name, show, options);
 		expect(soup.innerHTML).toEqual(answer);
 	});
 });
 
-// showSettings
+// ShowSettings
 [
 	[
 		{title_add: ''},
@@ -899,13 +899,13 @@ global.SP = () => {};
 		+ '</grid>',
 	],
 ].forEach(([z, name, answer], id) => {
-	test(`showSettings:${id}`, () => {
+	test(`ShowSettings:${id}`, () => {
 		Assign(Z, z);
-		expect(showSettings(name, {})).toEqual(answer);
+		expect(ShowSettings(name, {})).toEqual(answer);
 	});
 });
 
-// touchEvent
+// ParseTouchEvent
 [
 	[{}, {change: {x: undefined, y: undefined}, error: -1, stamp: undefined}],
 	[{clientX: 50, clientY: 60, timeStamp: 100}, {change: {x: 50, y: 60}, error: -1, stamp: 100}],
@@ -922,8 +922,8 @@ global.SP = () => {};
 		{change: {x: 5, y: 6}, error: -1, stamp: 100},
 	],
 ].forEach(([e, answer], id) => {
-	test(`touchEvent:${id}`, () => {
-		expect(touchEvent(e)).toEqual(answer);
+	test(`ParseTouchEvent:${id}`, () => {
+		expect(ParseTouchEvent(e)).toEqual(answer);
 	});
 });
 
@@ -940,20 +940,20 @@ global.SP = () => {};
 	});
 });
 
-// translateDefault
+// TranslateDefault
 [
 	[{}, null, null],
 	[{}, '', ''],
 	[{'language': 'fra'}, 'Italy', 'Italy'],
 	[{}, 'Japan', 'Japon'],
 ].forEach(([y, text, answer], id) => {
-	test(`translateDefault:${id}`, () => {
+	test(`TranslateDefault:${id}`, () => {
 		Assign(Y, y);
-		expect(translateDefault(text)).toEqual(answer);
+		expect(TranslateDefault(text)).toEqual(answer);
 	});
 });
 
-// translateExpression
+// TranslateExpression
 [
 	[{}, null, ''],
 	[{}, '', ''],
@@ -969,13 +969,13 @@ global.SP = () => {};
 		'<i class="breakall"><i class="nowrap">Animations</i><i class="nowrap">geschwindigkeit</i></i>',
 	],
 ].forEach(([y, text, answer], id) => {
-	test(`translateExpression:${id}`, () => {
+	test(`TranslateExpression:${id}`, () => {
 		Assign(Y, y);
-		expect(translateExpression(text)).toEqual(answer);
+		expect(TranslateExpression(text)).toEqual(answer);
 	});
 });
 
-// translateNode
+// TranslateNode
 [
 	['', {}, '<a></a>'],
 	['hi', {}, '<a>hi</a>'],
@@ -993,14 +993,14 @@ global.SP = () => {};
 		'<a><a data-t="Japan">X</a><a data-t="Belgium">Y</a></a>',
 	],
 ].forEach(([html, attrs, answer], id) => {
-	test(`translateNode:${id}`, () => {
+	test(`TranslateNode:${id}`, () => {
 		const soup = CreateNode('a', html, attrs);
-		translateNode(soup);
+		TranslateNode(soup);
 		expect(soup.outerHTML).toEqual(answer);
 	});
 });
 
-// translateNodes
+// TranslateNodes
 [
 	['', {}, '<a></a>'],
 	['hi', {}, '<a>hi</a>'],
@@ -1018,14 +1018,14 @@ global.SP = () => {};
 		'<a><a data-t="Japan">Japon</a><a data-t="Belgium">Belgique</a></a>',
 	],
 ].forEach(([html, attrs, answer], id) => {
-	test(`translateNodes:${id}`, () => {
+	test(`TranslateNodes:${id}`, () => {
 		const soup = CreateNode('a', html, attrs);
-		translateNodes(soup);
+		TranslateNodes(soup);
 		expect(soup.outerHTML).toEqual(answer);
 	});
 });
 
-// updateSvg
+// UpdateSvg
 [
 	[
 		'<a data-svg="play"></a><a data-svg="next"></a>',
@@ -1033,9 +1033,9 @@ global.SP = () => {};
 		+ '<a data-svg="next"></a>',
 	],
 ].forEach(([html, answer], id) => {
-	test(`updateSvg:${id}`, () => {
+	test(`UpdateSvg:${id}`, () => {
 		const soup = CreateNode('a', html);
-		updateSvg(soup);
+		UpdateSvg(soup);
 		expect(soup.innerHTML).toEqual(answer);
 	});
 });

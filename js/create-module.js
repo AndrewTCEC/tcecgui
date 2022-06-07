@@ -21,7 +21,7 @@ let fs = require('fs'),
  * @param {string} output path without .js for the combined output
  * @param {string=} extra_exports ex: global variables that we want exported
  */
-function createModule(path, sources, output, extra_exports)
+function CreateModule(path, sources, output, extra_exports)
 {
 	let all = '',
 		filenames = sources.map(source => `${path}/${source}.js`),
@@ -91,5 +91,5 @@ function createModule(path, sources, output, extra_exports)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
-	createModule: createModule,
+	CreateModule: CreateModule,
 };

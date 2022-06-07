@@ -19,7 +19,7 @@ LINKS, THEMES, TWITCH_CHANNEL:true, TWITCH_CHAT:true
  * Override settings here
  * - first features are the ones that are changed the most frequently
  */
-function startupConfig()
+function StartupConfig()
 {
 	HOST = 'https://tcec-chess.com';
 	HOST_ARCHIVE = 'archive/json';

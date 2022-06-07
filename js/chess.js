@@ -1,6 +1,6 @@
 // chess.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-06
 // - fast javascript implementation, 30000x faster
 // - FRC support
 // jshint -W069
@@ -11,7 +11,8 @@ Abs, Assign, DefaultInt, exports, Floor, global, Lower, LS, Max, Min, require
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['common'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -226,7 +227,7 @@ let EVAL_MODES = {
 		"paw": 1 + 2 + 4 + 8,
 		"kin": 1 + 2 + 4 + 16,
 	},
-	// piece names for print
+	// piece names for Print
 	PIECES = {
 		'P': 1,
 		'N': 2,
@@ -395,13 +396,13 @@ let NULL_OBJ = {
  * @param {number=} state
  * @returns {number}
  */
-function xorshift32(state)
+function Xorshift32(state)
 {
-	let seed = state || xorshift32.state;
+	let seed = state || Xorshift32.state;
 	seed ^= seed << 13;
 	seed ^= seed >> 17;
 	seed ^= seed << 5;
-	xorshift32.state = seed;
+	Xorshift32.state = seed;
 	return seed;
 }
 
@@ -467,7 +468,7 @@ var Chess = function(fen_)
 	/**
 	 * Add a single move
 	 */
-	function addMove(moves, piece, from, to, flag, promote, value)
+	function AddMove(moves, piece, from, to, flag, promote, value)
 	{
 		let capture = (flag & BITS_EN_PASSANT)? PAWN : (flag & BITS_CASTLE? NONE : TYPE(value)),
 			score = (capture | promote)? Max(PIECE_CAPTURES[capture], PIECE_CAPTURES[promote]) - (PIECE_CAPTURES[piece] >> 3) + 50 : 0,
@@ -493,27 +494,27 @@ var Chess = function(fen_)
 	/**
 	 * Add a pawn move + promote moves
 	 */
-	function addPawnMove(moves, piece, from, to, flag, value, only_capture)
+	function AddPawnMove(moves, piece, from, to, flag, value, only_capture)
 	{
 		let rank = Rank(to);
 		if (rank == 0 || rank == 7)
 		{
 			if (only_capture)
-				addMove(moves, piece, from, to, flag, QUEEN, value);
+				AddMove(moves, piece, from, to, flag, QUEEN, value);
 			else
 				for (let promote = QUEEN; promote >= KNIGHT; --promote)
-					addMove(moves, piece, from, to, flag, promote, value);
+					AddMove(moves, piece, from, to, flag, promote, value);
 			++mobilities[piece];
 		}
 		else
-			addMove(moves, piece, from, to, flag, 0, value);
+			AddMove(moves, piece, from, to, flag, 0, value);
 	}
 
 	/**
 	 * Add a ply state
 	 * @param {number} move
 	 */
-	function addState(move)
+	function AddState(move)
 	{
 		let state = ply_states[ply & 127];
 		state[0] = board_hash;
@@ -529,18 +530,18 @@ var Chess = function(fen_)
 	 * @param {number} score
 	 * @param {!Array<number>} pv
 	 */
-	function addTopMove(move, score, pv)
+	function AddTopMove(move, score, pv)
 	{
-		let uci = ucifyMove(move),
+		let uci = UcifyMove(move),
 			pv_string = uci;
 		if (pv)
 			for (let item of pv)
 			{
 				pv_string += " ";
-				pv_string += ucifyMove(item);
+				pv_string += UcifyMove(item);
 			}
 
-		let obj = unpackMove(move);
+		let obj = UnpackMove(move);
 		obj['m'] = uci;
 		obj['pv'] = pv_string;
 		obj['score'] = score;
@@ -566,16 +567,16 @@ var Chess = function(fen_)
 	 * @param {!Array<number>} pv
 	 * @returns {number}
 	 */
-	function alphaBeta(alpha, beta, depth, max_depth, pv)
+	function AlphaBeta(alpha, beta, depth, max_depth, pv)
 	{
 		// extend depth if in check
-		if (max_depth < max_extend && kingAttacked(turn))
+		if (max_depth < max_extend && KingAttacked(turn))
 			++max_depth;
 
 		// transposition
 		let hit = [0],
 			is_pv = (alpha != beta - 1),
-			entry = findEntry(board_hash, hit),
+			entry = FindEntry(board_hash, hit),
 			idepth = max_depth - depth;
 
 		if (depth > 0 && hit[0] && entry[3] >= idepth)
@@ -600,12 +601,12 @@ var Chess = function(fen_)
 			if (!max_quiesce)
 			{
 				++nodes;
-				score = evaluate();
+				score = Evaluate();
 			}
 			else
-				score = quiesce(alpha, beta, max_quiesce);
+				score = Quiesce(alpha, beta, max_quiesce);
 
-			updateEntry(entry[5], board_hash, score, BOUND_EXACT, idepth, null);
+			UpdateEntry(entry[5], board_hash, score, BOUND_EXACT, idepth, null);
 			++move_id;
 			return score;
 		}
@@ -614,7 +615,7 @@ var Chess = function(fen_)
 			best = -SCORE_INFINITY,
 			best_move = 0,
 			line = [],
-			moves = createMoves(false),
+			moves = CreateMoves(false),
 			num_valid = 0;
 
 		// top level
@@ -630,7 +631,7 @@ var Chess = function(fen_)
 		// check all moves
 		for (let move of moves)
 		{
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				continue;
 			++num_valid;
 
@@ -638,18 +639,18 @@ var Chess = function(fen_)
 			// pv search
 			if (alpha > alpha0 && pv_mode)
 			{
-				score = -alphaBeta(-alpha - 1, -alpha, depth + 1, max_depth, line);
+				score = -AlphaBeta(-alpha - 1, -alpha, depth + 1, max_depth, line);
 				if (score > alpha && score < beta)
-					score = -alphaBeta(-beta, -alpha, depth + 1, max_depth, line);
+					score = -AlphaBeta(-beta, -alpha, depth + 1, max_depth, line);
 			}
 			else
-				score = -alphaBeta(-beta, -alpha, depth + 1, max_depth, line);
-			undoMove();
+				score = -AlphaBeta(-beta, -alpha, depth + 1, max_depth, line);
+			UndoMove();
 
 			// top level
 			if (depth == 0 && scan_all)
 			{
-				addTopMove(move, score, line);
+				AddTopMove(move, score, line);
 				if (score > best)
 					best = score;
 				continue;
@@ -676,7 +677,7 @@ var Chess = function(fen_)
 				{
 					alpha = score;
 					if (depth == 0)
-						addTopMove(move, score, line);
+						AddTopMove(move, score, line);
 
 					if (hash_mode && score >= beta)
 						break;
@@ -690,10 +691,10 @@ var Chess = function(fen_)
 
 		// mate + stalemate
 		if (!num_valid)
-			return kingAttacked(turn)? -SCORE_MATE + ply : 0;
+			return KingAttacked(turn)? -SCORE_MATE + ply : 0;
 
 		let bound = (best >= beta)? BOUND_LOWER : ((alpha != alpha0)? BOUND_EXACT : BOUND_UPPER);
-		updateEntry(entry[5], board_hash, best, bound, idepth, best_move);
+		UpdateEntry(entry[5], board_hash, best, bound, idepth, best_move);
 		return best;
 	}
 
@@ -706,7 +707,7 @@ var Chess = function(fen_)
 	 * @param {number} b
 	 * @returns {number} -1 if a should be before b
 	 */
-	function compareMoves(a, b)
+	function CompareMoves(a, b)
 	{
 		return (b & 1023) - (a & 1023);
 	}
@@ -717,7 +718,7 @@ var Chess = function(fen_)
 	 * @param {!Array<number>} moves
 	 * @returns {string}
 	 */
-	function disambiguate(move, moves)
+	function Disambiguate(move, moves)
 	{
 		let ambiguities = 0,
 			from = MoveFrom(move),
@@ -747,7 +748,7 @@ var Chess = function(fen_)
 		if (!ambiguities)
 			return "";
 
-		let an = squareToAn(from, false);
+		let an = SquareToAn(from, false);
 		if (same_rank > 0 && same_file > 0)
 			return an;
 		else
@@ -760,7 +761,7 @@ var Chess = function(fen_)
 	 * @param {Array<boolean>} hit true if the hash matches
 	 * @returns {!Array<number>} hash, score, bound, depth, move, index
 	 */
-	function findEntry(hash, hit)
+	function FindEntry(hash, hit)
 	{
 		if (!hash_mode)
 			return [];
@@ -774,9 +775,9 @@ var Chess = function(fen_)
 	}
 
 	/**
-	 * Initialise piece squares
+	 * Initialize piece squares
 	 */
-	function initSquares()
+	function InitSquares()
 	{
 		for (let piece = PAWN; piece <= KING; ++piece)
 		{
@@ -794,11 +795,11 @@ var Chess = function(fen_)
 	 * @param {!Array<number>} pv
 	 * @returns {number}
 	 */
-	function miniMax(depth, max_depth, pv)
+	function MiniMax(depth, max_depth, pv)
 	{
 		// transposition
 		let hit = [0],
-			entry = findEntry(board_hash, hit),
+			entry = FindEntry(board_hash, hit),
 			idepth = max_depth - depth;
 		if (depth > 0 && hit[0] && entry[3] >= idepth)
 		{
@@ -811,13 +812,13 @@ var Chess = function(fen_)
 		{
 			++nodes;
 			pv.length = 0;
-			return evaluate();
+			return Evaluate();
 		}
 
 		let best = -SCORE_INFINITY,
 			best_move = 0,
 			line = [],
-			moves = createMoves(false),
+			moves = CreateMoves(false),
 			num_valid = 0;
 
 		// top level
@@ -833,16 +834,16 @@ var Chess = function(fen_)
 		// check all moves
 		for (let move of moves)
 		{
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				continue;
 			++num_valid;
 
-			let score = -miniMax(depth + 1, max_depth, line);
-			undoMove();
+			let score = -MiniMax(depth + 1, max_depth, line);
+			UndoMove();
 
 			// top level
 			if (depth == 0)
-				addTopMove(move, score, line);
+				AddTopMove(move, score, line);
 
 			if (score > best)
 			{
@@ -863,9 +864,9 @@ var Chess = function(fen_)
 
 		// mate + stalemate
 		if (!num_valid)
-			return kingAttacked(turn)? -SCORE_MATE + ply : 0;
+			return KingAttacked(turn)? -SCORE_MATE + ply : 0;
 
-		updateEntry(entry[5], board_hash, best, BOUND_EXACT, idepth, best_move);
+		UpdateEntry(entry[5], board_hash, best, BOUND_EXACT, idepth, best_move);
 		return best;
 	}
 
@@ -873,22 +874,22 @@ var Chess = function(fen_)
 	 * Get the move list
 	 * @returns {string}
 	 */
-	function moveList()
+	function MoveList()
 	{
 		let lines = [];
 		for (let i = 0; i <= ply; ++i)
 		{
 			let state = ply_states[i & 127];
-			lines.push(state? ucifyMove(state[3]) : '???');
+			lines.push(state? UcifyMove(state[3]) : '???');
 		}
 		return lines.join(' ');
 	}
 
 	/**
-	 * Null search, used by perft
+	 * Null search, used by Perft
 	 * @param {number} depth
 	 */
-	function nullSearch(depth)
+	function NullSearch(depth)
 	{
 		if (depth <= 0)
 		{
@@ -896,13 +897,13 @@ var Chess = function(fen_)
 			return;
 		}
 
-		let moves = createMoves(false);
+		let moves = CreateMoves(false);
 		for (let move of moves)
 		{
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				continue;
-			nullSearch(depth - 1);
-			undoMove();
+			NullSearch(depth - 1);
+			UndoMove();
 		}
 	}
 
@@ -915,20 +916,16 @@ var Chess = function(fen_)
 	 * @param {number} depth_left
 	 * @returns {number}
 	 */
-	function quiesce(alpha, beta, depth_left)
+	function Quiesce(alpha, beta, depth_left)
 	{
 		let delta = PIECE_SCORES[QUEEN];
 
 		++nodes;
-		let score = evaluate();
-		if (depth_left <= 0)
-			return score;
-		if (score >= beta)
-			return beta;
-		if (score + delta < alpha)
-			return alpha;
-		if (score > alpha)
-			alpha = score;
+		let score = Evaluate();
+		if (depth_left <= 0) return score;
+		if (score >= beta) return beta;
+		if (score + delta < alpha) return alpha;
+		if (score > alpha) alpha = score;
 
 		let best = score,
 			futility = best + PIECE_SCORES[PAWN];
@@ -936,17 +933,17 @@ var Chess = function(fen_)
 		if (ply >= sel_depth)
 			sel_depth = ply + 1;
 
-		let moves = createMoves(true);
+		let moves = CreateMoves(true);
 		for (let move of moves)
 		{
 			if (futility + PIECE_SCORES[MoveCapture(move)] <= alpha
 					&& (TYPE(board[MoveFrom(move)]) != PAWN || RELATIVE_RANK(turn, MoveTo(move)) <= 5))
 				continue;
 
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				continue;
-			let score = -quiesce(-beta, -alpha, depth_left - 1);
-			undoMove();
+			let score = -Quiesce(-beta, -alpha, depth_left - 1);
+			UndoMove();
 
 			if (score > best)
 			{
@@ -972,7 +969,7 @@ var Chess = function(fen_)
 	 * @param {number} depth
 	 * @param {Move?} move
 	 */
-	function updateEntry(entry, hash, score, bound, depth, move)
+	function UpdateEntry(entry, hash, score, bound, depth, move)
 	{
 		if (!hash_mode)
 			return;
@@ -996,7 +993,7 @@ var Chess = function(fen_)
 	 * @param {string} an c2
 	 * @returns {number} 98
 	 */
-	function anToSquare(an)
+	function AnToSquare(an)
 	{
 		if (an.length < 2)
 			return EMPTY;
@@ -1006,12 +1003,12 @@ var Chess = function(fen_)
 	}
 
 	/**
-	 * Check if a square is attacked by a color
+	 * Check if a square is Attacked by a color
 	 * @param {number} color attacking color
 	 * @param {number} square
-	 * @returns {boolean} true if the square is attacked
+	 * @returns {boolean} true if the square is Attacked
 	 */
-	function attacked(color, square)
+	function Attacked(color, square)
 	{
 		// knight
 		let target = COLORIZE(color, KNIGHT);
@@ -1069,7 +1066,7 @@ var Chess = function(fen_)
 	 * @param {string} san Bxe6+!!
 	 * @returns {string} clean san Bxe6
 	 */
-	function cleanSan(san)
+	function CleanSan(san)
 	{
 		return san.replace(/=/, '').replace(/[+#]?[?!]*$/, '');
 	}
@@ -1077,7 +1074,7 @@ var Chess = function(fen_)
 	/**
 	 * Clear the board
 	 */
-	function clear()
+	function Clear()
 	{
 		attacks.fill(0);
 		avg_depth = 0;
@@ -1112,7 +1109,7 @@ var Chess = function(fen_)
 	 * @param {string} options
 	 * @param {number} depth this overrides max_depth if > 0
 	 */
-	function configure(frc_, options, depth)
+	function Configure(frc_, options, depth)
 	{
 		debug = 0;
 		eval_mode = 1;
@@ -1137,45 +1134,29 @@ var Chess = function(fen_)
 				value = right * 1;
 			switch (left)
 			{
-			case 'd':
-				max_depth = value;
+			case 'd': max_depth = value; break;
+			case 'D': debug = value; break;
+			case 'e':
+			{
+				let eit = EVAL_MODES[right];
+				if (eit != undefined)
+					eval_mode = eit;
 				break;
-			case 'D':
-				debug = value;
+			}
+			case 'h': hash_mode = value; break;
+			case 'n': max_nodes = value; break;
+			case 'o': order_mode = value; break;
+			case 'p': pv_mode = value; break;
+			case 'q': max_quiesce = value; break;
+			case 's':
+			{
+				let sit = SEARCH_MODES[right];
+				if (sit != undefined)
+					search_mode = sit;
 				break;
-			case 'e': {
-					let eit = EVAL_MODES[right];
-					if (eit != undefined)
-						eval_mode = eit;
-				}
-				break;
-			case 'h':
-				hash_mode = value;
-				break;
-			case 'n':
-				max_nodes = value;
-				break;
-			case 'o':
-				order_mode = value;
-				break;
-			case 'p':
-				pv_mode = value;
-				break;
-			case 'q':
-				max_quiesce = value;
-				break;
-			case 's': {
-					let sit = SEARCH_MODES[right];
-					if (sit != undefined)
-						search_mode = sit;
-				}
-				break;
-			case 't':
-				max_time = value;
-				break;
-			case 'x':
-				max_extend = value;
-				break;
+			}
+			case 't': max_time = value; break;
+			case 'x': max_extend = value; break;
 			}
 		}
 
@@ -1188,7 +1169,7 @@ var Chess = function(fen_)
 	 * Create the FEN
 	 * @returns {string} fen
 	 */
-	function createFen()
+	function CreateFen()
 	{
 		let empty = 0;
 		fen = "";
@@ -1245,7 +1226,7 @@ var Chess = function(fen_)
 
 		// empty castling flag?
 		castle = castle || '-';
-		let epflags = (ep_square == EMPTY)? '-' : squareToAn(ep_square, false);
+		let epflags = (ep_square == EMPTY)? '-' : SquareToAn(ep_square, false);
 
 		return [fen, COLOR_TEXT[turn], castle, epflags, half_moves, move_number].join(' ');
 	}
@@ -1256,7 +1237,7 @@ var Chess = function(fen_)
 	 * @param {number} index between 0 and 959
 	 * @returns {string}
 	 */
-	function createFen960(index)
+	function CreateFen960(index)
 	{
 		if (index < 0 || index >= 960)
 			return '';
@@ -1324,7 +1305,7 @@ var Chess = function(fen_)
 	 * @param {boolean} only_capture
 	 * @returns {!Array<number>} moves
 	 */
-	function createMoves(only_capture)
+	function CreateMoves(only_capture)
 	{
 		let moves = [],
 			second_rank = 6 - turn * 5,
@@ -1366,16 +1347,16 @@ var Chess = function(fen_)
 				{
 					if (!board[square])
 					{
-						addPawnMove(moves, piece, i, square, 0, 0, false);
+						AddPawnMove(moves, piece, i, square, 0, 0, false);
 
 						// double square
 						square += offsets[1];
 						if (second_rank == Rank(i) && !board[square])
-							addMove(moves, piece, i, square, 0, 0, 0);
+							AddMove(moves, piece, i, square, 0, 0, 0);
 					}
 				}
 				// else if (Rank(square) % 7 == 0)
-				//     addMove(moves, piece, i, square, 0, QUEEN, 0);
+				//     AddMove(moves, piece, i, square, 0, QUEEN, 0);
 
 				// pawn captures
 				for (let j of [0, 2])
@@ -1389,7 +1370,7 @@ var Chess = function(fen_)
 					{
 						if (COLOR(value) == them)
 						{
-							addPawnMove(moves, piece, i, square, 0, value, only_capture);
+							AddPawnMove(moves, piece, i, square, 0, value, only_capture);
 							attacks[piece] += piece_attacks[value];
 						}
 						else
@@ -1397,7 +1378,7 @@ var Chess = function(fen_)
 					}
 					// en passant
 					else if (square == ep_square)
-						addPawnMove(moves, piece, i, square, BITS_EN_PASSANT, value, false);
+						AddPawnMove(moves, piece, i, square, BITS_EN_PASSANT, value, false);
 				}
 			}
 			// other pieces
@@ -1423,7 +1404,7 @@ var Chess = function(fen_)
 						if (!value)
 						{
 							if (!only_capture)
-								addMove(moves, piece, i, square, 0, 0, 0);
+								AddMove(moves, piece, i, square, 0, 0, 0);
 						}
 						else
 						{
@@ -1431,7 +1412,7 @@ var Chess = function(fen_)
 								defenses[piece] += piece_attacks[value];
 							else
 							{
-								addMove(moves, piece, i, square, 0, 0, value);
+								AddMove(moves, piece, i, square, 0, 0, value);
 								attacks[piece] += piece_attacks[value];
 							}
 							break;
@@ -1476,23 +1457,22 @@ var Chess = function(fen_)
 				if (error)
 					continue;
 
-				// check that the king is not attacked
+				// check that the king is not Attacked
 				for (let j = min_king; j <= max_king; ++j)
-					if (attacked(them, j))
+					if (Attacked(them, j))
 					{
 						error = true;
 						break;
 					}
 
 				// add castle, always in FRC format
-				if (!error)
-					addMove(moves, COLORIZE(us, KING), king, rook, BITS_CASTLE, 0, 0);
+				if (!error) AddMove(moves, COLORIZE(us, KING), king, rook, BITS_CASTLE, 0, 0);
 			}
 		}
 
 		// move ordering for alpha-beta
 		if (order_mode && is_search)
-			orderMoves(moves);
+			OrderMoves(moves);
 		return moves;
 	}
 
@@ -1501,12 +1481,12 @@ var Chess = function(fen_)
 	 * @param {string} san
 	 * @returns {string}
 	 */
-	function decorateSan(san)
+	function DecorateSan(san)
 	{
 		let last = san.slice(-1);
-		if (!'+#'.includes(last) && kingAttacked(turn))
+		if (!'+#'.includes(last) && KingAttacked(turn))
 		{
-			let moves = legalMoves();
+			let moves = LegalMoves();
 			san += moves.length? '+' : '#';
 		}
 		return san;
@@ -1520,7 +1500,7 @@ var Chess = function(fen_)
 	 * - 8/5n2/8/3K4/8/8/b7/7k w - - 0 1  KNB vs K
 	 * @returns {number}
 	 */
-	function evaluate()
+	function Evaluate()
 	{
 		// 1) draw
 		if (half_moves >= 100)
@@ -1621,15 +1601,14 @@ var Chess = function(fen_)
 		}
 
 		// 6) king
-		// if (eval_mode & 16) {
-		// }
+		// if (eval_mode & 16) {}
 		return score * (1 - (turn << 1));
 	}
 
 	/**
 	 * Evaluate every piece position, done when starting a search
 	 */
-	function evaluatePositions()
+	function EvaluatePositions()
 	{
 		attacks.fill(0);
 		defenses.fill(0);
@@ -1656,10 +1635,10 @@ var Chess = function(fen_)
 	/**
 	 * Hash the current board
 	 */
-	function hashBoard()
+	function HashBoard()
 	{
 		if (!zobrist_ready)
-			initZobrist();
+			InitZobrist();
 
 		// 1) board
 		board_hash = 0;
@@ -1676,7 +1655,7 @@ var Chess = function(fen_)
 		}
 
 		// 2) en passant
-		hashEnPassant();
+		HashEnPassant();
 
 		// 3) castle
 		for (let id = 0; id < 4; ++id)
@@ -1692,7 +1671,7 @@ var Chess = function(fen_)
 	 * Hash a castle square
 	 * @param {number} id 2 * color + 0/1 => 0, 1, 2, 3
 	 */
-	function hashCastle(id)
+	function HashCastle(id)
 	{
 		if (castling[id] != EMPTY)
 		{
@@ -1704,7 +1683,7 @@ var Chess = function(fen_)
 	/**
 	 * Hash the en-passant square
 	 */
-	function hashEnPassant()
+	function HashEnPassant()
 	{
 		if (ep_square != EMPTY)
 			board_hash ^= zobrist[0][ep_square];
@@ -1716,21 +1695,21 @@ var Chess = function(fen_)
 	 * @param {number} square
 	 * @param {number} piece
 	 */
-	function hashSquare(square, piece)
+	function HashSquare(square, piece)
 	{
 		board_hash ^= zobrist[piece][square];
 	}
 
 	/**
-	 * Initialise the zobrist table
+	 * Initialize the zobrist table
 	 */
-	function initZobrist()
+	function InitZobrist()
 	{
 		let collision = 0,
 			seed = 1070372;
 
-		xorshift32(seed);
-		zobrist_side = xorshift32();
+		Xorshift32(seed);
+		zobrist_side = Xorshift32();
 		let seens = new Set();
 
 		for (let i = SQUARE_A8; i <= SQUARE_H1; ++i)
@@ -1744,7 +1723,7 @@ var Chess = function(fen_)
 			{
 				if (j && !PIECE_ORDERS[j])
 					continue;
-				let x = xorshift32();
+				let x = Xorshift32();
 				if (seens.has(x))
 				{
 					++collision;
@@ -1762,28 +1741,28 @@ var Chess = function(fen_)
 	}
 
 	/**
-	 * Check if the king is attacked
+	 * Check if the king is Attacked
 	 * @param {number} color 0, 1 + special cases: 2=same turn, 3=other turn
-	 * @returns {boolean} true if king is attacked
+	 * @returns {boolean} true if king is Attacked
 	 */
-	function kingAttacked(color)
+	function KingAttacked(color)
 	{
 		if (color > 1)
 			color = (color == 2)? turn : turn ^ 1;
-		return attacked(color ^ 1, kings[color]);
+		return Attacked(color ^ 1, kings[color]);
 	}
 
 	/**
 	 * Get a list of all legal moves
 	 * @returns {!Array<number>}
 	 */
-	function legalMoves()
+	function LegalMoves()
 	{
-		let moves = createMoves(false);
+		let moves = CreateMoves(false);
 		return moves.filter(move => {
-			if (!makeMove(move))
+			if (!MakeMove(move))
 				return false;
-			undoMove();
+			UndoMove();
 			return true;
 		});
 	}
@@ -1794,12 +1773,12 @@ var Chess = function(fen_)
 	 * @param {boolean} must_hash hash the board?
 	 * @returns {string} empty on error, and the FEN may be corrected
 	 */
-	function load(fen_, must_hash)
+	function Load(fen_, must_hash)
 	{
 		if (!fen_)
 			return "";
 
-		clear();
+		Clear();
 		fen = fen_;
 
 		let tokens = fen_.split(/\s+/),
@@ -1814,13 +1793,13 @@ var Chess = function(fen_)
 				square += parseInt(value, 10);
 			else
 			{
-				put(PIECES[value], square);
+				Put(PIECES[value], square);
 				++square;
 			}
 		}
 
 		turn = (tokens[1] == 'w')? 0 : 1;
-		ep_square = anToSquare(tokens[3]);
+		ep_square = AnToSquare(tokens[3]);
 		half_moves = DefaultInt(tokens[4], 0);
 		move_number = DefaultInt(tokens[5], 1);
 		fen_ply = (move_number << 1) - 3 + turn;
@@ -1883,7 +1862,7 @@ var Chess = function(fen_)
 		}
 
 		if (must_hash)
-			hashBoard();
+			HashBoard();
 		else
 			board_hash = 0;
 		return fen;
@@ -1894,14 +1873,14 @@ var Chess = function(fen_)
 	 * @param {number} move
 	 * @returns {boolean} false if the move is not legal
 	 */
-	function makeMove(move)
+	function MakeMove(move)
 	{
 		// null move?
 		let move_from = MoveFrom(move),
 			move_to = MoveTo(move);
 		if (move_from == move_to)
 		{
-			// addState(move);
+			// AddState(move);
 			// ++ply;
 			// turn ^= 1;
 			return false;
@@ -1924,10 +1903,10 @@ var Chess = function(fen_)
 			promote = COLORIZE(us, promote);
 
 		// 1) check if move is legal
-		// castle is always legal because the checks were made in makeMove
+		// castle is always legal because the checks were made in MakeMove
 		if (!is_castle)
 		{
-			// quick makeMove
+			// quick MakeMove
 			if (piece_type == KING)
 				kings[us] = move_to;
 			board[move_from] = 0;
@@ -1935,9 +1914,9 @@ var Chess = function(fen_)
 			if (passant)
 				board[passant] = 0;
 
-			if (kingAttacked(us))
+			if (KingAttacked(us))
 			{
-				// quick undoMove
+				// quick UndoMove
 				if (piece_type == KING)
 					kings[us] = move_from;
 				board[move_from] = piece_from;
@@ -1949,10 +1928,10 @@ var Chess = function(fen_)
 		}
 
 		// 2) move is legal => do all other stuff
-		addState(move);
+		AddState(move);
 
 		++half_moves;
-		hashEnPassant();
+		HashEnPassant();
 		ep_square = EMPTY;
 
 		// castle?
@@ -1966,18 +1945,18 @@ var Chess = function(fen_)
 				rook_piece = COLORIZE(us, ROOK),
 				rook_to = king_to - 1 + (q << 1);
 
-			hashSquare(king, king_piece);
-			hashSquare(rook, rook_piece);
-			hashSquare(king_to, king_piece);
-			hashSquare(rook_to, rook_piece);
+			HashSquare(king, king_piece);
+			HashSquare(rook, rook_piece);
+			HashSquare(king_to, king_piece);
+			HashSquare(rook_to, rook_piece);
 			board[king] = 0;
 			board[rook] = 0;
 			board[king_to] = king_piece;
 			board[rook_to] = rook_piece;
 
 			kings[us] = king_to;
-			hashCastle(us << 1);
-			hashCastle((us << 1) + 1);
+			HashCastle(us << 1);
+			HashCastle((us << 1) + 1);
 
 			// score
 			positions[us]
@@ -1987,9 +1966,9 @@ var Chess = function(fen_)
 		}
 		else
 		{
-			hashSquare(move_from, piece_from);
-			hashSquare(move_to, piece_to);
-			hashSquare(move_to, promote? promote : piece_from);
+			HashSquare(move_from, piece_from);
+			HashSquare(move_to, piece_to);
+			HashSquare(move_to, promote? promote : piece_from);
 
 			// remove castling if we capture a rook
 			if (capture)
@@ -1998,9 +1977,9 @@ var Chess = function(fen_)
 				if (capture == ROOK)
 				{
 					if (move_to == castling[them << 1])
-						hashCastle(them << 1);
+						HashCastle(them << 1);
 					else if (move_to == castling[(them << 1) + 1])
-						hashCastle((them << 1) + 1);
+						HashCastle((them << 1) + 1);
 				}
 				half_moves = 0;
 			}
@@ -2008,21 +1987,21 @@ var Chess = function(fen_)
 			// remove castling if we move a king/rook
 			if (piece_type == KING)
 			{
-				hashCastle(us << 1);
-				hashCastle((us << 1) + 1);
+				HashCastle(us << 1);
+				HashCastle((us << 1) + 1);
 			}
 			else if (piece_type == ROOK)
 			{
 				if (move_from == castling[us << 1])
-					hashCastle(us << 1);
+					HashCastle(us << 1);
 				else if (move_from == castling[(us << 1) + 1])
-					hashCastle((us << 1) + 1);
+					HashCastle((us << 1) + 1);
 			}
 			// pawn + update 50MR
 			else if (piece_type == PAWN)
 			{
 				if (passant != EMPTY)
-					hashEnPassant();
+					HashEnPassant();
 				else if (promote)
 					materials[us] += PROMOTE_SCORES[promote];
 				// pawn moves 2 squares
@@ -2050,13 +2029,13 @@ var Chess = function(fen_)
 	 * @param {boolean} decorate add + # decorators
 	 * @returns {MoveText}
 	 */
-	function moveObject(obj, decorate)
+	function MoveObject(obj, decorate)
 	{
 		let flag = 0,
 			move = 0,
 			move_from = obj['from'],
 			move_to = obj['to'],
-			moves = legalMoves(),
+			moves = LegalMoves(),
 			san = '';
 
 		// castle
@@ -2087,7 +2066,7 @@ var Chess = function(fen_)
 				if ((MoveFlag(move2) & flag) && move_to == MoveTo(move2))
 				{
 					move = move2;
-					san = moveToSan(move, moves);
+					san = MoveToSan(move, moves);
 					break;
 				}
 		}
@@ -2101,15 +2080,15 @@ var Chess = function(fen_)
 					continue;
 
 				move = move2;
-				san = moveToSan(move, moves);
+				san = MoveToSan(move, moves);
 				break;
 			}
 
 		// no suitable move?
-		if (move && makeMove(move))
+		if (move && MakeMove(move))
 		{
-			obj = unpackMove(move);
-			obj['m'] = decorate? decorateSan(san) : san;
+			obj = UnpackMove(move);
+			obj['m'] = decorate? DecorateSan(san) : san;
 			obj['ply'] = fen_ply + ply;
 		}
 		return /** @type MoveText*/(Assign({}, NULL_OBJ, obj));
@@ -2122,15 +2101,15 @@ var Chess = function(fen_)
 	 * @param {boolean} sloppy allow sloppy parser
 	 * @returns {MoveText}
 	 */
-	function moveSan(text, decorate, sloppy)
+	function MoveSan(text, decorate, sloppy)
 	{
-		let moves = legalMoves(),
-			obj = sanToObject(text, moves, sloppy);
+		let moves = LegalMoves(),
+			obj = SanToObject(text, moves, sloppy);
 		if (obj['from'] != obj['to'])
 		{
-			makeMove(packObject(obj));
+			MakeMove(PackObject(obj));
 			if (decorate)
-				obj['m'] = decorateSan(obj['m']);
+				obj['m'] = DecorateSan(obj['m']);
 		}
 		return obj;
 	}
@@ -2144,7 +2123,7 @@ var Chess = function(fen_)
 	 * @param {!Array<number>} moves
 	 * @returns {string}
 	 */
-	function moveToSan(move, moves)
+	function MoveToSan(move, moves)
 	{
 		let move_flag = MoveFlag(move),
 			move_from = MoveFrom(move),
@@ -2153,7 +2132,7 @@ var Chess = function(fen_)
 		if (move_flag & BITS_CASTLE)
 			return (move_to > move_from)? "O-O" : "O-O-O";
 
-		let disambiguator = disambiguate(move, moves),
+		let disambiguator = Disambiguate(move, moves),
 			move_type = TYPE(board[move_from]),
 			output = '';
 
@@ -2163,11 +2142,11 @@ var Chess = function(fen_)
 		if (MoveCapture(move) || (move_flag & BITS_EN_PASSANT))
 		{
 			if (move_type == PAWN)
-				output += squareToAn(move_from, false)[0];
+				output += SquareToAn(move_from, false)[0];
 			output += 'x';
 		}
 
-		output += squareToAn(move_to, false);
+		output += SquareToAn(move_to, false);
 
 		let promote = MovePromote(move);
 		if (promote)
@@ -2184,14 +2163,14 @@ var Chess = function(fen_)
 	 * @param {boolean} decorate add + # decorators
 	 * @returns {MoveText}
 	 */
-	function moveUci(text, decorate)
+	function MoveUci(text, decorate)
 	{
 		let obj = {
-			'from': anToSquare(text.substr(0, 2)),
+			'from': AnToSquare(text.substr(0, 2)),
 			'promote': text[4]? TYPE(PIECES[text[4]]) : 0,
-			'to': anToSquare(text.substr(2, 2)),
+			'to': AnToSquare(text.substr(2, 2)),
 		};
-		return moveObject(obj, decorate);
+		return MoveObject(obj, decorate);
 	}
 
 	/**
@@ -2201,7 +2180,7 @@ var Chess = function(fen_)
 	 * @param {boolean} create_fen
 	 * @returns {!Array<Object>}
 	 */
-	function multiSan(multi, sloppy, create_fen)
+	function MultiSan(multi, sloppy, create_fen)
 	{
 		let result = [],
 			texts = multi.split(' ');
@@ -2210,12 +2189,12 @@ var Chess = function(fen_)
 			if ('0123456789'.includes(text[0]))
 				continue;
 
-			let moves = legalMoves(),
-				obj = sanToObject(text, moves, sloppy);
+			let moves = LegalMoves(),
+				obj = SanToObject(text, moves, sloppy);
 			if (obj['from'] == obj['to'])
 				break;
-			makeMove(packObject(obj));
-			obj['fen'] = create_fen? createFen() : "";
+			MakeMove(PackObject(obj));
+			obj['fen'] = create_fen? CreateFen() : "";
 			obj['ply'] = fen_ply + ply;
 			obj['score'] = 0;
 			result.push(obj);
@@ -2228,7 +2207,7 @@ var Chess = function(fen_)
 	 * @param {string} multi c2c4 a7a8a ...
 	 * @returns {!Array<Object>}
 	 */
-	function multiUci(multi)
+	function MultiUci(multi)
 	{
 		let result = [],
 			texts = multi.split(' ');
@@ -2237,11 +2216,11 @@ var Chess = function(fen_)
 			if ('0123456789'.includes(text[0]))
 				continue;
 
-			let obj = moveUci(text, true);
+			let obj = MoveUci(text, true);
 			if (obj['from'] == obj['to'] || !obj['m'])
 				break;
 
-			obj['fen'] = createFen();
+			obj['fen'] = CreateFen();
 			obj['ply'] = fen_ply + ply;
 			obj['score'] = 0;
 			result.push(obj);
@@ -2256,14 +2235,14 @@ var Chess = function(fen_)
 	 * - nb/r/q/r/p
 	 * @param {!Array<number>} moves
 	 */
-	function orderMoves(moves)
+	function OrderMoves(moves)
 	{
 		// use previous PV to reorder the first move
 		if (!move_id && (order_mode & 2) && prev_pv.length > ply)
 		{
 			let first = prev_pv[ply],
-				from = anToSquare(first.substr(0, 2)),
-				to = anToSquare(first.substr(2, 2)),
+				from = AnToSquare(first.substr(0, 2)),
+				to = AnToSquare(first.substr(2, 2)),
 				promote = first[4]? TYPE(PIECES[first[4]]) : 0;
 
 			let id = 0;
@@ -2275,7 +2254,7 @@ var Chess = function(fen_)
 			}
 		}
 
-		moves.sort(compareMoves);
+		moves.sort(CompareMoves);
 	}
 
 	/**
@@ -2289,7 +2268,7 @@ var Chess = function(fen_)
 	 * @param {MoveText} obj
 	 * @returns {number}
 	 */
-	function packObject(obj)
+	function PackObject(obj)
 	{
 		let value = 0
 			+ (obj['capture'] << 10)
@@ -2304,7 +2283,7 @@ var Chess = function(fen_)
 	 * Get params
 	 * @returns {!Array<number>}
 	 */
-	function params()
+	function Params()
 	{
 		let result = [
 			max_depth,                                      // 0
@@ -2318,27 +2297,27 @@ var Chess = function(fen_)
 	}
 
 	/**
-	 * Perform perft and divide
+	 * Perform Perft and divide
 	 * @param {string} fen
 	 * @param {number} depth
 	 * @returns {string}
 	 */
-	function perft(fen, depth)
+	function Perft(fen, depth)
 	{
 		if (fen)
-			load(fen, false);
-		let moves = legalMoves(),
+			Load(fen, false);
+		let moves = LegalMoves(),
 			lines = [`1=${moves.length}`];
 
 		for (let move of moves)
 		{
-			makeMove(move);
+			MakeMove(move);
 			let prev = nodes;
-			nullSearch(depth - 1);
+			NullSearch(depth - 1);
 			let delta = nodes - prev;
-			lines.push(`${ucifyMove(move)}:${delta}`);
+			lines.push(`${UcifyMove(move)}:${delta}`);
 			prev = nodes;
-			undoMove();
+			UndoMove();
 		}
 
 		if (depth > 1)
@@ -2352,7 +2331,7 @@ var Chess = function(fen_)
 	 * @param {string} pv_string previous pv
 	 * @param {boolean} scan_all_
 	 */
-	function prepareSearch(move_string, pv_string, scan_all_)
+	function PrepareSearch(move_string, pv_string, scan_all_)
 	{
 		first_moves = move_string? move_string.split(' ').map(item => item >>> 0) : [];
 		prev_pv = pv_string? pv_string.split(' ') : [];
@@ -2373,7 +2352,7 @@ var Chess = function(fen_)
 	 * @param {boolean} console
 	 * @returns {string}
 	 */
-	function print(console)
+	function Print(console)
 	{
 		let text = '';
 		for (let i = SQUARE_A8; i <= SQUARE_H1; ++i)
@@ -2397,7 +2376,7 @@ var Chess = function(fen_)
 	 * @param {number} piece
 	 * @param {number} square
 	 */
-	function put(piece, square)
+	function Put(piece, square)
 	{
 		board[square] = piece;
 		if (TYPE(piece) == KING)
@@ -2409,10 +2388,10 @@ var Chess = function(fen_)
 	/**
 	 * Reset the board to the default position
 	 */
-	function reset()
+	function Reset()
 	{
 		frc = false;
-		load(DEFAULT_POSITION, false);
+		Load(DEFAULT_POSITION, false);
 	}
 
 	/**
@@ -2422,14 +2401,14 @@ var Chess = function(fen_)
 	 * @param {boolean} sloppy allow sloppy parser
 	 * @returns {MoveText}
 	 */
-	function sanToObject(san, moves, sloppy)
+	function SanToObject(san, moves, sloppy)
 	{
 		// 1) try exact matching
-		let clean = cleanSan(san);
+		let clean = CleanSan(san);
 		for (let move of moves)
-			if (clean == cleanSan(moveToSan(move, moves)))
+			if (clean == CleanSan(MoveToSan(move, moves)))
 			{
-				let obj = unpackMove(move);
+				let obj = UnpackMove(move);
 				obj['m'] = san;
 				obj['ply'] = fen_ply + ply + 1;
 				return /** @type MoveText */(Assign({}, NULL_OBJ, obj));
@@ -2490,8 +2469,8 @@ var Chess = function(fen_)
 					&& (from_file == EMPTY || from_file == Filer(move_from))
 					&& (from_rank == EMPTY || from_rank == Rank(move_from))
 					&& (!promote || promote == MovePromote(move))) {
-				let obj = unpackMove(move);
-				obj['m'] = moveToSan(move, moves);
+				let obj = UnpackMove(move);
+				obj['m'] = MoveToSan(move, moves);
 				obj['ply'] = fen_ply + ply + 1;
 				return /** @type MoveText */(Assign({}, NULL_OBJ, obj));
 			}
@@ -2507,19 +2486,19 @@ var Chess = function(fen_)
 	 * @param {boolean} scan_all_
 	 * @returns {!Array<MoveText>} updated moves
 	 */
-	function search(move_string, pv_string, scan_all_)
+	function Search(move_string, pv_string, scan_all_)
 	{
 		// 1) prepare search
-		prepareSearch(move_string, pv_string, scan_all_);
-		hashBoard();
-		evaluatePositions();
+		PrepareSearch(move_string, pv_string, scan_all_);
+		HashBoard();
+		EvaluatePositions();
 
 		// 2) search
 		let pv = [];
 		if (search_mode == 1)
-			miniMax(0, max_depth, pv);
+			MiniMax(0, max_depth, pv);
 		else
-			alphaBeta(-SCORE_INFINITY, SCORE_INFINITY, 0, max_depth, pv);
+			AlphaBeta(-SCORE_INFINITY, SCORE_INFINITY, 0, max_depth, pv);
 
 		// 3) add unseen moves with a None score
 		if (!scan_all)
@@ -2527,9 +2506,9 @@ var Chess = function(fen_)
 			let seens = Assign({}, ...first_objs.map(obj => ({[obj['m']]: 1})));
 			for (let move of first_moves)
 			{
-				let uci = ucifyMove(move);
+				let uci = UcifyMove(move);
 				if (!seens[uci])
-					addTopMove(move, -SCORE_NONE, []);
+					AddTopMove(move, -SCORE_NONE, []);
 			}
 		}
 
@@ -2545,7 +2524,7 @@ var Chess = function(fen_)
 	 * @param {boolean=} check check the boundaries
 	 * @returns {string} a1
 	 */
-	function squareToAn(square, check)
+	function SquareToAn(square, check)
 	{
 		let file = Filer(square),
 			rank = Rank(square);
@@ -2562,10 +2541,10 @@ var Chess = function(fen_)
 	 * @param {number} move
 	 * @returns {string}
 	 */
-	function ucifyMove(move)
+	function UcifyMove(move)
 	{
 		let promote = MovePromote(move),
-			uci = squareToAn(MoveFrom(move), false) + squareToAn(MoveTo(move), false);
+			uci = SquareToAn(MoveFrom(move), false) + SquareToAn(MoveTo(move), false);
 		if (promote)
 			uci += PIECE_LOWER[promote];
 		return uci;
@@ -2576,11 +2555,11 @@ var Chess = function(fen_)
 	 * @param {MoveText} obj
 	 * @returns {string}
 	 */
-	function ucifyObject(obj)
+	function UcifyObject(obj)
 	{
 		if (!obj)
 			return '???';
-		let uci = squareToAn(obj['from'], false) + squareToAn(obj['to'], false);
+		let uci = SquareToAn(obj['from'], false) + SquareToAn(obj['to'], false);
 		if (obj['promote'])
 			uci += PIECE_LOWER[obj['promote']];
 		return uci;
@@ -2590,7 +2569,7 @@ var Chess = function(fen_)
 	 * Undo a move
 	 * @returns {boolean}
 	 */
-	function undoMove()
+	function UndoMove()
 	{
 		if (ply <= 0)
 			return false;
@@ -2695,7 +2674,7 @@ var Chess = function(fen_)
 	 * @param {number} move
 	 * @returns {MoveText}
 	 */
-	function unpackMove(move)
+	function UnpackMove(move)
 	{
 		return {
 			'capture': MoveCapture(move),
@@ -2712,64 +2691,64 @@ var Chess = function(fen_)
 	}
 
 	// if the user passes in a fen string, load it, else default to starting position
-	load(fen_ || DEFAULT_POSITION, false);
-	initSquares();
+	Load(fen_ || DEFAULT_POSITION, false);
+	InitSquares();
 
 	// BINDING CODE
 	///////////////
 
-	this.anToSquare = anToSquare;
-	this.attacked = attacked;
+	this.AnToSquare = AnToSquare;
+	this.Attacked = Attacked;
 	this.attacks = () => attacks;
 	this.avgDepth = () => max_depth;
 	this.board = () => board;
 	this.boardHash = () => board_hash;
 	this.castling = () => castling;
-	this.checked = color => kingAttacked(color);
-	this.cleanSan = cleanSan;
-	this.clear = clear;
-	this.configure = configure;
+	this.checked = color => KingAttacked(color);
+	this.CleanSan = CleanSan;
+	this.Clear = Clear;
+	this.Configure = Configure;
 	this.currentFen = () => fen;
-	this.decorateSan = decorateSan;
+	this.DecorateSan = DecorateSan;
 	this.defenses = () => defenses;
-	this.evaluate = evaluate;
-	this.fen = createFen;
-	this.fen960 = createFen960;
+	this.Evaluate = Evaluate;
+	this.fen = CreateFen;
+	this.fen960 = CreateFen960;
 	this.frc = () => frc;
-	this.hashBoard = hashBoard;
+	this.HashBoard = HashBoard;
 	this.hashStats = () => [tt_adds, tt_hits];
-	this.load = load;
-	this.makeMove = makeMove;
+	this.Load = Load;
+	this.MakeMove = MakeMove;
 	this.material = color => materials[color];
 	this.mobilities = () => mobilities;
-	this.moveObject = moveObject;
-	this.moves = legalMoves;
-	this.moveSan = moveSan;
-	this.moveToSan = moveToSan;
-	this.moveUci = moveUci;
-	this.multiSan = multiSan;
-	this.multiUci = multiUci;
+	this.MoveObject = MoveObject;
+	this.moves = LegalMoves;
+	this.MoveSan = MoveSan;
+	this.MoveToSan = MoveToSan;
+	this.MoveUci = MoveUci;
+	this.MultiSan = MultiSan;
+	this.MultiUci = MultiUci;
 	this.nodes = () => nodes;
-	this.order = orderMoves;
-	this.packObject = packObject;
-	this.params = params;
-	this.perft = perft;
+	this.order = OrderMoves;
+	this.PackObject = PackObject;
+	this.Params = Params;
+	this.Perft = Perft;
 	this.piece = text => PIECES[text] || 0;
-	this.print = print;
-	this.prepare = prepareSearch;
-	this.put = put;
-	this.reset = reset;
-	this.sanToObject = sanToObject;
-	this.search = search;
+	this.Print = Print;
+	this.prepare = PrepareSearch;
+	this.Put = Put;
+	this.Reset = Reset;
+	this.SanToObject = SanToObject;
+	this.Search = Search;
 	this.selDepth = () => Max(avg_depth, sel_depth);
-	this.squareToAn = squareToAn;
+	this.SquareToAn = SquareToAn;
 	this.trace = () => trace;
 	this.turn = () => turn;
-	this.ucifyMove = ucifyMove;
-	this.ucifyObject = ucifyObject;
-	this.undo = undoMove;
-	this.unpackMove = unpackMove;
-	this.version = () => '20201102';
+	this.UcifyMove = UcifyMove;
+	this.UcifyObject = UcifyObject;
+	this.undo = UndoMove;
+	this.UnpackMove = UnpackMove;
+	this.version = () => '20220606';
 	return this;
 };
 

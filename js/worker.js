@@ -19,7 +19,8 @@ let DEV = {},
 	},
 	engines = {};
 
-if (self.Module) {
+if (self.Module)
+{
 	self.Module().then(instance => {
 		engine_classes.wasm = instance.Chess;
 	});
@@ -78,10 +79,10 @@ function think(engine, fen, moves, pv_string, scan_all)
 {
 	// 1) generate all moves + analyse them
 	let chess = createChess(engine);
-	chess.load(fen, true);
+	chess.Load(fen, true);
 
 	let start = Now(1),
-		objs = ArrayJS(chess.search(moves.join(' '), pv_string, scan_all)),
+		objs = ArrayJS(chess.Search(moves.join(' '), pv_string, scan_all)),
 		elapsed = Now(1) - start;
 
 	// 2) results
@@ -117,7 +118,7 @@ self.onmessage = e => {
 	// 1) create the chess engine
 	let chess = createChess(data['engine']);
 	if (data['options'])
-		chess.configure(data['frc'], data['options'], data['depth']);
+		chess.Configure(data['frc'], data['options'], data['depth']);
 
 	// 2) handle the messages
 	if (func == 'config')

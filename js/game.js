@@ -13,29 +13,30 @@
 /*
 globals
 _, A, Abs, addPlayerEval, AddTimeout, AnimationFrame, ArrayJS, Assign, assignMove, Attrs, audiobox, C, CacheId,
-calculateFeatureQ, cannotClick, Ceil, changeSetting, chart_data, charts, checkHash, checkSocketIo, Clamp,
-clampEval, Class, ClearTimeout, closePopups, context_areas, context_target:true, controls, convertCheckmate,
-CopyClipboard, createFieldValue, CreateNode, createPageArray, CreateSVG, createSvgIcon, cube:true,
+calculateFeatureQ, CannotClick, Ceil, ChangeSetting, chart_data, charts, CheckHash, checkSocketIo, Clamp,
+clampEval, Class, ClearTimeout, ClosePopups, context_areas, context_target:true, controls, convertCheckmate,
+CopyClipboard, CreateFieldValue, CreateNode, CreatePageArray, CreateSVG, CreateSvgIcon, cube:true,
 DefaultArray, DefaultFloat, DefaultInt, DefaultObject, DEV, device, document, DownloadObject, E, Events, Exp, exports,
-fillCombo, fixMoveFormat, Floor, formatEval, FormatPercent, formatUnit, From, FromSeconds, FromTimestamp, getArea,
-getFenPly, getMovePly, getObject, global, HAS_GLOBAL, HasClass, HasClasses, Hide, HOST_ARCHIVE, HTML, Id, Input,
-InsertNodes, invertEval, IsArray, IsObject, isOverlayVisible, IsString, Keys, KEYS,
-last_key:true, last_scroll, listenLog, loadLibrary, loadModel, LOCALHOST, location, Lower, LS, markPlyCharts, Max,
-Min, Module, navigator, node_modal, Now, Pad, Parent, ParseJSON, parseTime, playSound, pushState, QueryString,
-RandomInt, redrawEvalCharts, require, resetCharts, resize3d, resizeText, Resource, restoreHistory, Round,
-S, SafeId, saveOption, saveStorage, scaleBoom, scene, scrollAdjust, set3dEvents, setScaleFunc, setSection,
-Show, showPopup, Sign, sliceCharts, SP, Split, splitMoveString, SPRITE_OFFSETS, Sqrt, START_FEN, STATE_KEYS,
-stockfishWdl, Stringify, Style, SUB_BOARDS, TEXT, TextHTML, timers, Title, TITLES, Toggle, touchHandle,
-translateDefault, translateNodes,
+FillCombo, fixMoveFormat, Floor, formatEval, FormatPercent, formatUnit, From, FromSeconds, FromTimestamp, GetArea,
+getFenPly, getMovePly, GetObject, global, HAS_GLOBAL, HasClass, HasClasses, Hide, HOST_ARCHIVE, HTML, Id, Input,
+InsertNodes, invertEval, IsArray, IsObject, IsOverlayVisible, IsString, Keys, KEYS,
+last_key:true, last_scroll, listenLog, LoadLibraryOnce, LoadModel, LOCALHOST, location, Lower, LS, markPlyCharts, Max,
+Min, Module, navigator, node_modal, Now, Pad, Parent, ParseJSON, parseTime, PlaySound, PushState, QueryString,
+RandomInt, redrawEvalCharts, require, resetCharts, Resize3d, ResizeText, Resource, RestoreHistory, Round,
+S, SafeId, SaveOption, SaveStorage, scaleBoom, scene, ScrollAdjust, Set3dEvents, setScaleFunc, SetSection,
+Show, ShowPopup, Sign, sliceCharts, SP, Split, splitMoveString, SPRITE_OFFSETS, Sqrt, START_FEN, STATE_KEYS,
+stockfishWdl, Stringify, Style, SUB_BOARDS, TEXT, TextHTML, timers, Title, TITLES, Toggle, HandleTouch,
+TranslateDefault, TranslateNodes,
 Undefined, updateChart, updateChartOptions, updateLiveChart, updateLiveCharts, updateMarkers, updatePlayerChart,
-updatePlayerCharts, updateSvg, Upper, vi_clickTab:true, vi_closePopups:true, vi_init3dAfter:true,
-vi_randomPosition:true, Visible, VisibleHeight, VisibleWidth, WB_LOWER, WB_TITLE, window, X_SETTINGS, XBoard, xboards,
+updatePlayerCharts, UpdateSvg, Upper, vi_ClickTab:true, vi_ClosePopups:true, vi_Init3dAfter:true,
+vi_RandomPosition:true, Visible, VisibleHeight, VisibleWidth, WB_LOWER, WB_TITLE, window, X_SETTINGS, XBoard, xboards,
 Y, y_x, Z
 */
 'use strict';
 
 // <<
-if (typeof global != 'undefined') {
+if (typeof global != 'undefined')
+{
 	['common', 'engine', 'global', 'graph', 'network', 'xboard'].forEach(key => {
 		Object.assign(global, require(`./${key}.js`));
 	});
@@ -438,7 +439,7 @@ let ANALYSIS_URLS = {
 		'archive': {},
 		'live': {},
 	},
-	vi_openedTableSpecial;
+	vi_OpenedTableSpecial;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -850,9 +851,9 @@ function createBoards(mode='html')
 			}, BOARDS[key]),
 			xboard = new XBoard(options);
 
-		xboard.initialise();
+		xboard.Initialize();
 		// make sure not to render => false
-		xboard.resize(options.size * 8 + options.border * 2, {render: false});
+		xboard.Resize(options.size * 8 + options.border * 2, {render: false});
 		xboards[key] = xboard;
 	});
 
@@ -862,7 +863,7 @@ function createBoards(mode='html')
 	// 3) update themes: this will render the boards too
 	updateBoardTheme(7);
 
-	xboards['pva'].reset(y_x);
+	xboards['pva'].Reset(y_x);
 	showAgree();
 }
 
@@ -925,7 +926,7 @@ function resetSubBoards(section, mode, render, start_fen)
 		if (mode & 1)
 			board.valid = false;
 		if (mode & 2)
-			board.reset(section, {evals: mode & 4, render: render, start_fen: start_fen});
+			board.Reset(section, {evals: mode & 4, render: render, start_fen: start_fen});
 	});
 }
 
@@ -1022,7 +1023,7 @@ function showAgree()
 /**
  * Show/hide the timers around the board
  * @param {string} name
- * @param {number} resize_flag &1:force resizeGame, &2:no resize, &4:skip visible
+ * @param {number} resize_flag &1:force ResizeGame, &2:no resize, &4:skip visible
  * @param {boolean=} show undefined => show when center/engine is disabled
  * @returns {boolean} true if visibility has changed
  */
@@ -1061,7 +1062,7 @@ function showBoardInfo(name, resize_flag, show)
 	if (!(resize_flag & 4) && Visible('.xbottom', node) == show)
 	{
 		if (resize_flag & 1)
-			resizeGame();
+			ResizeGame();
 		return false;
 	}
 
@@ -1093,7 +1094,7 @@ function showBoardInfo(name, resize_flag, show)
 		board.showPicks(true);
 
 	if (!(resize_flag & 2))
-		resizeGame();
+		ResizeGame();
 	return true;
 }
 
@@ -1153,7 +1154,7 @@ function updateBoardTheme(mode)
 
 		// 3) render
 		board.instant();
-		board.render(7);
+		board.Render(7);
 	});
 
 	updateEnginePieces();
@@ -1401,7 +1402,7 @@ function analyseCrosstable(section, data)
 			widths = [...['4%', '18%', '7%'], ...extras.map(() => width)],
 			head = createTableColumns(new_columns, widths, abbrevs, titles);
 		HTML('thead', head, node);
-		translateNodes(node);
+		TranslateNodes(node);
 	}
 
 	updateTable(section, 'cross', cross_rows);
@@ -1527,7 +1528,7 @@ function checkPagination(parent)
 		let lines = ['<a class="page page-prev" data-p="-1">&lt;</a>'];
 		if (parent == 'table')
 		{
-			let array = createPageArray(num_page, page, 2);
+			let array = CreatePageArray(num_page, page, 2);
 			for (let id = 0; id < num_page; ++id)
 			{
 				if (array[id] == 2)
@@ -1638,7 +1639,7 @@ function createTable(columns, add_empty)
 		'<table><thead>',
 			createTableColumns(columns),
 		'</thead><tbody>',
-			(add_empty? columns.map(column => `<td data-x="${createFieldValue(column)[0]}">&nbsp;</td>`).join('') : ''),
+			(add_empty? columns.map(column => `<td data-x="${CreateFieldValue(column)[0]}">&nbsp;</td>`).join('') : ''),
 		'</tbody></table>',
 	];
 	return lines.join('');
@@ -1657,7 +1658,7 @@ function createTable(columns, add_empty)
 function createTableColumns(columns, widths, no_translates=[], titles={})
 {
 	return columns.map((column, id) => {
-		let [field, value] = createFieldValue(column),
+		let [field, value] = CreateFieldValue(column),
 			style = widths? ` style="width:${widths[id]}"` : '',
 			title = titles[value] || TITLES[value] || titles[field] || TITLES[field],
 			translate = no_translates.includes(value)? '' : ` data-t="${value}"`;
@@ -1687,7 +1688,7 @@ function createTables()
 			html = createTable(Split(table), is_overview);
 		HTML(CacheId(`${is_overview? '' : 'table-'}${name}`), html);
 	});
-	translateNodes('body');
+	TranslateNodes('body');
 
 	// 2) live tables
 	for (let [node, box_node] of LIVE_TABLES)
@@ -1700,7 +1701,7 @@ function createTables()
 	// 3) mouse/touch scroll
 	Events('.scroller', 'pointerdown pointerenter pointerleave pointermove pointerup', e => {
 		if (!device.iphone)
-			touchHandle(e);
+			HandleTouch(e);
 	}, {passive: false});
 }
 
@@ -1782,17 +1783,16 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 		// fill the table
 		if (!skip)
 		{
-			if (callback)
-				callback(data);
+			if (callback) callback(data);
 			else if (name)
 			{
 				updateTable(section, name, data);
 				if (show && section == y_x)
 				{
-					openTable(name);
+					OpenTable(name);
 					let is_game = hashes[section]['game'];
 					AddTimeout('scroll', () => {
-						scrollAdjust(Y.scroll || (is_game? '#overview' : '#tables'));
+						ScrollAdjust(Y.scroll || (is_game? '#overview' : '#tables'));
 					}, TIMEOUT_scroll);
 				}
 			}
@@ -1800,7 +1800,7 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 	}
 
 	let key = `table_${name}_${section}`,
-		cache = getObject(key),
+		cache = GetObject(key),
 		timeout = CACHE_TIMEOUTS[name];
 
 	if (!no_cache && timeout)
@@ -1843,7 +1843,7 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 
 		if (!no_cache)
 		{
-			saveStorage(key, {'data': data, 'time': Floor(now)});
+			SaveStorage(key, {'data': data, 'time': Floor(now)});
 			if (DEV['json'])
 				LS(`cache saved: ${key}`);
 		}
@@ -1936,8 +1936,8 @@ function showFilteredGames(text)
 {
 	setGamesFilter(text);
 	AddTimeout('table', () => {
-		openTable('sched');
-		scrollAdjust('#tables');
+		OpenTable('sched');
+		ScrollAdjust('#tables');
 	}, TIMEOUT_search);
 }
 
@@ -2049,7 +2049,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 				let value = row[key];
 				if (value)
 					lines.push(value + '');
-				return {[createFieldValue(key)[0]]: value};
+				return {[CreateFieldValue(key)[0]]: value};
 			}));
 			row['_text'] = Lower(lines.join(' '));
 			data.push(row);
@@ -2084,10 +2084,8 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 	data.sort((a, b) => {
 		let ax = a[sort],
 			bx = b[sort];
-		if (ax == undefined)
-			return empty;
-		if (bx == undefined)
-			return -empty;
+		if (ax == undefined) return empty;
+		if (bx == undefined) return -empty;
 
 		// special cases:
 		// - red terminations
@@ -2095,8 +2093,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 		{
 			let ay = TERMINATION_NORMALS[ax] || 0,
 				by = TERMINATION_NORMALS[bx] || 0;
-			if (ay != by)
-				return ay - by;
+			if (ay != by) return ay - by;
 		}
 		// - G5.0 => 5.0
 		else if (def == 80000)
@@ -2420,8 +2417,8 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 				Style('th', [['width', `${th_width}px`]], true, node);
 		}
 
-		updateSvg(table);
-		translateNodes(table);
+		UpdateSvg(table);
+		TranslateNodes(table);
 
 		// 7) add events
 		if (name == 'season')
@@ -2436,7 +2433,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 		C('[data-g]', function(e) {
 			if (Parent(e.target, {class_: 'fen', self: true}))
 				return;
-			if (cannotClick())
+			if (CannotClick())
 				return;
 
 			if (this.tagName == 'TR')
@@ -2448,7 +2445,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 			Y.scroll = '#overview';
 			if (section == 'archive')
 			{
-				saveOption('game', game);
+				SaveOption('game', game);
 				openGame();
 			}
 			// make sure the game is over
@@ -2464,13 +2461,13 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 				let overlay = xboards['xfen'].xoverlay;
 				HTML(overlay,
 					'<v class="fcenter facenter h100">'
-						+ `<div class="xcopy">${translateDefault('COPIED')}</div>`
+						+ `<div class="xcopy">${TranslateDefault('COPIED')}</div>`
 					+ '</v>'
 				);
 				Style(overlay, [['opacity', 1], ['transition', 'opacity 0s']]);
 			}
 			else
-				popupCustom('popup-fen', 'fen', e, '', TEXT(this));
+				PopupCustom('popup-fen', 'fen', e, '', TEXT(this));
 		});
 
 		// sorting
@@ -2677,8 +2674,7 @@ function openEvent(section, callback)
 	downloadTable(section, `${prefix}_Schedule.json`, 'sched', null, Assign({show: !event_tag}, dico));
 
 	openGame();
-	if (callback)
-		callback();
+	if (callback) callback();
 }
 
 /**
@@ -2693,8 +2689,8 @@ function openGame()
 
 	if (Y['season'] && (Y['div'] || Y['round'] || Y['stage']) && Y['game'])
 	{
-		pushState();
-		checkHash();
+		PushState();
+		CheckHash();
 	}
 	if (Y['game'])
 		downloadPgn('archive', `${HOST_ARCHIVE}/${event}_${Y['game']}.pgn`);
@@ -2709,23 +2705,23 @@ function setSeasonEvents()
 
 	// expand/collapse
 	C('.season', function() {
-		if (cannotClick())
+		if (CannotClick())
 			return;
 		expandSeason(this);
 	}, table);
 
 	// open games
 	C('a[data-u]', function() {
-		if (cannotClick())
+		if (CannotClick())
 			return;
 
 		// 'season=18&div=l3' or 'season=cup5&round=round16'
 		let query = QueryString({query: this.dataset['u']}),
 			dico = Assign({div: '', round: '', stage: ''}, /** @type Object */(query));
 		Keys(dico).forEach(key => {
-			saveOption(key, dico[key]);
+			SaveOption(key, dico[key]);
 		});
-		saveOption('game', 1);
+		SaveOption('game', 1);
 
 		setGamesFilter('');
 		Y.scroll = '#tables';
@@ -2853,15 +2849,10 @@ function calculateEventStats(section, rows)
 		results[result] = (results[result] || 0) + 1;
 		seconds += time;
 
-		if (max_moves[0] < move)
-			max_moves = [move, game];
-		if (min_moves[0] > move)
-			min_moves = [move, game];
-
-		if (max_time[0] < time)
-			max_time = [time, game];
-		if (min_time[0] > time)
-			min_time = [time, game];
+		if (max_moves[0] < move) max_moves = [move, game];
+		if (min_moves[0] > move) min_moves = [move, game];
+		if (max_time[0] < time) max_time = [time, game];
+		if (min_time[0] > time) min_time = [time, game];
 
 		let open_engine = DefaultObject(open_engines, unique, {});
 		DefaultArray(open_engine, pair, []).push([result, row]);
@@ -2973,7 +2964,7 @@ function calculateEventStats(section, rows)
 	let parent = CacheId('table-stats'),
 		node = _('.estats', parent);
 	HTML(node, lines.join(''));
-	translateNodes(node);
+	TranslateNodes(node);
 
 	// 6) shortcuts?
 	for (let id = 1; id <= 3; ++id)
@@ -3129,7 +3120,7 @@ function createBracket(section, data)
 						seed?
 						`<h title="${item.name}">`
 							+ `<img class="match-logo" src="image/engine/${short}.png">`
-							+ `<div class="seed">#${seed}</div><div>${resizeText(short, 17)}</div>`
+							+ `<div class="seed">#${seed}</div><div>${ResizeText(short, 17)}</div>`
 						+ '</h>' : '',
 						short,
 					];
@@ -3216,7 +3207,7 @@ function createBracket(section, data)
 	lines.push('<div id="svgs"></div></h>');
 	let node = CacheId('table-brak');
 	HTML(node, lines.join(''));
-	translateNodes(node);
+	TranslateNodes(node);
 
 	// 4) swap active in final round
 	let nodes = A('.final .match-title');
@@ -3348,12 +3339,12 @@ function createCup(section, data, show)
 
 	createBracket(section, data);
 	if (show)
-		openTable('brak');
+		OpenTable('brak');
 
 	// 3) cup events
 	// click on a match => load its games
 	C('.match', function() {
-		if (cannotClick())
+		if (CannotClick())
 			return;
 		let dataset = this.dataset,
 			names = Split(dataset['n']),
@@ -3387,7 +3378,7 @@ function createMedals(parent)
 			dataset = node.dataset,
 			place = dataset['p'],
 			html = [
-				`<div class="place-svg">${createSvgIcon(place < 4? 'trophy' : 'medal')}</div>`,
+				`<div class="place-svg">${CreateSvgIcon(place < 4? 'trophy' : 'medal')}</div>`,
 				`<div class="place-text">#${place}</div>`,
 			].join(''),
 			style = `left:${ax + 4}px;top:${ay}px`;
@@ -3567,9 +3558,8 @@ function downloadPgn(section, url, reset_moves, callback)
 		updatePgn(section, data, extra, reset_moves);
 
 		if (section == 'archive' && Y.scroll)
-			scrollAdjust(Y.scroll);
-		if (callback)
-			callback();
+			ScrollAdjust(Y.scroll);
+		if (callback) callback();
 	}, {type: 'text'});
 }
 
@@ -3852,7 +3842,7 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={})
 					if (mode & 8)
 					{
 						board.chessLoad(prev_fen);
-						let result = board.chess.multiSan(pv, true, false),
+						let result = board.chess.MultiSan(pv, true, false),
 							new_pv = result.map(item => item['m']).join(' ');
 						if (pv != new_pv)
 						{
@@ -4007,7 +3997,7 @@ function parseTimeControl(value)
 /**
  * Resize game elements
  */
-function resizeGame()
+function ResizeGame()
 {
 	let section = y_x;
 
@@ -4017,15 +4007,15 @@ function resizeGame()
 		if (!board.main && !board.sub)
 			return;
 
-		let area = getArea(board.node),
+		let area = GetArea(board.node),
 			width = area.clientWidth,
 			size = Max(width / Max(board.sub, 1) - 4, 196);
-		board.resize(size, {instant: true, render: true});
+		board.Resize(size, {instant: true, render: true});
 	});
 
 	// 2) moves
 	resizeMoveLists();
-	resize3d();
+	Resize3d();
 
 	// 3) percents
 	let ratio = Y['hardware']? 0.65 : 1;
@@ -4361,7 +4351,7 @@ function updateMovePv(section, ply, move)
 	}
 
 	// PV should jump directly to a new position, no transition
-	board.reset(section, {instant: true});
+	board.Reset(section, {instant: true});
 
 	if (move['pv'])
 	{
@@ -4497,7 +4487,7 @@ function updateOverviewBasic(section, headers)
 		updateHardware(section, id, [box_node, node], {engine: name, short: short});
 
 		TextHTML(CacheId(`engine${id}`), formatEngine(name, true, 21));
-		TextHTML(main.node_minis[id].short, resizeText(short, 15, 'small'));
+		TextHTML(main.node_minis[id].short, ResizeText(short, 15, 'small'));
 
 		// load engine image
 		let image = CacheId(`logo${id}`);
@@ -4578,7 +4568,7 @@ function updateOverviewMoves(section, headers, moves, is_new)
 	{
 		let result = headers['Result'];
 		if (is_live && is_new)
-			playSound(audiobox, (result == '1/2-1/2')? Y['sound_draw']: Y['sound_win']);
+			PlaySound(audiobox, (result == '1/2-1/2')? Y['sound_draw']: Y['sound_win']);
 		if (DEV['new'])
 			LS(`finished: result=${result} : is_live=${is_live} : is_new=${is_new}`);
 		main.setLast(result);
@@ -4730,7 +4720,7 @@ function updatePgn(section, data, extras, reset_moves)
 			LS(pgn);
 		}
 
-		main.reset(section, {evals: is_same, render: is_same, start_fen: pgn.frc});
+		main.Reset(section, {evals: is_same, render: is_same, start_fen: pgn.frc});
 		main.clearMoves(main.moves.length);
 		if (is_same)
 		{
@@ -5015,8 +5005,8 @@ function analyseLog(line)
 	if (!no_pv)
 	{
 		let last_move = main.moves[ply - 1];
-		main.chess.load(last_move? last_move['fen']: main.fen);
-		let moves = ArrayJS(main.chess.multiUci(info_pv));
+		main.chess.Load(last_move? last_move['fen']: main.fen);
+		let moves = ArrayJS(main.chess.MultiUci(info_pv));
 		info['moves'] = moves;
 		if (moves.length != splits.length)
 			return checkMissingMoves(ply, null, null, true);
@@ -5117,8 +5107,7 @@ function boomEffect(section, type, info, volume, intensities, params, callback)
 			}, shake_start);
 		}
 
-		if (callback)
-			callback();
+		if (callback) callback();
 	});
 }
 
@@ -5149,10 +5138,10 @@ function boomSound(type, volume, intensities, callback)
 	}
 
 	last_sound = sound;
-	let gonna_play = volume? playSound(audiobox, sound, {onloaded: () => {
+	let gonna_play = volume? PlaySound(audiobox, sound, {onloaded: () => {
 		if (DEV['effect'])
 			LS(`sound ${sound} loaded, playing now ...`);
-		playSound(audiobox, sound, {interrupt: true, volume: Y[`${type}_volume`] / 10 * volume});
+		PlaySound(audiobox, sound, {interrupt: true, volume: Y[`${type}_volume`] / 10 * volume});
 		callback(sound);
 	}}) : false;
 
@@ -5429,7 +5418,7 @@ function clockTick(section, id)
 		player = main.players[id],
 		elapsed = (now - player.start) * 1000,
 		left = player.left - elapsed,
-		// try to synchronise it with the left time
+		// try to synchronize it with the left time
 		timeout = Floor(left) % 1000 - 1;
 
 	if (isNaN(timeout))
@@ -5659,7 +5648,7 @@ function updateHardware(section, id, nodes, {engine, hardware, short}={})
 		let node = _('[data-x="name"]', child);
 		if (node && node.title != full_engine)
 		{
-			TextHTML(node, resizeText(short, 15));
+			TextHTML(node, ResizeText(short, 15));
 			Attrs(node, {title: full_engine});
 			Assign(player, {
 				feature: Undefined(ENGINE_FEATURES[short], 0),
@@ -5738,7 +5727,7 @@ function updateLiveEval(section, data, id, force_ply, no_graph)
 	// live engine is not desired?
 	if (!Y[`live_engine_${id + 1}`])
 	{
-		HTML('.live-pv', `<i>${translateDefault('off~2')}</i>`, node);
+		HTML('.live-pv', `<i>${TranslateDefault('off~2')}</i>`, node);
 		return false;
 	}
 
@@ -5826,7 +5815,7 @@ function updatePlayerEval(section, data, same_pv)
 		if (moves && moves.length)
 		{
 			data['ply'] = moves[0]['ply'];
-			board.reset(section, {instant: true});
+			board.Reset(section, {instant: true});
 			let last_move = main.moves.slice(-1)[0];
 			board.setFen(last_move? last_move['fen']: main.fen);
 			board.addMoves(moves, {agree: data.agree, cur_ply: data['ply']});
@@ -5881,7 +5870,7 @@ function updatePlayerEval(section, data, same_pv)
 			TextHTML(_(`[data-x="${key}"]`, node), dico[key]);
 		});
 
-		TextHTML(mini.short, resizeText(short, 15, 'small'));
+		TextHTML(mini.short, ResizeText(short, 15, 'small'));
 		TextHTML(mini.eval_, formatEval(eval_, ply));
 		if (data['nodes'] > 1)
 			addPlayerEval(player, ply, eval_);
@@ -5961,7 +5950,7 @@ function benchmark(round=10, running=0)
 		if (!running)
 		{
 			ClearTimeout('bench_load');
-			closePopups();
+			ClosePopups();
 			bench_countdown = now + 3.2;
 			bench_start = -1;
 			bench_stats.length = 0;
@@ -5974,7 +5963,7 @@ function benchmark(round=10, running=0)
 			Attrs(CacheId('bench-stop'), {'data-t': 'STOP'});
 
 			addBenchmarkResult(0, ...['round', 'plies', 'time', 'plies/s'].map(text => `<i data-t="${text}"></i>`));
-			translateNodes(node_benchmark);
+			TranslateNodes(node_benchmark);
 
 			// events
 			C('#bench-stop', function() {
@@ -5994,7 +5983,7 @@ function benchmark(round=10, running=0)
 			let sub = CacheId('bench-sub');
 			Attrs(sub, {'data-t': device.mobile? "Don't touch the screen." : "Don't move the mouse."});
 			Show(sub);
-			translateNodes(node_benchmark);
+			TranslateNodes(node_benchmark);
 		}
 
 		main.setPly(-1, {manual: true});
@@ -6040,7 +6029,7 @@ function benchmark(round=10, running=0)
 
 			Attrs(CacheId('bench-title'), {'data-t': 'Benchmark over.'});
 			Attrs(CacheId('bench-stop'), {'data-t': 'OK'});
-			translateNodes(node_benchmark);
+			TranslateNodes(node_benchmark);
 			Hide(CacheId('bench-sub'));
 		}
 		return;
@@ -6068,11 +6057,11 @@ function benchmark(round=10, running=0)
  * @param {number} code hardware keycode
  * @returns {boolean?}
  */
-function gameActionKey(code)
+function GameActionKey(code)
 {
 	let okay = null;
 
-	if (isOverlayVisible())
+	if (IsOverlayVisible())
 	{
 		let changes = 0,
 			parent = Visible(node_modal)? node_modal : null,
@@ -6147,7 +6136,7 @@ function gameActionKey(code)
 
 		// changed a setting?
 		if (changes && node.name)
-			changeSetting(node.name, node.value);
+			ChangeSetting(node.name, node.value);
 
 		// moved?
 		Class('.selected', '-selected', true, parent);
@@ -6159,13 +6148,13 @@ function gameActionKey(code)
 		{
 		case 32:
 			okay = false;
-			board_target.play(false, true, 'gameActionKey');
+			board_target.play(false, true, 'GameActionKey');
 			break;
 		// left / right
 		case 37:
 		case 39:
 			if (code == 37)
-				board_target.play(true, true, 'gameActionKey');
+				board_target.play(true, true, 'GameActionKey');
 			board_target.hold = KEY_NAMES[code];
 			board_target.holdButton(KEY_NAMES[code], 0, true);
 			break;
@@ -6212,7 +6201,7 @@ function gameActionKey(code)
 				}
 				// redo/undo
 				else
-					restoreHistory(code == 89? 1 : -1);
+					RestoreHistory(code == 89? 1 : -1);
 			break;
 		}
 
@@ -6227,7 +6216,7 @@ function gameActionKey(code)
  * @param {number} code
  * @returns {boolean?}
  */
-function gameActionKeyup(code)
+function GameActionKeyup(code)
 {
 	let okay = null;
 
@@ -6239,7 +6228,7 @@ function gameActionKeyup(code)
 		board_target.release();
 		ClearTimeout(`click_${KEY_NAMES[code]}_${board_target.id}`);
 		if (code == 37)
-			board_target.play(true, true, 'gameActionKeyup');
+			board_target.play(true, true, 'GameActionKeyup');
 		break;
 	}
 
@@ -6258,7 +6247,7 @@ function loadBenchmark(step)
 		'game': 33,
 		'season': '20',
 	});
-	setSection('archive');
+	SetSection('archive');
 	openEvent('archive');
 
 	// wait for the PGN + 2x live info to be loaded
@@ -6311,7 +6300,7 @@ function pasteText(text)
 	{
 		if (board.fen != fen)
 		{
-			board.reset(section, {evals: true, start_fen: board.fen});
+			board.Reset(section, {evals: true, start_fen: board.fen});
 			if (board_target.name == 'pva')
 				resetCharts(section);
 		}
@@ -6330,11 +6319,11 @@ function pasteText(text)
 ///////////
 
 /**
- * Initialise the 3D engine
+ * Initialize the 3D engine
  */
-function init3dAfter()
+function Init3dAfter()
 {
-	loadModel('pieces', 'export/pieces-draco.glb', object => {
+	LoadModel('pieces', 'export/pieces-draco.glb', object => {
 		cube = object;
 		scene.add(cube);
 	});
@@ -6344,7 +6333,7 @@ function init3dAfter()
  * Random position for looking at the chessboard
  * @returns {!Object}
  */
-function randomPosition()
+function RandomPosition()
 {
 	return {x: -1.34, y: -1.98, z: 0.97};
 }
@@ -6354,11 +6343,11 @@ function randomPosition()
 
 /**
  * Changed a game setting
- * - called by changeSettingSpecial
+ * - called by ChangeSettingSpecial
  * @param {string} name
  * @param {*} value
  */
-function changeSettingGame(name, value)
+function ChangeSettingGame(name, value)
 {
 	let update_tab,
 		board = getContextBoard(),
@@ -6394,7 +6383,7 @@ function changeSettingGame(name, value)
 				.replace('{STANDARD}', board.frc? 'chess960' : 'standard');
 			window.open(url, '_blank');
 		}
-		closePopups();
+		ClosePopups();
 		break;
 	case 'benchmark_game':
 		loadBenchmark();
@@ -6403,8 +6392,8 @@ function changeSettingGame(name, value)
 		benchmark();
 		break;
 	case 'boom_effect':
-		saveOption('boom_sound', value? 'random' : 0);
-		saveOption('boom_visual', value? 'all' : 0);
+		SaveOption('boom_sound', value? 'random' : 0);
+		SaveOption('boom_visual', value? 'all' : 0);
 		break;
 	case 'copy_download':
 	case 'download_PGN':
@@ -6412,19 +6401,19 @@ function changeSettingGame(name, value)
 		break;
 	case 'copy_FEN':
 		CopyClipboard(board.fen);
-		closePopups();
+		ClosePopups();
 		break;
 	case 'copy_moves':
 		copyPgn(board, false, false, 4);
-		closePopups();
+		ClosePopups();
 		break;
 	case 'copy_PGN':
 		copyPgn(board);
-		closePopups();
+		ClosePopups();
 		break;
 	case 'explosion_effect':
-		saveOption('explosion_sound', value? 'random' : 0);
-		saveOption('explosion_visual', value? 'all' : 0);
+		SaveOption('explosion_sound', value? 'random' : 0);
+		SaveOption('explosion_visual', value? 'all' : 0);
 		break;
 	case 'game_PV':
 		S(CacheId('pva-pv'), value);
@@ -6448,7 +6437,7 @@ function changeSettingGame(name, value)
 		if (charts[target])
 		{
 			Y['scales'][target] = ivalue;
-			saveOption('scales');
+			SaveOption('scales');
 			setScaleFunc(target);
 			updateChart(target);
 		}
@@ -6472,8 +6461,8 @@ function changeSettingGame(name, value)
 		updateMaterials(main.moves[main.ply]);
 		break;
 	case 'moob_effect':
-		saveOption('moob_sound', value? 'random' : 0);
-		saveOption('moob_visual', value? 'all' : 0);
+		SaveOption('moob_sound', value? 'random' : 0);
+		SaveOption('moob_visual', value? 'all' : 0);
 		break;
 	case 'moves_left':
 		Class(CacheId('movesleft'), 'hidden', !value);
@@ -6524,7 +6513,7 @@ function changeSettingGame(name, value)
 /**
  * Hash was changed => check if we should load a game
  */
-function changedHash()
+function ChangedHash()
 {
 	// 1) global stuff
 	if (DEV['ad'])
@@ -6557,7 +6546,7 @@ function changedHash()
 
 	// new game link detected => try to load it
 	if (DEV['load'])
-		LS(`changedHash: ${game_link} => ${string} : ${missing}`);
+		LS(`ChangedHash: ${game_link} => ${string} : ${missing}`);
 	game_link = string;
 
 	if (section == 'live')
@@ -6588,7 +6577,7 @@ function changedSection()
 		active = tab.name;
 	else
 		active = is_cup? 'brak' : DEFAULT_ACTIVES[section];
-	AddTimeout('active', () => openTable(active), TIMEOUT_active);
+	AddTimeout('active', () => OpenTable(active), TIMEOUT_active);
 
 	// reset some stuff
 	lockSubBoards(2);
@@ -6606,8 +6595,8 @@ function changedSection()
 		if (Y['archive_scroll'] && !hash.game && changed_sections)
 		{
 			if (!['sched', 'season'].includes(getActiveTab('table').name))
-				openTable('season');
-			scrollAdjust('#tables');
+				OpenTable('season');
+			ScrollAdjust('#tables');
 		}
 		if (hash.game)
 		{
@@ -6900,18 +6889,18 @@ function handleBoardEvents(board, type, value, e, force)
 		{
 			context_target = board.node;
 			let setting = (name == 'pva')? 'game' : 'board';
-			showPopup('options', 'toggle', {id: name, setting: setting, xy: [e.clientX, e.clientY]});
+			ShowPopup('options', 'toggle', {id: name, setting: setting, xy: [e.clientX, e.clientY]});
 		}
 		else if (value == 'copy')
 		{
 			context_target = board.node;
-			showPopup('options', 'toggle', {
+			ShowPopup('options', 'toggle', {
 				class_: 'settings2', id: name, setting: 'quick_copy', xy: [e.clientX, e.clientY]});
 		}
 		else if (value == 'cube')
 		{
 			board.mode = (board.mode == 'html')? 'text' : 'html';
-			board.render(3);
+			board.Render(3);
 		}
 		else if (value == 'rotate')
 		{
@@ -6924,7 +6913,7 @@ function handleBoardEvents(board, type, value, e, force)
 	case 'move':
 		board_target = board;
 		if (value != undefined && !Visible(board.vis))
-			openTable(board.tab);
+			OpenTable(board.tab);
 		break;
 	case 'new':
 		if (board_target == board)
@@ -7028,7 +7017,7 @@ function handleBoardEvents(board, type, value, e, force)
  * @param {string|Node} sel
  * @param {boolean=} clicked user clicked on the tab?
  */
-function openTable(sel, clicked)
+function OpenTable(sel, clicked)
 {
 	ClearTimeout('active');
 
@@ -7050,7 +7039,7 @@ function openTable(sel, clicked)
 	if (parent.id == 'table-tabs')
 	{
 		Y['table_tab'][y_x] = target;
-		saveOption('table_tab');
+		SaveOption('table_tab');
 
 		if (clicked && target == 'sched')
 			setGamesFilter('');
@@ -7079,7 +7068,7 @@ function openTable(sel, clicked)
 	if (context_area)
 		context_area[2] |= 2;
 
-	saveOption('areas');
+	SaveOption('areas');
 
 	let key = target,
 		node = CacheId(target);
@@ -7133,10 +7122,10 @@ function openedTable(node, name, tab)
 		break;
 	case 'kibitz':
 	case 'pv':
-		resizeGame();
+		ResizeGame();
 		break;
 	case 'log':
-		fillCombo('#nlog', [0, 5, 10, 'all'], Y['live_log']);
+		FillCombo('#nlog', [0, 5, 10, 'all'], Y['live_log']);
 		listenLog();
 		break;
 	case 'season':
@@ -7155,8 +7144,8 @@ function openedTable(node, name, tab)
 	checkPaginations();
 	AddTimeout('info', () => showBoardInfo(section, 0), TIMEOUT_info);
 
-	if (vi_openedTableSpecial)
-		vi_openedTableSpecial(node, name, tab);
+	if (vi_OpenedTableSpecial)
+		vi_OpenedTableSpecial(node, name, tab);
 
 	// switch graphs when PVA is hidden
 	let target;
@@ -7180,7 +7169,7 @@ function openedTable(node, name, tab)
  * @param {string|number=} scolor 0, 1, popup
  * @param {string=} text
  */
-function popupCustom(id, name, e, scolor, text)
+function PopupCustom(id, name, e, scolor, text)
 {
 	if (e.buttons)
 		return;
@@ -7216,8 +7205,8 @@ function popupCustom(id, name, e, scolor, text)
 			lines = lines.map(([left, right]) => {
 				return [
 					'<div>',
-						`<div>${resizeText(left, 20)}</div>`,
-						`<div class="indent">${resizeText(right, 20) || '&nbsp;'}</div>`,
+						`<div>${ResizeText(left, 20)}</div>`,
+						`<div class="indent">${ResizeText(right, 20) || '&nbsp;'}</div>`,
 					'</div>',
 				].join('');
 			});
@@ -7279,10 +7268,10 @@ function popupCustom(id, name, e, scolor, text)
  * Compute woke up
  * @param {number} resume_time
  */
-function resumeSleep(resume_time)
+function ResumeSleep(resume_time)
 {
 	if (DEV['queue'])
-		LS(`resumeSleep: ${resume_time}`);
+		LS(`ResumeSleep: ${resume_time}`);
 	checkMissingMoves();
 	showBoardInfo(y_x, 1);
 }
@@ -7290,14 +7279,14 @@ function resumeSleep(resume_time)
 /**
  * Game events
  */
-function setGameEvents()
+function SetGameEvents()
 {
-	set3dEvents();
+	Set3dEvents();
 
 	// engine popup
 	Events('#info0, #info1, #popup', '!pointerenter pointermove pointerleave pointerup', function(e) {
 		let id = this.id;
-		popupCustom('popup', 'engine', e, (id == 'popup')? id : id.slice(-1));
+		PopupCustom('popup', 'engine', e, (id == 'popup')? id : id.slice(-1));
 	});
 	C('#mobil', function() {
 		let ply = this.dataset['i'];
@@ -7307,7 +7296,7 @@ function setGameEvents()
 
 	// tabs
 	C('div.tab', function() {
-		openTable(this);
+		OpenTable(this);
 	});
 	// search
 	Input('input.search', function() {
@@ -7320,7 +7309,7 @@ function setGameEvents()
 	// live_log
 	C('#nlog', function() {
 		let value = this.value;
-		saveOption('live_log', value);
+		SaveOption('live_log', value);
 		if (value == 0)
 			Y['log_auto_start'] = 0;
 		listenLog();
@@ -7331,9 +7320,9 @@ function setGameEvents()
 //////////
 
 /**
- * Call this after the structures have been initialised
+ * Call this after the structures have been initialized
  */
-function startGame()
+function StartGame()
 {
 	createTables();
 	createBoards();
@@ -7342,7 +7331,7 @@ function startGame()
 
 	Y.wasm = 0;
 	if (Y.wasm)
-		loadLibrary('js/chess-wasm.js', () => {
+		LoadLibraryOnce('js/chess-wasm.js', () => {
 			let module = window['Module'];
 			if (!module)
 				return;
@@ -7364,9 +7353,9 @@ function startGame()
 }
 
 /**
- * Initialise structures with game specific data
+ * Initialize structures with game specific data
  */
-function startupGame()
+function StartupGame()
 {
 	node_benchmark = Id('benchmark');
 	node_mobil = Id('mobil');
@@ -7394,10 +7383,10 @@ function startupGame()
 		'TC': 'Time control',
 	});
 
-	vi_clickTab = openTable;
-	vi_closePopups = popupCustom;
-	vi_init3dAfter = init3dAfter;
-	vi_randomPosition = randomPosition;
+	vi_ClickTab = OpenTable;
+	vi_ClosePopups = PopupCustom;
+	vi_Init3dAfter = Init3dAfter;
+	vi_RandomPosition = RandomPosition;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

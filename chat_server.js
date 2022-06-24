@@ -26,7 +26,8 @@ let chess,
 /**
  * Load chess-wasm
  */
-async function loadWasm() {
+async function loadWasm()
+{
 	let instance = await Module();
 	chess = new instance.Chess();
 	LS('chess library loaded');

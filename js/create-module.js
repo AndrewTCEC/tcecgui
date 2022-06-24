@@ -49,8 +49,7 @@ function CreateModule(path, sources, output, extra_exports)
 			if (extra_exports)
 			{
 				let misses = extra_exports.filter(name => !exports.includes(`${name}: ${name},`));
-				if (!misses.length)
-					return;
+				if (!misses.length) return;
 				console.log(misses);
 			}
 		}

@@ -2417,8 +2417,6 @@ function initPlayers(ply, players, evals)
 		88,
 	],
 ].forEach(([section, board_data, data, answer, num_move], id) => {
-	if (id != 2)
-		return;
 	test(`updatePgn:${id}`, () => {
 		let main = xboards[section];
 		main.moves.length = 0;

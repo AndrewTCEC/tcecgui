@@ -99,10 +99,8 @@ const animation_frames = {},
  */
 function _(sel, parent)
 {
-	if (!sel)
-		return null;
-	if (IsObject(sel))
-		return /** @type {Node} */(sel);
+	if (!sel) return null;
+	if (IsObject(sel)) return /** @type {Node} */(sel);
 	return (parent || document).querySelector(/** @type {string} */(sel));
 }
 
@@ -114,10 +112,8 @@ function _(sel, parent)
  */
 function A(sel, parent)
 {
-	if (!sel)
-		return [];
-	if (IsArray(sel) || sel instanceof NodeList)
-		return /** @type {!Array<Node>} */(sel);
+	if (!sel) return [];
+	if (IsArray(sel) || sel instanceof NodeList) return /** @type {!Array<Node>} */(sel);
 	return (parent || document).querySelectorAll(sel);
 }
 
@@ -129,8 +125,7 @@ function A(sel, parent)
  */
 function E(sel, callback, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	if (IsArray(sel) || sel instanceof NodeList)
 	{
 		let id = 0;
@@ -152,12 +147,9 @@ function E(sel, callback, parent)
  */
 function Id(id, parent)
 {
-	if (!id)
-		return null;
-	if (IsObject(id))
-		return /** @type {Node} */(id);
-	if (HAS_GLOBAL)
-		return (parent || document).querySelector('#' + id);
+	if (!id) return null;
+	if (IsObject(id)) return /** @type {Node} */(id);
+	if (HAS_GLOBAL) return (parent || document).querySelector('#' + id);
 	return (parent || document).getElementById(id);
 }
 
@@ -172,8 +164,7 @@ function Id(id, parent)
  */
 function Attrs(sel, attrs, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		Keys(attrs).forEach(key => {
 			const value = attrs[key];
@@ -193,8 +184,7 @@ function Attrs(sel, attrs, parent)
  */
 function AttrsNS(sel, attrs, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		Keys(attrs).forEach(key => {
 			const value = attrs[key];
@@ -216,8 +206,7 @@ function AttrsNS(sel, attrs, parent)
  */
 function C(sel, callback, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		node.onclick = callback;
 	}, parent);
@@ -251,8 +240,7 @@ function CacheId(id, parent)
  */
 function Class(sel, classes, add=true, parent=null)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 
 	// string
 	if (IsString(classes))
@@ -261,8 +249,8 @@ function Class(sel, classes, add=true, parent=null)
 		E(sel, node => {
 			const list = node.classList;
 			classes.split(' ').forEach(item => {
-				if (!item)
-					return;
+				if (!item) return;
+
 				const first = item.substr(0, 1),
 					right = item.substr(1);
 				if (first == '-')
@@ -337,22 +325,19 @@ function Contain(list, pattern)
 	if (first == '^')
 	{
 		for (const item of list)
-			if (item.slice(0, length) == right)
-				return true;
+			if (item.slice(0, length) == right) return true;
 	}
 	// ends with
 	else if (first == '$')
 	{
 		for (const item of list)
-			if (item.slice(-length) == right)
-				return true;
+			if (item.slice(-length) == right) return true;
 	}
 	// includes
 	else if (first == '*')
 	{
 		for (const item of list)
-			if (item.indexOf(right) >= 0)
-				return true;
+			if (item.indexOf(right) >= 0) return true;
 	}
 	// exact match
 	else if (list.contains)
@@ -427,8 +412,7 @@ function CreateSVG(type, attrs, children)
  */
 function Events(sel, events, callback, options, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 
 	let direct;
 	if (events.slice(0, 1) == '!')
@@ -459,8 +443,7 @@ function HasClass(node, class_)
 {
 	if (IsString(node))
 		node = _(node);
-	if (!node)
-		return false;
+	if (!node) return false;
 
 	return node.classList && node.classList.contains(class_);
 }
@@ -475,12 +458,10 @@ function HasClasses(node, classes)
 {
 	if (IsString(node))
 		node = _(node);
-	if (!node)
-		return false;
+	if (!node) return false;
 
 	const list = node.classList;
-	if (!list)
-		return false;
+	if (!list) return false;
 
 	// match all classes, ex: 'visible -shown'
 	for (const item of classes.split(' '))
@@ -489,13 +470,11 @@ function HasClasses(node, classes)
 			b = item.substr(1);
 		if (a == '-')
 		{
-			if (Contain(list, b))
-				return false;
+			if (Contain(list, b)) return false;
 		}
 		else if (a == '+')
 		{
-			if (!Contain(list, b))
-				return false;
+			if (!Contain(list, b)) return false;
 		}
 		else if (!item.split('|').some(key => Contain(list, key)))
 			return false;
@@ -512,8 +491,7 @@ function HasClasses(node, classes)
  */
 function Hide(sel, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		node.classList.remove('dn');
 		node.style.display = 'none';
@@ -590,8 +568,7 @@ function Index(node)
  */
 function Input(sel, callback, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		node.oninput = callback;
 	}, parent);
@@ -607,8 +584,7 @@ function InsertNodes(parent, nodes, prepend)
 {
 	if (IsString(parent))
 		parent = _(parent);
-	if (!parent)
-		return;
+	if (!parent) return;
 
 	const child = parent.firstChild;
 	for (const node of nodes)
@@ -630,10 +606,8 @@ function InsertNodes(parent, nodes, prepend)
  */
 function Parent(node, {tag, class_, attrs, self}={})
 {
-	if (IsString(node))
-		node = _(node);
-	if (!node)
-		return null;
+	if (IsString(node)) node = _(node);
+	if (!node) return null;
 
 	const aitems = attrs? attrs.split(' ') : [],
 		citems = class_? class_.split(' ') : [],
@@ -645,8 +619,7 @@ function Parent(node, {tag, class_, attrs, self}={})
 		if (depth || !self || parent.nodeType != 1)
 		{
 			parent = parent.parentNode;
-			if (!parent || !parent.tagName)
-				return null;
+			if (!parent || !parent.tagName) return null;
 		}
 		let ok = true;
 
@@ -713,8 +686,7 @@ function Parent(node, {tag, class_, attrs, self}={})
  */
 function S(sel, show, parent, mode='')
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		node.classList.remove('dn');
 		node.style.display = show? mode : 'none';
@@ -763,8 +735,7 @@ function ScrollDocument(top, {element, offset=0, outside, smooth=true}={})
 		if (isNaN(top))
 		{
 			node = _(/** @type {Node|string} */(top));
-			if (!node)
-				return;
+			if (!node) return;
 			let value = 0;
 			for (let parent = node; parent; parent = parent.offsetParent)
 				value += parent.offsetTop;
@@ -799,8 +770,7 @@ function ScrollDocument(top, {element, offset=0, outside, smooth=true}={})
  */
 function Show(sel, parent, mode='')
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		node.classList.remove('dn');
 		node.style.display = mode;
@@ -816,8 +786,7 @@ function Show(sel, parent, mode='')
  */
 function Style(sel, styles, add=true, parent=null)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 
 	// string
 	if (IsString(styles))
@@ -991,8 +960,7 @@ function TextHTML(sel, text, parent)
  */
 function Toggle(sel, parent)
 {
-	if (!sel)
-		return;
+	if (!sel) return;
 	E(sel, node => {
 		S(node, !Visible(node));
 	}, parent);
@@ -1006,12 +974,10 @@ function Toggle(sel, parent)
  */
 function Visible(sel, parent)
 {
-	if (!sel)
-		return null;
+	if (!sel) return null;
 	let visible;
 	E(sel, node => {
-		if (visible == false)
-			return;
+		if (visible == false) return;
 		else if (node.classList.contains('dn'))
 			visible = false;
 		else if (node.style.display == 'none' || node.style.visibility == 'hidden')
@@ -1035,8 +1001,7 @@ function Visible(sel, parent)
 function AddTimeout(name, func, timeout, is_interval)
 {
 	ClearTimeout(name);
-	if (timeout < 0)
-		return;
+	if (timeout < 0) return;
 
 	if (timeout)
 		timeouts[name] = [
@@ -1085,10 +1050,11 @@ function ArrayJS(vector)
 function CancelAnimationFrame(name)
 {
 	const handle = animation_frames[name];
-	if (!handle)
-		return;
-	cancelAnimationFrame(handle);
-	delete animation_frames[name];
+	if (handle)
+	{
+		cancelAnimationFrame(handle);
+		delete animation_frames[name];
+	}
 }
 
 /**
@@ -1134,8 +1100,7 @@ function Clear(dico)
 function ClearTimeout(name)
 {
 	const timeout = timeouts[name];
-	if (!timeout)
-		return;
+	if (!timeout) return;
 
 	if (timeout[1])
 		clearInterval(timeout[0]);
@@ -1268,8 +1233,7 @@ function DownloadObject(object, name, mode, space)
 		let json, type_;
 		if (mode == 2)
 		{
-			if (!IsString(object))
-				return;
+			if (!IsString(object)) return;
 			json = object;
 			type_ = 'plain';
 		}
@@ -1507,8 +1471,7 @@ function Resource(url, callback, {content=null, form, headers={}, method='GET', 
 	if (type)
 		xhr.responseType = type;
 	xhr.onreadystatechange = () => {
-		if (xhr.readyState != 4)
-			return;
+		if (xhr.readyState != 4) return;
 		callback(xhr.status, xhr.response, xhr);
 	};
 	xhr.open(method, url, true);
@@ -1577,8 +1540,7 @@ function VisibleWidth()
 function Format(vector, sep=', ', align=undefined)
 {
 	// null, undefined
-	if (vector == null)
-		return null;
+	if (vector == null) return null;
 	// [1, 2, 3]
 	if (IsArray(vector))
 		return vector.map(value => Format(IsArray(value)? value[0] : value, sep, align)).join(sep);

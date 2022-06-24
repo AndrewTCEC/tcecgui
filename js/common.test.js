@@ -3,7 +3,7 @@
  */
 // common.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-12
 //
 /*
 globals
@@ -29,9 +29,8 @@ const real_now = Date.now.bind(global.Date);
  */
 function BeginDateNow(now)
 {
-	if (now == null)
-		return;
-	global.Date.now = jest.fn(() => now);
+	if (now != null)
+		global.Date.now = jest.fn(() => now);
 }
 
 /**

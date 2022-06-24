@@ -317,8 +317,7 @@ function checkLatestArchive()
 
 function touchFile(fileName)
 {
-	if (_TEST)
-		return;
+	if (_TEST) return;
    fs.appendFileSync(fileName, '');
 }
 
@@ -453,8 +452,7 @@ function exitNode()
 
 function runPerlArchive()
 {
-	if (_TEST)
-		return;
+	if (_TEST) return;
    if (inprogress == 0)
    {
 	  inprogress = 1;
@@ -509,27 +507,26 @@ function runPerlArchive()
 		 }, 15000);
 		 console.log (stderr);
 		 console.log (stdout);
-	  });
-   }
-   else
-   {
-	  console.log ("Already another in progress");
-   }
+	  	});
+   	}
+	else
+	{
+		console.log ("Already another in progress");
+	}
 }
 
 function makeLink()
 {
-	if (_TEST)
-		return;
-   if (!retPgn.bonus)
-   {
-	  var makeLink = '/scratch/tcec/Commonscripts/Divlink/makelnk.sh';
+	if (_TEST) return;
+	if (!retPgn.bonus)
+	{
+		var makeLink = '/scratch/tcec/Commonscripts/Divlink/makelnk.sh';
 
-	  exec(makeLink + ' ' + retPgn.abb, function callback(error, stdout, stderr){
-		 console.log ("Error is :" + stderr);
-		 console.log ("Output is :" + stdout);
-	  });
-   }
+		exec(makeLink + ' ' + retPgn.abb, function callback(error, stdout, stderr) {
+			console.log("Error is :" + stderr);
+			console.log("Output is :" + stdout);
+		});
+	}
 }
 
 function addLiveTail()

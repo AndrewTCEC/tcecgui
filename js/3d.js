@@ -302,8 +302,7 @@ let Cube;
 function AddCube(cube)
 {
 	const index = cubes.indexOf(cube);
-	if (index >= 0)
-		return false;
+	if (index >= 0) return false;
 	cubes.push(cube);
 	return true;
 }
@@ -356,12 +355,9 @@ function DeleteCube(cube)
  */
 function Init3d(force)
 {
-	if (Vector3)
-		return;
-	if (force)
-		three_loaded = true;
-	if (!three_loaded)
-		return;
+	if (Vector3) return;
+	if (force) three_loaded = true;
+	if (!three_loaded) return;
 
 	// vars
 	UpdateThree();
@@ -493,8 +489,7 @@ function InitRenderer()
  */
 function Interpolate(part, epsilon)
 {
-	if (!part)
-		return;
+	if (!part) return;
 
 	// 1) backup
 	if (part.pos3) part.pos3.copy(part.position);
@@ -652,8 +647,7 @@ function PickObject(point, targets)
 		if (target)
 			raycaster.intersectObject(target, true, intersects);
 
-	if (!intersects.length)
-		return null;
+	if (!intersects.length) return null;
 
 	intersects.sort((a, b) => a.distance - b.distance);
 	return intersects[0];
@@ -665,8 +659,7 @@ function PickObject(point, targets)
  */
 function RemoveMaterial(materials)
 {
-	if (!materials)
-		return;
+	if (!materials) return;
 
 	if (IsArray(materials))
 		for (const material of /** @type {!Array} */(materials))
@@ -687,8 +680,8 @@ function RemoveMaterial(materials)
  */
 function RemoveMeshData(mesh)
 {
-	if (!mesh || !mesh.isMesh)
-		return;
+	if (!mesh || !mesh.isMesh) return;
+
 	const user_data = mesh.userData;
 	if (mesh.geometry)
 		mesh.geometry.dispose();
@@ -703,8 +696,7 @@ function RemoveMeshData(mesh)
  */
 function RemoveObjects(parent)
 {
-	if (!parent)
-		return;
+	if (!parent) return;
 
 	// 1) dispose geometries + materials
 	parent.traverse(child => RemoveMeshData(child));
@@ -727,8 +719,7 @@ function RemoveObjects(parent)
  */
 function Render()
 {
-	if (!cube || !clock || !T || !y_three)
-		return;
+	if (!cube || !clock || !T || !y_three) return;
 
 	const [can_render, can_simulate] = vi_CanRenderSimulate();
 	if (!can_render)
@@ -766,8 +757,7 @@ function Render()
 
 	debugs.fps = [delta, (delta > 0)? 1.0 / delta : 0];
 
-	if (!cube)
-		return;
+	if (!cube) return;
 
 	if (stats)
 		stats.begin();
@@ -948,8 +938,7 @@ function RequestRender(timer)
  */
 function Resize3d(no_csm)
 {
-	if (!three_loaded)
-		return;
+	if (!three_loaded) return;
 
 	let height = parent_3d.clientHeight,
 		width = parent_3d.clientWidth;
@@ -1017,8 +1006,7 @@ function Resize3d(no_csm)
  */
 function UpdateLight()
 {
-	if (csm || !light_sun_obj)
-		return;
+	if (csm || !light_sun_obj) return;
 
 	const distance = light_sun.shadow? light_sun.shadow.camera.right : 100;
 	camera.getWorldDirection(t_vector);
@@ -1031,8 +1019,7 @@ function UpdateLight()
  */
 function UpdateLightSettings()
 {
-	if (!light_sun)
-		return;
+	if (!light_sun) return;
 
 	// 1) get settings
 	const [main_intensity, under_intensity, quality] =
@@ -1049,8 +1036,7 @@ function UpdateLightSettings()
 	if (light_sun.quality)
 	{
 		// no change => return
-		if (light_sun.quality == quality)
-			return;
+		if (light_sun.quality == quality) return;
 
 		// HACK: remove the old light + create a new one
 		scene.remove(light_sun);
@@ -1191,8 +1177,7 @@ function ThreeVector(vector, target)
  **/
 function UpdatePhysics(delta)
 {
-	if (!world)
-		return;
+	if (!world) return;
 
 	// step simulation
 	world.stepSimulation(delta, 10);
@@ -1363,8 +1348,7 @@ function GamepadUpdate()
  */
 function PlaySound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended, onloaded, onplay, start=0, voice, volume=1}={})
 {
-	if (!has_clicked || !cube || !cube.sounds || Y['silent_mode'])
-		return false;
+	if (!has_clicked || !cube || !cube.sounds || Y['silent_mode']) return false;
 
 	// ext can be in the name
 	const name_ = name;
@@ -1380,8 +1364,7 @@ function PlaySound(cube, name, {_, cycle, ext='ogg', inside, interrupt, onended,
 
 	let audio = cube.sounds[name];
 	// already played the same sound this frame => skip
-	if (audio && frame && audio.frame == frame)
-		return false;
+	if (audio && frame && audio.frame == frame) return false;
 
 	// play sounds weaker depending on the distance
 	// - distance between 2 segments is ~1500 units
@@ -1495,12 +1478,10 @@ function GamepadModal()
 	// handle button repeat
 	Keys(buttons).forEach(key => {
 		const button = buttons[key];
-		if (!button)
-			return;
+		if (!button) return;
 
 		const code = BUTTON_MAPPINGS[key];
-		if (code < 37 || code > 40)
-			return;
+		if (code < 37 || code > 40) return;
 
 		const repeat = (key == button_repeat && time < button_repeat_time)? 0 : 0.5;
 		if (time > button + repeat)
@@ -1588,8 +1569,7 @@ function ToggleModal()
 function UpdateDebug()
 {
 	const cube = camera_target || cubes.find(item => !!(item && item.see));
-	if (!cube)
-		return;
+	if (!cube) return;
 
 	// general
 	const lines = [],

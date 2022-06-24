@@ -92,8 +92,7 @@ function checkSocketIo()
  */
 function eventSockets()
 {
-	if (!socket_io)
-		return;
+	if (!socket_io) return;
 
 	// live_log
 	socket_io.on('htmlread', data => {
@@ -180,8 +179,7 @@ function eventSockets()
 	//
 	AddTimeout('get_users', () => socket_io.emit('getusers', 'd'), TIMEOUT_users);
 	AddTimeout('check', () => {
-		if (!Y['log_auto_start'])
-			return;
+		if (!Y['log_auto_start']) return;
 		if (Now() > log_time + TIMEOUT_check - 1)
 		{
 			listenLog(0);
@@ -246,8 +244,7 @@ function insertLog(html)
  */
 function listenLog(new_room)
 {
-	if (!socket_io)
-		return;
+	if (!socket_io) return;
 	if (new_room == undefined)
 		new_room = Y['live_log'];
 	if (!num_listen && Y['log_auto_start'] && new_room == 0)
@@ -315,52 +312,28 @@ function showBanner(text)
 function SocketMessage(e)
 {
 	let datax = IsArray(e)? e : ParseJSON(e.data);
-	if (!datax || !IsArray(datax))
-		return false;
+	if (!datax || !IsArray(datax)) return false;
 
 	let [method, data, error] = /** @type {!Array} */(datax);
-	if (error)
-		return false;
+	if (error) return false;
 
 	switch (method)
 	{
 	// messages
-	case MSG_CUSTOM_LOG:
-		handleLog(data);
-		break;
-	case MSG_CUSTOM_PGN:
-		updatePgn('live', data);
-		break;
-	case MSG_USER_COUNT:
-		setViewers(data);
-		break;
+	case MSG_CUSTOM_LOG: handleLog(data); break;
+	case MSG_CUSTOM_PGN: updatePgn('live', data); break;
+	case MSG_USER_COUNT: setViewers(data); break;
 
 	// full files
-	case 'banner.txt':
-		showBanner(data);
-		break;
-	case 'crash.json':
-		updateTable('live', 'crash', data);
-		break;
-	case 'crosstable.json':
-		analyseCrosstable('live', data);
-		break;
-	case 'enginerating.json':
-		break;
-	case 'Eventcrosstable.json':
-		createCup('live', data);
-		break;
-	case 'gamelist.json':
-		break;
-	case 'liveeval.json':
-		updateLiveEval('live', data, 0);
-		break;
-	case 'liveeval1.json':
-		updateLiveEval('live', data, 1);
-		break;
-	case 'schedule.json':
-		updateTable('live', 'sched', data);
-		break;
+	case 'banner.txt': showBanner(data); break;
+	case 'crash.json': updateTable('live', 'crash', data); break;
+	case 'crosstable.json': analyseCrosstable('live', data); break;
+	case 'enginerating.json': break;
+	case 'Eventcrosstable.json': createCup('live', data); break;
+	case 'gamelist.json': break;
+	case 'liveeval.json': updateLiveEval('live', data, 0); break;
+	case 'liveeval1.json': updateLiveEval('live', data, 1); break;
+	case 'schedule.json': updateTable('live', 'sched', data); break;
 	case 'tournament.json':
 		analyseTournament('live', data);
 		if (y_x == 'live')
@@ -388,8 +361,7 @@ function updateTwitch(dark, chat_url, only_resize)
 	// 1) update twitch chat IF there was a change
 	dark = Y['twitch_dark'];
 	let node = CacheId('chat');
-	if (!node)
-		return;
+	if (!node) return;
 
 	let current = node.src,
 		src = Y['twitch_chat']? `${TWITCH_CHAT}${dark? '&darkpopout' : ''}` : '';

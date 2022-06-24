@@ -100,8 +100,7 @@ function getPgnStats(data, origin)
 
 	moves.slice(0, Floor(num_move * 0.8)).forEach((move, ply) => {
 		fixMoveFormat(move);
-		if (!move || isNaN(move.n) || move.n < 2 || isNaN(move.s))
-			return;
+		if (!move || isNaN(move.n) || move.n < 2 || isNaN(move.s)) return;
 		const time = move.n / move.s;
 		sum_moves[ply & 1] += move.n * 1.0;
 		sum_times[ply & 1] += time;
@@ -118,8 +117,7 @@ function getPgnStats(data, origin)
 			interval = Floor(num_value / 4) + 1;
 		let	number = 0;
 
-		if (!name)
-			return;
+		if (!name) return;
 
 		// collect hardware info
 		const options = dico[`${color}EngineOptions`] || {},
@@ -225,8 +223,7 @@ function mergeStats(result)
 	// 2) merge data
 	names.forEach(key => {
 		const stats = result[key];
-		if (!stats)
-			return;
+		if (!stats) return;
 
 		const reduce = stats.reduce((a, b) => [a[0] + b[0], 0, a[2] + b[2]]),
 			median = Floor(reduce[0] / stats.length + 0.5),
@@ -361,8 +358,7 @@ function OpenFile(filename, result, callback)
 		if (verbose)
 			LS(filename);
 		fs.readFile(filename, 'utf8', (err, data) => {
-			if (err || !data)
-				return;
+			if (err || !data) return;
 			getMultiPgnStats(data, result, filename);
 			callback();
 		});

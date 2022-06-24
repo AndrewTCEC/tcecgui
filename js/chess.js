@@ -971,12 +971,10 @@ var Chess = function(fen_)
 	 */
 	function UpdateEntry(entry, hash, score, bound, depth, move)
 	{
-		if (!hash_mode)
-			return;
+		if (!hash_mode) return;
 
 		hash >>>= 0;
-		if (hash == table[entry] && depth < (table[entry + 1] & 0xff) && bound != BOUND_EXACT)
-			return;
+		if (hash == table[entry] && depth < (table[entry + 1] & 0xff) && bound != BOUND_EXACT) return;
 		table[entry + 0] = hash;
 		table[entry + 1] = (score << 16) + (bound << 8) + depth;
 		table[entry + 2] = move;
@@ -995,8 +993,8 @@ var Chess = function(fen_)
 	 */
 	function AnToSquare(an)
 	{
-		if (an.length < 2)
-			return EMPTY;
+		if (an.length < 2) return EMPTY;
+
 		let file = an[0].charCodeAt(0) - 97,
 			rank = 56 - an[1].charCodeAt(0);
 		return file + (rank << 4);
@@ -1015,10 +1013,8 @@ var Chess = function(fen_)
 		for (let offset of PIECE_OFFSETS[KNIGHT])
 		{
 			let pos = square + offset;
-			if (pos & 0x88)
-				continue;
-			if (board[pos] == target)
-				return true;
+			if (pos & 0x88) continue;
+			if (board[pos] == target) return true;
 		}
 
 		// bishop + pawn + rook + queen
@@ -1036,22 +1032,17 @@ var Chess = function(fen_)
 					break;
 
 				let value = board[pos];
-				if (!value)
-					continue;
-				if (COLOR(value) != color)
-					break;
+				if (!value) continue;
+				if (COLOR(value) != color) break;
 
 				let piece_type = TYPE(value);
-				if (piece_type == QUEEN || piece_type == target)
-					return true;
+				if (piece_type == QUEEN || piece_type == target) return true;
 				if (k == 0)
 				{
-					if (piece_type == KING)
-						return true;
+					if (piece_type == KING) return true;
 					if (target == BISHOP && piece_type == PAWN)
 					{
-						if (color == ((j < 4)? BLACK : WHITE))
-							return true;
+						if (color == ((j < 4)? BLACK : WHITE)) return true;
 					}
 				}
 				break;
@@ -1760,8 +1751,7 @@ var Chess = function(fen_)
 	{
 		let moves = CreateMoves(false);
 		return moves.filter(move => {
-			if (!MakeMove(move))
-				return false;
+			if (!MakeMove(move)) return false;
 			UndoMove();
 			return true;
 		});
@@ -2468,7 +2458,8 @@ var Chess = function(fen_)
 					&& (!type || type == TYPE(board[move_from]))
 					&& (from_file == EMPTY || from_file == Filer(move_from))
 					&& (from_rank == EMPTY || from_rank == Rank(move_from))
-					&& (!promote || promote == MovePromote(move))) {
+					&& (!promote || promote == MovePromote(move)))
+			{
 				let obj = UnpackMove(move);
 				obj['m'] = MoveToSan(move, moves);
 				obj['ply'] = fen_ply + ply + 1;
@@ -2571,8 +2562,7 @@ var Chess = function(fen_)
 	 */
 	function UndoMove()
 	{
-		if (ply <= 0)
-			return false;
+		if (ply <= 0) return false;
 		--ply;
 
 		let move,

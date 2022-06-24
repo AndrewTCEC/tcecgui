@@ -58,8 +58,7 @@ function createChess(engine)
 	let chess = engines[engine];
 	if (!chess)
 	{
-		if (DEV['worker'])
-			LS(`creating "${engine}" engine`);
+		if (DEV['worker']) LS(`creating "${engine}" engine`);
 		engines[engine] = new engine_class();
 		chess = engines[engine];
 	}

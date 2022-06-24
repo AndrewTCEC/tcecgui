@@ -1,6 +1,6 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-22
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
@@ -12,9 +12,9 @@
 globals
 _, A, Abs, AddTimeout, AnimationFrame, Assign, Attrs, C, CacheId, CancelAnimationFrame, Ceil, Clamp, Class, Clear,
 ClearTimeout, CreateNode,
-DeepCopy, DefaultFloat, DefaultInt, DefaultObject, document, DownloadObject, E, Events, exports, Floor, From, global,
-HAS_DOCUMENT, HAS_GLOBAL, HasClass, HexString, Hide, history, HTML, Id, Input, IsArray, IsDigit, IsFloat, IsFunction,
-IsObject, IsString, Keys,
+DeepCopy, DefaultFloat, DefaultInt, DefaultObject, document, DownloadObject, E, Events, exports, FileReader, Floor,
+From, global, HAS_DOCUMENT, HAS_GLOBAL, HasClass, HexString, Hide, history, HTML, Id, Input, IsArray, IsDigit, IsFloat,
+IsFunction, IsObject, IsString, Keys,
 LoadLibrary, location, Lower, LS, Max, Min, NAMESPACE_SVG, navigator, Now, Parent, ParseJSON, PD, Pow, QueryString,
 require, Resource, Round,
 S, Safe, ScrollDocument, Show, Sign, SP, Stringify, Style, timeouts, Title, Undefined, Upper, Visible, VisibleHeight,
@@ -91,9 +91,11 @@ const _ALL = 'all',
 	KEYS = {},
 	LANGUAGES = {},
 	// only if they're different from the first 2 letters, ex: ita:it is not necessary
+	// https://www.loc.gov/standards/iso639-2/php/code_list.php
 	LANGUAGES_32 = {
 		'jpn': 'ja',
 		'pol': 'pl',
+		'por': 'pt',
 		'spa': 'es',
 		'swe': 'sv',
 	},
@@ -293,10 +295,8 @@ function CreateFieldValue(text)
  */
 function MixHexColors(color1, color2, mix)
 {
-	if (mix <= 0)
-		return color1;
-	else if (mix >= 1)
-		return color2;
+	if (mix <= 0) return color1;
+	if (mix >= 1) return color2;
 
 	const off1 = (color1[0] == '#')? 1 : 0,
 		off2 = (color2[0] == '#')? 1 : 0;
@@ -323,8 +323,7 @@ function SetSection(section, subsection)
 	}
 	if (subsection != null)
 		Z.s = subsection;
-	if (HAS_GLOBAL)
-		HAS_GLOBAL.y_x = y_x;
+	if (HAS_GLOBAL) HAS_GLOBAL.y_x = y_x;
 }
 
 // SETTINGS
@@ -347,8 +346,8 @@ function AddFoot(lines, foot_set, foot)
 function AddHistory()
 {
 	const text = Stringify(Y);
-	if (text == y_states[y_index])
-		return;
+	if (text == y_states[y_index]) return;
+
 	++y_index;
 	y_states[y_index] = text;
 	y_states.length = y_index + 1;
@@ -399,8 +398,7 @@ function ChangeSetting(name, value, close)
 	}
 	change_queue = null;
 
-	if (vi_ChangeSettingSpecial && vi_ChangeSettingSpecial(name, value, close))
-		return;
+	if (vi_ChangeSettingSpecial && vi_ChangeSettingSpecial(name, value, close)) return;
 
 	switch (name)
 	{
@@ -423,9 +421,7 @@ function ChangeSetting(name, value, close)
 		else if (value != 'eng')
 			ApiTranslateGet();
 		break;
-	case 'theme':
-		UpdateTheme([value]);
-		break;
+	case 'theme': UpdateTheme([value]); break;
 	}
 }
 
@@ -492,8 +488,7 @@ function GetInt(name, def, force)
 function GetObject(name, def)
 {
 	const text = GetString(name);
-	if (!text)
-		return DeepCopy(def);
+	if (!text) return DeepCopy(def);
 	return ParseJSON(text, def);
 }
 
@@ -525,10 +520,8 @@ function GuessTypes(settings, keys)
 			setting = settings[key];
 		let type;
 
-		if (def_type == 'boolean')
-			type = 'b';
-		else if (def_type == 'object' && def != undefined)
-			type = 'o';
+		     if (def_type == 'boolean') type = 'b';
+		else if (def_type == 'object' && def != undefined) type = 'o';
 		else if (def_type == 'string')
 		{
 			type = 's';
@@ -541,8 +534,7 @@ function GuessTypes(settings, keys)
 					type = 'i';
 			}
 		}
-		else if (IsFloat(def))
-			type = 'f';
+		else if (IsFloat(def)) type = 'f';
 		// integer default could still be a float type
 		else
 		{
@@ -609,8 +601,7 @@ function GuessTypes(settings, keys)
  */
 function ImportSettings(data, reset)
 {
-	if (!IsObject(data))
-		return;
+	if (!IsObject(data)) return;
 
 	Keys(/** @type {!Object} */(data)).forEach(key => {
 		if (!NO_IMPORTS[key])
@@ -656,16 +647,13 @@ function LoadDefaults()
  */
 function LoadPreset(name)
 {
-	if (name == 'custom')
-		return;
+	if (name == 'custom') return;
 	if (name == 'default settings')
 		ResetSettings(true);
 	else
 	{
 		Resource(`preset/${name}.json?v=${Ceil(Now() / TIMEOUT_preset)}`, (code, data) => {
-			if (code != 200)
-				return;
-			ImportSettings(data, true);
+			if (code == 200) ImportSettings(data, true);
 		});
 	}
 }
@@ -696,18 +684,15 @@ function MergeSettings(x_settings)
 	// + skip undefined values
 	Keys(X_SETTINGS).forEach(name => {
 		const settings = X_SETTINGS[name];
-		if (!IsObject(settings))
-			return;
+		if (!IsObject(settings)) return;
 
 		const dico = {},
 			sub_settings = {};
 
 		Keys(settings).forEach(key => {
-			if (key[0] == '_')
-				return;
+			if (key[0] == '_') return;
 			let setting = settings[key];
-			if (!IsObject(setting))
-				return;
+			if (!IsObject(setting)) return;
 
 			// support {_value: [...]}
 			if (setting['_value'])
@@ -721,18 +706,15 @@ function MergeSettings(x_settings)
 			if (setting['_multi'] && !setting['_main'])
 			{
 				Keys(setting).forEach(sub_key => {
-					if (sub_key[0] == '_')
-						return;
+					if (sub_key[0] == '_') return;
 					const sub = setting[sub_key];
-					if (sub[1] != undefined)
-						dico[sub_key] = sub[1];
+					if (sub[1] != undefined) dico[sub_key] = sub[1];
 					sub_settings[sub_key] = sub;
 				});
 			}
 			else
 			{
-				if (setting[1] != undefined)
-					dico[key] = setting[1];
+				if (setting[1] != undefined) dico[key] = setting[1];
 				sub_settings[key] = setting;
 			}
 		});
@@ -776,8 +758,7 @@ function ParseDev()
 		}
 
 		const name = DEV_NAMES[letter];
-		if (!name)
-			continue;
+		if (!name) continue;
 
 		let i2 = i + 1,
 			value = 0;
@@ -798,8 +779,7 @@ function ParseDev()
 		}
 	}
 
-	if (DEV['debug'])
-		LS(DEV);
+	if (DEV['debug']) LS(DEV);
 }
 
 /**
@@ -846,19 +826,17 @@ function ResetDefaults(pattern)
 function ResetItemSetting(node)
 {
 	const next = node.nextElementSibling;
-	if (!next)
-		return;
+	if (!next) return;
 
 	E('input, select, textarea', node => {
 		const name = node.name,
 			def = DEFAULTS[name],
 			type = node.type;
-		if (def == undefined)
-			return;
+		if (def == undefined) return;
+
 		if (type == 'checkbox')
 		{
-			if (node.checked == (def? true : false))
-				return;
+			if (node.checked == (def? true : false)) return;
 			node.checked = def? true : false;
 		}
 		else
@@ -867,8 +845,7 @@ function ResetItemSetting(node)
 			if (type == 'color' && !IsString(value))
 				value = HexString(value, 6, '#');
 
-			if (node.value == value)
-				return;
+			if (node.value == value) return;
 			node.value = value;
 		}
 		SaveOption(name, def);
@@ -930,12 +907,11 @@ function ResetSettings(is_default)
 function RestoreHistory(dir)
 {
 	const y_copy = y_states[y_index + dir];
-	if (!y_copy)
-		return;
+	if (!y_copy) return;
+
 	y_index += dir;
 	const data = ParseJSON(y_copy);
-	if (!IsObject(data))
-		return;
+	if (!IsObject(data)) return;
 
 	Assign(Y, /** @type {!Object} */(data));
 	ImportSettings(data, true);
@@ -949,8 +925,7 @@ function SanitizeData()
 	// convert string to number
 	Keys(DEFAULTS).forEach(key => {
 		const value = Y[key];
-		if (!IsString(value))
-			return;
+		if (!IsString(value)) return;
 
 		const def = DEFAULTS[key],
 			type = TYPES[key];
@@ -1063,8 +1038,7 @@ function ShowPopup(name, show, {adjust, bar_x=20, center, class_, event=1, html=
 
 	// find the modal
 	const node = click_target || (node_id? CacheId(node_id, parent) : node_modal);
-	if (!node)
-		return;
+	if (!node) return;
 
 	const dataset = node.dataset,
 		data_id = dataset['id'],
@@ -1077,10 +1051,8 @@ function ShowPopup(name, show, {adjust, bar_x=20, center, class_, event=1, html=
 		popup_full = POPUP_FULLS[id_x],
 		win_x = VisibleWidth() - 8,
 		win_y = VisibleHeight();
-	if (adjust && !popup_adjust)
-		adjust = false;
-	if (center == undefined)
-		center = dataset['center'] || '';
+	if (adjust && !popup_adjust) adjust = false;
+	if (center == undefined) center = dataset['center'] || '';
 
 	// smart toggle
 	if (is_toggle)
@@ -1117,26 +1089,22 @@ function ShowPopup(name, show, {adjust, bar_x=20, center, class_, event=1, html=
 		switch (name)
 		{
 		case 'options':
-			if (!xy)
-				context_target = null;
+			if (!xy) context_target = null;
 			html = html || ShowSettings(setting, {xy: xy});
 			break;
 		default:
 			const link = LINKS[name];
-			if (link)
-				html = CreateUrlList(LINKS[name]);
+			if (link) html = CreateUrlList(LINKS[name]);
 			break;
 		}
 
 		if (show)
 		{
 			DestroyPopup(node, 2);
-			if (html !== 0)
-				HTML(node, html);
+			if (html !== 0) HTML(node, html);
 			// focus?
 			const focus = _('[data-f]', node);
-			if (focus)
-				focus.focus();
+			if (focus) focus.focus();
 		}
 		else
 		{
@@ -1289,8 +1257,7 @@ function ShowPopup(name, show, {adjust, bar_x=20, center, class_, event=1, html=
 			dataset['my'] = '';
 			dataset['x'] = '';
 			dataset['xy'] = '';
-			if (vi_ClosedPopup)
-				vi_ClosedPopup();
+			if (vi_ClosedPopup) vi_ClosedPopup();
 		}
 
 		SetModalEvents(node);
@@ -1358,8 +1325,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 			if (!title)
 			{
 				title = settings['_title'] || settings['_label'];
-				if (IsFunction(title))
-					title = title();
+				if (IsFunction(title)) title = title();
 				if (!title)
 				{
 					title = Title(name).replace(/_/g, ' ');
@@ -1368,8 +1334,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				}
 			}
 			const sset = (flag & 8)? '' : ` data-set="${unique? -1 : ''}"`;
-			lines.push(
-				`<div class="item-title span${sset? '' : ' text'}"${sset} data-n="${name}" data-t="${title}"></div>`);
+			lines.push(`<div class="item-title span${sset? '' : ' text'}"${sset} data-n="${name}" data-t="${title}"></div>`);
 		}
 	}
 
@@ -1382,8 +1347,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 
 		// only in popup
 		let setting = settings[key];
-		if (setting['_pop'])
-			return;
+		if (setting['_pop']) return;
 
 		// extra _keys: class, color, flag, on, span, value
 		const sclass = setting['_class'],                   // classes for item
@@ -1409,14 +1373,11 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 			sextra = setting['_extra'],                     // extra label, ex: [min, max]
 			svalue = setting['_value'];                     // value or callback
 
-		if (sflag && sflag & flag)
-			return;
-		if (IsFunction(son) && !son())
-			return;
+		if (sflag && sflag & flag) return;
+		if (IsFunction(son) && !son()) return;
 		if (svalue != undefined)
 		{
-			if (IsFunction(svalue))
-				svalue = svalue();
+			if (IsFunction(svalue)) svalue = svalue();
 			setting = svalue;
 		}
 
@@ -1453,29 +1414,24 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 			y_key = Y[key];
 
 		// only in popup2?
-		if (!xy && (string_digit & 4))
-			return;
+		if (!xy && (string_digit & 4)) return;
 
 		if (sclass != undefined)
 			more_class = sclass? ` ${sclass}` : '';
 		else if (sspan)
 			more_class = ' item-title span';
-		if (ssvg)
-			more_class = `${more_class} frow`;
+		if (ssvg) more_class = `${more_class} frow`;
 
 		if (string_digit & 8)
 			more_class = `${more_class} no-close`;
 
-		if (IsFunction(third) && !third())
-			return;
-		if (IsFunction(fourth))
-			y_key = fourth();
+		if (IsFunction(third) && !third()) return;
+		if (IsFunction(fourth)) y_key = fourth();
 
 		// only contextual actions?
 		if (title && title[0] == '!')
 		{
-			if (!parent_id)
-				return;
+			if (!parent_id) return;
 			title = title.slice(1);
 		}
 
@@ -1484,15 +1440,12 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 			clean = '';
 		else
 		{
-			if (suffix && clean.slice(-suffix.length) == suffix)
-				clean = clean.slice(0, -suffix.length);
-			if (prefix && clean.slice(0, prefix.length) == prefix)
-				clean = clean.slice(prefix.length);
+			if (suffix && clean.slice(-suffix.length) == suffix) clean = clean.slice(0, -suffix.length);
+			if (prefix && clean.slice(0, prefix.length) == prefix) clean = clean.slice(prefix.length);
 		}
 
-		// TODO: improve that part, it can be customised better
-		if (string_digit & 2)
-			scolor = '#f00';
+		// TODO: improve that part, it can be customized better
+		if (string_digit & 2) scolor = '#f00';
 		const style = scolor? `${(Y['theme'] == 'dark')? ' class="tshadow"' : ''} style="color:${scolor}"` : '',
 			title2 = title? `data-t="${title.replace(/"/g, '&quot;')}" data-t2="title"` : '';
 		let label = (slabel != undefined)? slabel : `${Title(clean).replace(/_/g, ' ')}${ssyn}`;
@@ -1500,8 +1453,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 		// price [min/max]
 		if (sextra)
 		{
-			if (!sextra.includes('{'))
-				sextra = `{${sextra}}`;
+			if (!sextra.includes('{')) sextra = `{${sextra}}`;
 			label = `{${label}} [<i class='nowrap'>${sextra}</i>]`;
 		}
 
@@ -1525,8 +1477,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				);
 			}
 
-		if (is_string)
-			return;
+		if (is_string) return;
 
 		// multi data? ex: center min-max
 		const datas = smulti? setting : {[key]: data},
@@ -1536,8 +1487,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 		Keys(datas).forEach(key => {
 			// a) get data info
 			let data = datas[key];
-			if (!data || key[0] == '_')
-				return;
+			if (!data || key[0] == '_') return;
 			++id;
 
 			// multi
@@ -1550,10 +1500,8 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				data['class'] = `multi${smulti}`;
 				y_key = Y[key];
 
-				if (IsFunction(third) && !third())
-					return;
-				if (IsFunction(fourth))
-					y_key = fourth();
+				if (IsFunction(third) && !third()) return;
+				if (IsFunction(fourth)) y_key = fourth();
 			}
 
 			// b) create element
@@ -1572,8 +1520,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				else
 				{
 					const dico = {on_off: true};
-					if (slower != undefined)
-						dico.lower = slower;
+					if (slower != undefined) dico.lower = slower;
 					lines.push(
 						`<v class="fcenter${iclass}">`,
 							`<select name="${key}">${FillCombo(null, data, y_key, dico)}</select>`,
@@ -1590,13 +1537,11 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 			const class_on = (merge && y_key)? ' on' : '',
 				type = data.type || '';
 			class_ = ` class="setting${class_? ' ' : ''}${class_}${class_on}"`;
-			if (focus)
-				focus = ` data-f="${focus}"`;
+			if (focus) focus = ` data-f="${focus}"`;
 
 			// title
 			title = title || data.title || '';
-			if (title)
-				title = ` title="${TranslateExpression(title)}"`;
+			if (title) title = ` title="${TranslateExpression(title)}"`;
 
 			if (id == 0)
 				lines.push(
@@ -1608,10 +1553,8 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				lines.push(`<div class="ilabel${class_on}" data-t="${label}"></div>`);
 
 			// c) placeholder + autocomplete
-			if (holder)
-				holder = ` data-t="${data.text}" data-t2="placeholder"`;
-			if (auto)
-				auto = ` autocomplete="${auto}"`;
+			if (holder) holder = ` data-t="${data.text}" data-t2="placeholder"`;
+			if (auto) auto = ` autocomplete="${auto}"`;
 
 			let found = true;
 			switch (type)
@@ -1659,13 +1602,11 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 				switch (type)
 				{
 				case 'color':
-					if (!IsString(y_key))
-						y_key = HexString(y_key, 6, '#');
+					if (!IsString(y_key)) y_key = HexString(y_key, 6, '#');
 					break;
 				// chrome allows spaces before/after with email => text
 				case 'email':
-					if (!device.mobile)
-						type2 = 'text';
+					if (!device.mobile) type2 = 'text';
 					break;
 				}
 				lines.push(
@@ -1687,10 +1628,8 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 					let class_ = item_class2,
 						iname = key,
 						iset = data['_set'];
-					if (dclass)
-						class_ = dtext? dclass : `${class_}${class_? ' ' : ''}${dclass}`;
-					if (smain)
-						iname = `${main_key}_${iname}`;
+					if (dclass) class_ = dtext? dclass : `${class_}${class_? ' ' : ''}${dclass}`;
+					if (smain) iname = `${main_key}_${iname}`;
 
 					iset = (iset === 0)? '' : ` data-set="${iset || key}"`;
 					lines.push(`<${dtag} class="${class_}" name="${iname}"${iset} data-t="${Title(data['_label'] || key).replace(/_/g, ' ')}"></${dtag}>`);
@@ -1730,6 +1669,21 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 
 // TRANSLATIONS
 ///////////////
+
+/**
+ * Get translates from the cache
+ */
+function CachedTranslates()
+{
+	let times = GetObject('times');
+	if (!IsObject(times)) times = {};
+
+	let trans = GetObject('trans');
+	if (!IsObject(trans)) trans = {};
+
+	Assign(Clear(api_times), /** @type {!Object} */(times));
+	Assign(Clear(translates), /** @type {!Object} */(trans));
+}
 
 /**
  * Resize text if it's too long
@@ -1774,6 +1728,7 @@ function Translate(text)
 	if (DEV['translate'])
 		TRANSLATES[text] = '';
 
+	// hello~2 => hello
 	if (Y['language'] == 'eng')
 		return text.includes('{')? null : text.split('~')[0];
 
@@ -1815,8 +1770,7 @@ function TranslateDefault(text)
  */
 function TranslateExpression(text)
 {
-	if (!text)
-		return '';
+	if (!text) return '';
 
 	// 1) try a direct translation
 	const result = Translate(text);
@@ -1847,22 +1801,20 @@ function TranslateExpression(text)
 function TranslateNode(node)
 {
 	// 1) skip?
-	if (!node)
-		return;
+	if (!node) return;
 	const text = node.dataset['t'];
-	if (text == undefined)
-		return;
+	if (text == undefined) return;
 
-	// 2) translate
+	// 3) translate
 	const tag = node.tagName;
 	let target = node.dataset['t2'],
 		translated = TranslateExpression(text);
 
 	if (!target)
-		if (tag == 'INPUT')
-			target = 'value';
-		else if (tag == 'IMG')
-			target = 'title';
+	{
+		if (tag == 'INPUT') target = 'value';
+		else if (tag == 'IMG') target = 'title';
+	}
 
 	if (target)
 	{
@@ -1882,8 +1834,7 @@ function TranslateNode(node)
 	else
 	{
 		const resize = node.dataset['tr'];
-		if (resize)
-			translated = ResizeText(translated, parseInt(resize, 10));
+		if (resize) translated = ResizeText(translated, parseInt(resize, 10));
 		HTML(node, translated);
 	}
 }
@@ -1896,10 +1847,11 @@ function TranslateNode(node)
 function TranslateNodes(parent)
 {
 	parent = _(parent);
-	if (!parent)
-		return;
-	E('[data-t]', TranslateNode, parent);
-	TranslateNode(parent);
+	if (parent)
+	{
+		E('[data-t]', TranslateNode, parent);
+		TranslateNode(parent);
+	}
 }
 
 // NODES
@@ -1926,8 +1878,8 @@ function CreateCloser()
 function CreateSvgIcon(name)
 {
 	let image = ICONS[name.split(' ')[0]];
-	if (!image)
-		return '';
+	if (!image) return '';
+
 	// VB=viewBox=; PFC=path fill="currentColor"
 	image = image
 		.replace('VB=', 'viewBox=')
@@ -1952,8 +1904,7 @@ function CreateSvgIcon(name)
  */
 function FillCombo(letter, values, select, {dico, lower=true, no_translate, on_off, parent, skips}={})
 {
-	if (!HAS_DOCUMENT)
-		return '';
+	if (!HAS_DOCUMENT) return '';
 	dico = Undefined(dico, {});
 
 	if (IsString(letter))
@@ -1988,8 +1939,7 @@ function FillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
 
 		if (value.slice(0, 2) == '* ')
 		{
-			if (group)
-				lines.push('</optgroup>');
+			if (group) lines.push('</optgroup>');
 			group = true;
 			lines.push(`<optgroup data-t="${text.slice(2)}" data-t2="label">`);
 			continue;
@@ -2048,8 +1998,7 @@ function FillCombo(letter, values, select, {dico, lower=true, no_translate, on_o
  */
 function LetterSelector(letter)
 {
-	if (letter.length == 1)
-		letter = `#co${letter}`;
+	if (letter.length == 1) letter = `#co${letter}`;
 	return letter;
 }
 
@@ -2135,8 +2084,7 @@ function UpdateTheme(themes, callback, version=1)
 	const changes = UpdateStyle('extra-style', themes, version);
 	SetThemeEvents();
 	UpdateSvg();
-	if (!changes)
-		return false;
+	if (!changes) return false;
 
 	// post-process
 	if (callback) callback();
@@ -2242,8 +2190,7 @@ function LoadLibraryOnce(url, callback, extra)
 {
 	if (!libraries[url])
 		LoadLibrary(url, () => {
-			if (DEV['load'])
-				LS('LoadLibraryOnce:', url);
+			if (DEV['load']) LS('LoadLibraryOnce:', url);
 			libraries[url] = Now();
 			if (callback) callback();
 		}, extra);
@@ -2277,8 +2224,7 @@ function PushState(query, {check, go, key='hash', replace}={})
 	if (state)
 	{
 		changes = state_keys.filter(key => (new_state[key] !== state[key]));
-		if (!changes.length)
-			return null;
+		if (!changes.length) return null;
 	}
 
 	if (go)
@@ -2287,8 +2233,7 @@ function PushState(query, {check, go, key='hash', replace}={})
 	{
 		url = QUERY_KEYS[key] + url;
 		const exist = location[key];
-		if (exist == url)
-			return null;
+		if (exist == url) return null;
 		if (replace)
 			history.replaceState(new_state, '', url);
 		else
@@ -2317,8 +2262,7 @@ function ToggleFullscreen(callback)
 	{
 		const body = document.body,
 			enter = body.requestFullscreen || body.webkitRequestFullScreen || body.mozRequestFullScreen;
-		if (enter)
-			enter.call(body);
+		if (enter) enter.call(body);
 	}
 
 	if (callback) callback(full);
@@ -2393,8 +2337,7 @@ function HandlePing(data)
 		ping_diff[2] = [...server_diffs].sort().slice(4, 12).reduce((a, b) => a + b) >> 3;
 	}
 
-	if (DEV['socket'])
-		LS('ping=', ping_diff, 'data=', items[0], items[1]);
+	if (DEV['socket']) LS('ping=', ping_diff, 'data=', items[0], items[1]);
 }
 
 /**
@@ -2406,10 +2349,8 @@ function HandlePing(data)
  */
 function InitWebSockets({close, message, open}={})
 {
-	if (socket && socket.readyState <= WS.OPEN)
-		return;
-	if (DEV['socket'])
-		LS('init websockets');
+	if (socket && socket.readyState <= WS.OPEN) return;
+	if (DEV['socket']) LS('init websockets');
 
 	socket = new WS(`ws${location.protocol == 'https:'? 's' : ''}://${location.host}/api/`);
 	socket.binaryType = 'arraybuffer';
@@ -2423,8 +2364,7 @@ function InitWebSockets({close, message, open}={})
 	socket.onclose = () => {
 		socket = null;
 		SocketError(`socket close: ${Now(1) - app_start}`);
-		if (vi_SocketClose)
-			vi_SocketClose();
+		if (vi_SocketClose) vi_SocketClose();
 	};
 	socket.onerror = e => {
 		if (!socket_fail)
@@ -2434,8 +2374,7 @@ function InitWebSockets({close, message, open}={})
 		socket_fail = 0;
 		// try to reuse the session
 		CheckSession();
-		if (vi_SocketOpen)
-			vi_SocketOpen();
+		if (vi_SocketOpen) vi_SocketOpen();
 	};
 	socket.onmessage = message => {
 		pings[1] = Now(2);
@@ -2456,8 +2395,7 @@ function InitWebSockets({close, message, open}={})
  */
 function SocketError(text)
 {
-	if (!socket_fail)
-		LS(text);
+	if (!socket_fail) LS(text);
 	++socket_fail;
 	if (socket_fail > 3)
 	{
@@ -2474,8 +2412,8 @@ function SocketError(text)
  */
 function SocketPing()
 {
-	if (!socket || socket.readyState != WS.OPEN)
-		return false;
+	if (!socket || socket.readyState != WS.OPEN) return false;
+
 	// pings[0] = Now(2);
 	// ++pings[3];
 	// socket.send(Uint16Array.of(pings[0] & 0xffff));
@@ -2488,8 +2426,8 @@ function SocketPing()
  */
 function SocketPings()
 {
-	if (!socket || socket.readyState != WS.OPEN)
-		return false;
+	if (!socket || socket.readyState != WS.OPEN) return false;
+
 	for (let i = 0; i < 16; ++i)
 		AddTimeout(`ping_${i}`, SocketPing, i * 200);
 	return true;
@@ -2508,19 +2446,16 @@ function SocketSend(data, ajax_session)
 	{
 		AddTimeout('socket', InitWebSockets, SOCKET_OPTIONS.direct);
 
-		if (!SOCKET_OPTIONS.ajax || data instanceof ArrayBuffer)
-			return false;
+		if (!SOCKET_OPTIONS.ajax || data instanceof ArrayBuffer) return false;
 
-		if (DEV['socket'])
-			LS('socket_ajax:', data);
+		if (DEV['socket']) LS('socket_ajax:', data);
 
 		// add session info when WebSocket is closed
 		if (ajax_session)
 			AddSession(data, ajax_session);
 
 		ApiMessage(data, result => {
-			if (result != null && vi_SocketMessage)
-				vi_SocketMessage(result);
+			if (result != null && vi_SocketMessage) vi_SocketMessage(result);
 		});
 		return true;
 	}
@@ -2557,8 +2492,7 @@ function SocketSend(data, ajax_session)
  */
 function AddMove(change, stamp, ratio_x=1, ratio_y=1)
 {
-	if (!drag)
-		return [0, 0];
+	if (!drag) return [0, 0];
 	const dx = (change.x - drag[0].x) * ratio_x,
 		dy = (change.y - drag[0].y) * ratio_y;
 	touch_moves.push([dx, dy, (stamp - drag[1])]);
@@ -2571,11 +2505,10 @@ function AddMove(change, stamp, ratio_x=1, ratio_y=1)
  */
 function CannotClick()
 {
-	if (Now(1) < touch_done + TIMEOUT_touch)
-		return true;
+	if (Now(1) < touch_done + TIMEOUT_touch) return true;
+
 	const active = document.activeElement;
-	if (active && {'INPUT': 1, 'TEXTAREA': 1}[active.tagName])
-		return active;
+	if (active && {'INPUT': 1, 'TEXTAREA': 1}[active.tagName]) return active;
 	return false;
 }
 
@@ -2587,8 +2520,7 @@ function CannotPopup()
 {
 	const is_control = KEYS[17],
 		cannot = !Undefined(Y['popup_right_click'], 1) || is_control;
-	if (cannot && is_control)
-		KEYS[17] = 0;
+	if (cannot && is_control) KEYS[17] = 0;
 	return cannot;
 }
 
@@ -2619,270 +2551,7 @@ function GetArea(node)
 function GetChangedTouches(e)
 {
 	const touches = e.changedTouches || e.touches;
-	return touches?
-		[...touches].map(touch => ({x: touch.clientX, y: touch.clientY}))
-	:
-		[{x: e.clientX, y: e.clientY}];
-}
-
-/**
- * Render the inertial scrolling
- */
-function RenderScroll()
-{
-	const ratio = Y['scroll_inertia'];
-	if (!ratio)
-		return;
-
-	const now = Now(1),
-		delta = Min(33, (now - touch_now) * 1000);
-
-	touch_scroll.x -= touch_speed.x * delta;
-	touch_scroll.y -= touch_speed.y * delta;
-	if (full_target)
-	{
-		full_scroll.x -= touch_speed.x * delta;
-		full_scroll.y -= touch_speed.y * delta;
-	}
-	SetScroll();
-
-	if (Abs(touch_speed.x) > 0.03 || Abs(touch_speed.y) > 0.03)
-	{
-		touch_speed.x *= ratio;
-		touch_speed.y *= ratio;
-		AnimationFrame('scroll', RenderScroll);
-	}
-	touch_now = now;
-}
-
-/**
- * Adjust the scrolling to the nearest anchor (if near enough)
- * - can be used to scroll to a specific target
- * - can be used after mouse wheel
- * @param {string} target
- * @param {number=} max_delta
- * @param {number=} depth
- */
-function ScrollAdjust(target, max_delta, depth=0)
-{
-	if (max_delta == undefined)
-		max_delta = Y['wheel_adjust'];
-
-	const keys = target? [target] : Keys(ANCHORS),
-		max_allowed = 100,
-		window_height = window.innerHeight,
-		y_old = ScrollDocument();
-	let y = y_old;
-
-	if ((!y || y >= document.scrollingElement.offsetHeight - window_height) && !target)
-		return;
-
-	// 1) gather anchor data
-	const deltas = keys.map(key => {
-		const [flag, gap, priority] = ANCHORS[key] || [0, 0, 0],
-			nodes = From(A(key)).filter(child => Visible(child));
-		if (!nodes.length)
-			return;
-
-		const rect = nodes[0].getBoundingClientRect(),
-			bottom = rect.bottom + y - gap - window_height,
-			top = rect.top + y - gap;
-
-		let delta1, delta2;
-		if (flag & 1)
-		{
-			delta1 = top - y;
-			if (Abs(delta1) > max_allowed)
-				return;
-		}
-		if (flag & 2)
-		{
-			delta2 = bottom - y;
-			if (Abs(delta2) > max_allowed)
-				return;
-		}
-
-		return [priority, key, delta1, delta2, top, bottom, gap];
-	}).filter(vector => vector).sort((a, b) => {
-		if (a[0] != b[0]) return b[0] - a[0];
-		return (b[2] || b[3]) - (a[2] || a[3]);
-	});
-
-	// 2) no anchors found => scroll to the target if any
-	if (!deltas.length)
-	{
-		if (target)
-		{
-			y = Safe(target).getBoundingClientRect().top + y;
-			ScrollDocument(y);
-		}
-		return;
-	}
-
-	// 3) get the closest matches
-	let offset, y1, y2, y3,
-		diff = max_delta,
-		diff3 = diff;
-	for (let [priority, key, delta1, delta2, top, bottom] of deltas)
-	{
-		if (DEV['ui'])
-			LS(`${priority} : ${key} : ${delta1} : ${delta2} : ${top} : ${bottom}`);
-		if (delta2 != undefined && Abs(delta2) < max_delta)
-		{
-			y2 = bottom;
-			offset = -delta2;
-		}
-		if (delta1 != undefined)
-		{
-			if (offset)
-			{
-				delta1 += offset;
-				if (delta1 < 0)
-				{
-					if (delta1 > -max_delta && Abs(delta1) < Abs(diff3))
-					{
-						diff3 = delta1;
-						y3 = top;
-					}
-					continue;
-				}
-			}
-			if (Abs(delta1) < Abs(diff))
-			{
-				diff = delta1;
-				y1 = top;
-			}
-		}
-	}
-
-	// 4) combine the best matches
-	let combined = 0;
-	if (y1 == undefined && y3 != undefined)
-		y = y3;
-	else
-	{
-		const ys = [y1, y2].filter(value => value != undefined);
-		combined = ys.length;
-		if (!combined)
-			return;
-		y = ys.reduce((a, b) => a + b) / ys.length;
-	}
-	ScrollDocument(y);
-
-	// 5) adjust again?
-	if (!target && depth < 1 && combined < 2)
-	{
-		const new_delta = max_delta - Abs(y - y_old);
-		if (new_delta > 0)
-			AddTimeout('adjust', () => ScrollAdjust(target, new_delta, depth + 1), TIMEOUT_adjust);
-	}
-}
-
-/**
- * Set the scroll
- */
-function SetScroll()
-{
-	const node = drag_target || scroll_target;
-
-	if (node)
-	{
-		// horizontal
-		if (drag_scroll & 1)
-		{
-			node.scrollLeft = touch_scroll.x;
-			touch_scroll.x = node.scrollLeft;
-		}
-		// vertical
-		if (drag_scroll & 2)
-		{
-			ScrollDocument(touch_scroll.y, {smooth: false});
-			touch_scroll.y = ScrollDocument();
-		}
-	}
-
-	if (full_target)
-	{
-		full_scroll.x = Clamp(full_scroll.x, 0, full_target.clientWidth - window.innerWidth);
-		full_scroll.y = Clamp(full_scroll.y, 0, full_target.clientHeight - window.innerHeight);
-		Style(full_target, [['transform', `translate(${-full_scroll.x}px,${-full_scroll.y}px)`]]);
-	}
-}
-
-/**
- * Stop dragging
- */
-function StopDrag()
-{
-	drag = null;
-	drag_moved = false;
-	drag_scroll = 3;
-	drag_target = null;
-}
-
-/**
- * Handle a touch/mouse event
- * @param {Event} e
- * @returns {{change:Vector2, error:number, stamp:number}}
- */
-function ParseTouchEvent(e)
-{
-	const changes = GetChangedTouches(e),
-		change = changes[0],
-		length = changes.length,
-		stamp = e.timeStamp;
-	let error = -1;
-
-	// multiple inputs => keep the one closer to the previous input
-	if (length > 1)
-	{
-		if (drag)
-		{
-			let best_x = 0,
-				best_y = 0;
-			for (const touch of changes)
-			{
-				const dx = (touch.x - touch_last.x),
-					dy = (touch.y - touch_last.y),
-					delta = dx * dx + dy * dy;
-
-				if (error < 0 || delta < error)
-				{
-					error = delta;
-					best_x = touch.x;
-					best_y = touch.y;
-				}
-			}
-			if (error >= 0)
-			{
-				change.x = best_x;
-				change.y = best_y;
-			}
-		}
-		else
-		{
-			const total = [0, 0];
-			for (const touch of changes)
-			{
-				total[0] += touch.x;
-				total[1] += touch.y;
-			}
-			change.x = total[0] / length;
-			change.y = total[1] / length;
-		}
-	}
-	else if (drag)
-	{
-		const dx = (change.x - touch_last.x),
-			dy = (change.y - touch_last.y);
-		error = dx * dx + dy * dy;
-	}
-
-	return {
-		change: change,
-		error: error,
-		stamp: stamp,
-	};
+	return touches? [...touches].map(touch => ({x: touch.clientX, y: touch.clientY})) : [{x: e.clientX, y: e.clientY}];
 }
 
 /**
@@ -2910,14 +2579,11 @@ function HandleTouch(e, full, prevent_default)
 	{
 		const old_target = drag_target;
 		StopDrag();
-		if (type5 == 'mouse' && buttons != 1)
-			return;
+		if (type5 == 'mouse' && buttons != 1) return;
 		// input => skip
-		if (['INPUT', 'SELECT'].includes(target.tagName))
-			return;
+		if (['INPUT', 'SELECT'].includes(target.tagName)) return;
 		// can only acquire a new target with a click
-		if (type == 'pointerenter' && !old_target)
-			return;
+		if (type == 'pointerenter' && !old_target) return;
 
 		ClearTimeout('touch_end');
 
@@ -2931,8 +2597,7 @@ function HandleTouch(e, full, prevent_default)
 			{
 				const child_height = child.clientHeight,
 					child_width = child.clientWidth;
-				if (child_height <= drag_target.clientHeight && child_width <= drag_target.clientWidth)
-					return;
+				if (child_height <= drag_target.clientHeight && child_width <= drag_target.clientWidth) return;
 			}
 		}
 
@@ -2951,8 +2616,7 @@ function HandleTouch(e, full, prevent_default)
 	}
 	else if (TOUCH_MOVES.has(type))
 	{
-		if (!drag)
-			return;
+		if (!drag) return;
 		// reset needed when we move the mouse outside the window, then come back
 		if (type == 'pointermove' && !buttons)
 		{
@@ -2980,8 +2644,7 @@ function HandleTouch(e, full, prevent_default)
 	}
 	else if (TOUCH_ENDS.has(type))
 	{
-		if (!drag || !drag_moved)
-			return;
+		if (!drag || !drag_moved) return;
 
 		AddMove(change, stamp);
 
@@ -3055,6 +2718,258 @@ function HandleWheelEvent(e, full)
 	PD(e);
 }
 
+/**
+ * Handle a touch/mouse event
+ * @param {Event} e
+ * @returns {{change:Vector2, error:number, stamp:number}}
+ */
+function ParseTouchEvent(e)
+{
+	const changes = GetChangedTouches(e),
+		change = changes[0],
+		length = changes.length,
+		stamp = e.timeStamp;
+	let error = -1;
+
+	// multiple inputs => keep the one closer to the previous input
+	if (length > 1)
+	{
+		if (drag)
+		{
+			let best_x = 0,
+				best_y = 0;
+			for (const touch of changes)
+			{
+				const dx = (touch.x - touch_last.x),
+					dy = (touch.y - touch_last.y),
+					delta = dx * dx + dy * dy;
+
+				if (error < 0 || delta < error)
+				{
+					error = delta;
+					best_x = touch.x;
+					best_y = touch.y;
+				}
+			}
+			if (error >= 0)
+			{
+				change.x = best_x;
+				change.y = best_y;
+			}
+		}
+		else
+		{
+			const total = [0, 0];
+			for (const touch of changes)
+			{
+				total[0] += touch.x;
+				total[1] += touch.y;
+			}
+			change.x = total[0] / length;
+			change.y = total[1] / length;
+		}
+	}
+	else if (drag)
+	{
+		const dx = (change.x - touch_last.x),
+			dy = (change.y - touch_last.y);
+		error = dx * dx + dy * dy;
+	}
+
+	return {
+		change: change,
+		error: error,
+		stamp: stamp,
+	};
+}
+
+/**
+ * Render the inertial scrolling
+ */
+function RenderScroll()
+{
+	const ratio = Y['scroll_inertia'];
+	if (!ratio) return;
+
+	const now = Now(1),
+		delta = Min(33, (now - touch_now) * 1000);
+
+	touch_scroll.x -= touch_speed.x * delta;
+	touch_scroll.y -= touch_speed.y * delta;
+	if (full_target)
+	{
+		full_scroll.x -= touch_speed.x * delta;
+		full_scroll.y -= touch_speed.y * delta;
+	}
+	SetScroll();
+
+	if (Abs(touch_speed.x) > 0.03 || Abs(touch_speed.y) > 0.03)
+	{
+		touch_speed.x *= ratio;
+		touch_speed.y *= ratio;
+		AnimationFrame('scroll', RenderScroll);
+	}
+	touch_now = now;
+}
+
+/**
+ * Adjust the scrolling to the nearest anchor (if near enough)
+ * - can be used to scroll to a specific target
+ * - can be used after mouse wheel
+ * @param {string} target
+ * @param {number=} max_delta
+ * @param {number=} depth
+ */
+function ScrollAdjust(target, max_delta, depth=0)
+{
+	if (max_delta == undefined)
+		max_delta = Y['wheel_adjust'];
+
+	const keys = target? [target] : Keys(ANCHORS),
+		max_allowed = 100,
+		window_height = window.innerHeight,
+		y_old = ScrollDocument();
+	let y = y_old;
+
+	if ((!y || y >= document.scrollingElement.offsetHeight - window_height) && !target) return;
+
+	// 1) gather anchor data
+	const deltas = keys.map(key => {
+		const [flag, gap, priority] = ANCHORS[key] || [0, 0, 0],
+			nodes = From(A(key)).filter(child => Visible(child));
+		if (!nodes.length) return;
+
+		const rect = nodes[0].getBoundingClientRect(),
+			bottom = rect.bottom + y - gap - window_height,
+			top = rect.top + y - gap;
+
+		let delta1, delta2;
+		if (flag & 1)
+		{
+			delta1 = top - y;
+			if (Abs(delta1) > max_allowed) return;
+		}
+		if (flag & 2)
+		{
+			delta2 = bottom - y;
+			if (Abs(delta2) > max_allowed) return;
+		}
+
+		return [priority, key, delta1, delta2, top, bottom, gap];
+	}).filter(vector => vector).sort((a, b) => {
+		if (a[0] != b[0]) return b[0] - a[0];
+		return (b[2] || b[3]) - (a[2] || a[3]);
+	});
+
+	// 2) no anchors found => scroll to the target if any
+	if (!deltas.length)
+	{
+		if (target)
+		{
+			y = Safe(target).getBoundingClientRect().top + y;
+			ScrollDocument(y);
+		}
+		return;
+	}
+
+	// 3) get the closest matches
+	let offset, y1, y2, y3,
+		diff = max_delta,
+		diff3 = diff;
+	for (let [priority, key, delta1, delta2, top, bottom] of deltas)
+	{
+		if (DEV['ui']) LS(`${priority} : ${key} : ${delta1} : ${delta2} : ${top} : ${bottom}`);
+		if (delta2 != undefined && Abs(delta2) < max_delta)
+		{
+			y2 = bottom;
+			offset = -delta2;
+		}
+		if (delta1 != undefined)
+		{
+			if (offset)
+			{
+				delta1 += offset;
+				if (delta1 < 0)
+				{
+					if (delta1 > -max_delta && Abs(delta1) < Abs(diff3))
+					{
+						diff3 = delta1;
+						y3 = top;
+					}
+					continue;
+				}
+			}
+			if (Abs(delta1) < Abs(diff))
+			{
+				diff = delta1;
+				y1 = top;
+			}
+		}
+	}
+
+	// 4) combine the best matches
+	let combined = 0;
+	if (y1 == undefined && y3 != undefined)
+		y = y3;
+	else
+	{
+		const ys = [y1, y2].filter(value => value != undefined);
+		combined = ys.length;
+		if (!combined) return;
+		y = ys.reduce((a, b) => a + b) / ys.length;
+	}
+	ScrollDocument(y);
+
+	// 5) adjust again?
+	if (!target && depth < 1 && combined < 2)
+	{
+		const new_delta = max_delta - Abs(y - y_old);
+		if (new_delta > 0)
+			AddTimeout('adjust', () => ScrollAdjust(target, new_delta, depth + 1), TIMEOUT_adjust);
+	}
+}
+
+/**
+ * Set the scroll
+ */
+function SetScroll()
+{
+	const node = drag_target || scroll_target;
+	if (node)
+	{
+		// horizontal
+		if (drag_scroll & 1)
+		{
+			node.scrollLeft = touch_scroll.x;
+			touch_scroll.x = node.scrollLeft;
+		}
+		// vertical
+		if (drag_scroll & 2)
+		{
+			ScrollDocument(touch_scroll.y, {smooth: false});
+			touch_scroll.y = ScrollDocument();
+		}
+	}
+
+	if (full_target)
+	{
+		full_scroll.x = Clamp(full_scroll.x, 0, full_target.clientWidth - window.innerWidth);
+		full_scroll.y = Clamp(full_scroll.y, 0, full_target.clientHeight - window.innerHeight);
+		Style(full_target, [['transform', `translate(${-full_scroll.x}px,${-full_scroll.y}px)`]]);
+	}
+}
+
+/**
+ * Stop dragging
+ */
+function StopDrag()
+{
+	drag = null;
+	drag_moved = false;
+	drag_scroll = 3;
+	drag_target = null;
+}
+
 // UI
 /////
 
@@ -3102,8 +3017,7 @@ function CloseInput(cancel)
  */
 function ClosePopups()
 {
-	if (vi_CanClosePopups && !vi_CanClosePopups())
-		return;
+	if (vi_CanClosePopups && !vi_CanClosePopups()) return;
 
 	ShowPopup();
 	Hide(node_overlay);
@@ -3149,10 +3063,8 @@ function CreatePageArray(num_page, page, extra)
 			++off;
 	}
 
-	if (array[2])
-		array[1] = 2;
-	if (array[num_page - 3])
-		array[num_page - 2] = 2;
+	if (array[2]) array[1] = 2;
+	if (array[num_page - 3]) array[num_page - 2] = 2;
 	return array;
 }
 
@@ -3300,8 +3212,7 @@ function HideElement(target)
 {
 	const drop = GetDropId(target),
 		areas = Y['areas'];
-	if (!drop.node)
-		return;
+	if (!drop.node) return;
 
 	Keys(areas).forEach(key => {
 		for (const vector of areas[key])
@@ -3337,13 +3248,11 @@ function MovePane(node, dir)
 		orders = panes.map(pane => pane[0]);
 
 	// 2) move pane, but skip if already where it should be
-	if ((dir == -3 && !index) || (dir == 3 && index == num_pane - 1))
-		return;
+	if ((dir == -3 && !index) || (dir == 3 && index == num_pane - 1)) return;
 
 	const pane = panes.splice(index, 1)[0],
 		target = (dir == -3)? 0 : (dir == 3)? num_pane - 1 : index + dir;
-	if (target < 0 || target >= num_pane)
-		return;
+	if (target < 0 || target >= num_pane) return;
 	panes.splice(target, 0, pane);
 
 	// 3) update sizes
@@ -3389,8 +3298,7 @@ function PopulateAreas(activate)
 	// 2) process all areas
 	Keys(areas).forEach(key => {
 		const parent = CacheId(key);
-		if (!parent)
-			return;
+		if (!parent) return;
 
 		// a) add missing defaults
 		for (const vector of default_areas[key])
@@ -3469,14 +3377,11 @@ function PopulateAreas(activate)
 			else
 				return;
 		}
-		if (DEV['ui'])
-			LS(key, `populate ${key} : ${error}`, child);
+		if (DEV['ui']) LS(key, `populate ${key} : ${error}`, child);
 
 		// c) restructure the panel => this will cause the chat to reload too
 		// remove tabs
-		E('.tabs', node => {
-			node.remove();
-		}, parent);
+		E('.tabs', node => node.remove(), parent);
 
 		// add children + create tabs
 		let exist = 0;
@@ -3487,8 +3392,7 @@ function PopulateAreas(activate)
 			let no_tab,
 				[id, tab, show] = vector;
 			const node = CacheId(id);
-			if (!node)
-				continue;
+			if (!node) continue;
 
 			if (tab || prev_tab)
 			{
@@ -3568,6 +3472,25 @@ function SetDraggable()
 }
 
 /**
+ * Update the background
+ */
+function UpdateBackground()
+{
+	const node = CacheId('background');
+	if (!node) return;
+
+	const color = Y['background_color'],
+		image = Y['background_image'],
+		image_url = image? `url(${image})` : '',
+		opacity = image? Y['background_opacity']: 0;
+
+	if (node.style.backgroundImage != image_url)
+		node.style.backgroundImage = image_url;
+
+	Style(node, [['background-color', (color == '#000000')? '' : color], ['opacity', opacity]]);
+}
+
+/**
  * Handle a general window click
  * @param {Event} e
  */
@@ -3576,8 +3499,7 @@ function WindowClick(e)
 	has_clicked = true;
 	Clear(KEYS);
 	const cannot = CannotClick();
-	if (cannot == 1)
-		return;
+	if (cannot == 1) return;
 
 	let target = e.target;
 	const dataset = target.dataset,
@@ -3587,27 +3509,23 @@ function WindowClick(e)
 
 	// special 1
 	if (vi_WindowClickDataset)
-		if (vi_WindowClickDataset(dataset))
-			return;
+		if (vi_WindowClickDataset(dataset)) return;
 
 	while (target)
 	{
 		const id = target.id;
 		if (id)
 		{
-			if (MODAL_IDS[id] || id.includes('modal') || id.includes('popup'))
-				return;
+			if (MODAL_IDS[id] || id.includes('modal') || id.includes('popup')) return;
 		}
-		if (HasClass(target, 'no-close') || HasClass(target, 'nav'))
-			return;
+		if (HasClass(target, 'no-close') || HasClass(target, 'nav')) return;
+
 		// special 2
 		if (vi_WindowClickParent)
 		{
 			const result = vi_WindowClickParent(target, is_click);
-			if (result == 1)
-				return;
-			else if (result == 2)
-				break;
+			     if (result == 1) return;
+			else if (result == 2) break;
 		}
 
 		if (is_click)
@@ -3638,10 +3556,8 @@ function WindowClick(e)
 				if (vi_WindowClickParentDataset)
 				{
 					const result = vi_WindowClickParentDataset(dataset);
-					if (result == 1)
-						return;
-					else if (result == 2)
-						break;
+					     if (result == 1) return;
+					else if (result == 2) break;
 				}
 			}
 		}
@@ -3664,9 +3580,9 @@ function WindowClick(e)
  */
 function ApiMessage(data, callback, ajax_session)
 {
+	if (!data) return;
+
 	// add session info?
-	if (!data)
-		return;
 	if (ajax_session)
 		AddSession(data, ajax_session);
 
@@ -3724,9 +3640,7 @@ function ApiTranslateGet(force, callback, custom_data)
 		_done({});
 	else
 		Resource(`translate/${language}.json?v=${Ceil(now / TIMEOUT_translate)}`, (code, data) => {
-			if (code != 200)
-				return;
-			_done(data);
+			if (code == 200) _done(data);
 		});
 }
 
@@ -3735,12 +3649,10 @@ function ApiTranslateGet(force, callback, custom_data)
  */
 function CheckSession()
 {
-	if (!me['session'])
-		return;
+	if (!me['session']) return;
 
 	SocketSend([MSG_USER_SESSION, {
 		'email': me['email'],
-		'ip': me['ip'],
 		'login': me['login'],
 		'session': me['session'],
 	}]);
@@ -3765,13 +3677,11 @@ function GetIp(name, callback)
 	if (callback && !ip_callbacks[name])
 		ip_callbacks[name] = callback;
 
-	if (timeouts['GetIp'])
-		return;
+	if (timeouts['GetIp']) return;
 
 	AddTimeout('GetIp', () => {
 		ApiMessage([MSG_IP_GET], data => {
-			if (!data)
-				return;
+			if (!data) return;
 			Z.ip = data[1];
 			Z.ip_time = Now();
 
@@ -3796,15 +3706,14 @@ function GetIp(name, callback)
 function SetDragEvents(HandleDrop, force_orient=0)
 {
 	Events(window, 'dragstart', e => {
-		if (!Y['drag_and_drop'])
-			return;
+		if (!Y['drag_and_drop']) return;
+
 		// no drag and drop on text
 		const target = e.target;
-		if (target.nodeType != 1)
-			return;
+		if (target.nodeType != 1) return;
+
 		const parent = Parent(target, {attrs: 'draggable=true', self: true});
-		if (!parent)
-			return;
+		if (!parent) return;
 
 		for (const class_ of DRAG_CLASSES)
 			if (HasClass(parent, class_))
@@ -3817,8 +3726,8 @@ function SetDragEvents(HandleDrop, force_orient=0)
 	});
 
 	Events(window, 'dragenter dragover', e => {
-		if (!Y['drag_and_drop'])
-			return;
+		if (!Y['drag_and_drop']) return;
+
 		const parent = Parent(e.target, {class_: 'area', self: true});
 		let child = GetDropId(e.target).node;
 		if (child == drag_source)
@@ -3833,8 +3742,7 @@ function SetDragEvents(HandleDrop, force_orient=0)
 		// tab=drop or top/bottom area => vertical bar, otherwise horizontal
 		const orient = ((parent && ['bottom', 'top'].includes(parent.id)) || HasClass(child, 'drop'))? 1 : 2;
 		DrawRectangle(child, force_orient || orient, e.clientX, e.clientY);
-		if (!child)
-			return;
+		if (!child) return;
 
 		Class('.area', 'dragging');
 		SP(e);
@@ -3842,8 +3750,7 @@ function SetDragEvents(HandleDrop, force_orient=0)
 	});
 
 	Events(window, 'dragexit dragleave', e => {
-		if (!Y['drag_and_drop'])
-			return;
+		if (!Y['drag_and_drop']) return;
 		if (e.target.tagName == 'HTML')
 		{
 			Class('.area', '-dragging');
@@ -3874,8 +3781,8 @@ function SetEngineEvents()
 	// iframe support: scroll going to opposite expected way => stop the animation
 	Events(window, 'scroll', () => {
 		last_scroll = Now(1);
-		if (Abs(touch_speed.x) <= 0.03 && Abs(touch_speed.y) <= 0.03)
-			return;
+		if (Abs(touch_speed.x) <= 0.03 && Abs(touch_speed.y) <= 0.03) return;
+
 		const y = ScrollDocument(),
 			sign = Sign(y - touch_scroll.y);
 		if (sign && sign != -Sign(touch_speed.y))
@@ -3883,6 +3790,35 @@ function SetEngineEvents()
 			CancelAnimationFrame('scroll');
 			StopDrag();
 		}
+	});
+}
+
+/**
+ * File load events
+ * @param {Node|Array<Node>|string|Window} sel CSS selector or node
+ * @param {!Object} handlers
+ */
+function SetFileEvents(sel, handlers)
+{
+	Events(sel, 'change', function() {
+		const file = this.files[0],
+			id = this.dataset['x'],
+			reader = new FileReader();
+		if (!file) return;
+
+		const [type, callback] = handlers[id];
+		if (!type) return;
+
+		switch (type)
+		{
+		case 'array': reader.readAsArrayBuffer(file); break;
+		case 'bin': reader.readAsBinaryString(file); break;
+		case 'text': reader.readAsText(file); break;
+		case 'url': reader.readAsDataURL(file); break;
+		default: return;
+		}
+
+		reader.onloadend = () => callback(reader, id, file);
 	});
 }
 
@@ -3895,10 +3831,8 @@ function SetEngineEvents()
 function SetFullScreenEvents({move, wheel}={})
 {
 	Events(window, 'pointerdown pointerenter pointerleave pointermove pointerup', e => {
-		if (move)
-			move(e);
-		if (!IsFullScreen())
-			return;
+		if (move) move(e);
+		if (!IsFullScreen()) return;
 		HandleTouch(e, true);
 	});
 	Events(window, 'wheel', e => {
@@ -3906,8 +3840,7 @@ function SetFullScreenEvents({move, wheel}={})
 			wheel(e);
 		if (!IsFullScreen())
 		{
-			if (Y['wheel_adjust'])
-				AddTimeout('adjust', ScrollAdjust, TIMEOUT_adjust);
+			if (Y['wheel_adjust']) AddTimeout('adjust', ScrollAdjust, TIMEOUT_adjust);
 			return;
 		}
 		HandleWheelEvent(e, true);
@@ -3922,8 +3855,7 @@ function SetModalEvents(parent)
 {
 	// settings events
 	parent = parent || node_modal;
-	if (parent.dataset['ev'] == 0)
-		return;
+	if (parent.dataset['ev'] == 0) return;
 
 	C('.closer', () => {
 		ShowPopup();
@@ -3947,13 +3879,12 @@ function SetModalEvents(parent)
 		if (!next)
 		{
 			// link
-			if (this.href)
-				CheckHash();
+			if (this.href) CheckHash();
 			return;
 		}
 		next = _('input, select', next);
-		if (!next)
-			return;
+		if (!next) return;
+
 		switch (next.tagName)
 		{
 		case 'INPUT':
@@ -3979,8 +3910,7 @@ function SetModalEvents(parent)
 
 	// right click on item => reset to default
 	Events('.item', 'contextmenu', function(e) {
-		if (CannotPopup())
-			return;
+		if (CannotPopup()) return;
 		ResetItemSetting(this);
 		PD(e);
 		SP(e);
@@ -4006,14 +3936,14 @@ function SetModalEvents(parent)
 	}, parent);
 	//
 	C('input, select, textarea', function() {
-		if (CannotClick())
-			return;
+		if (CannotClick()) return;
 		ChangeSetting('');
 	}, parent);
 
 	// name + IDs => special action
 	C('[name]', function() {
-		ChangeSetting(this.getAttribute('name'));
+		if (!['INPUT', 'SELECT'].includes(this.tagName))
+			ChangeSetting(this.getAttribute('name'));
 	}, parent);
 	C('[id]', function() {
 		ChangeSetting(this.id);
@@ -4031,8 +3961,7 @@ function SetThemeEvents()
 	C('.theme', function() {
 		const theme = THEMES[(Y['theme'] == THEMES[0]) ? 1 : 0];
 		AnimateTheme(theme);
-		if (vi_ChangeTheme)
-			vi_ChangeTheme(theme);
+		if (vi_ChangeTheme) vi_ChangeTheme(theme);
 	});
 }
 

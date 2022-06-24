@@ -757,10 +757,8 @@ function checkDrawArrow(board)
 		main = xboards[y_x];
 
 	// 0) skip?
-	if (id == undefined)
-		return;
-	if (!['all', id < 2? 'player' : 'kibitzer'].includes(Y['arrow_from']))
-		return;
+	if (id == undefined) return;
+	if (!['all', id < 2? 'player' : 'kibitzer'].includes(Y['arrow_from'])) return;
 
 	let draw = false,
 		moves = main.moves,
@@ -769,14 +767,12 @@ function checkDrawArrow(board)
 		ply = main.ply,
 		next_ply = ply + 1;
 
-	if (Y['arrow_moves'] != 'all' && ply < main.moves.length - 1)
-		return;
+	if (Y['arrow_moves'] != 'all' && ply < main.moves.length - 1) return;
 
 	// wrong color?
 	let from_opponent = Y['arrow_from_opponent'],
 		is_other = (board.name.slice(0, 2) == 'pv' && (next_ply & 1) != (id & 1));
-	if (!from_opponent && is_other)
-		return;
+	if (!from_opponent && is_other) return;
 
 	// wrong current move?
 	let board_move = board_moves[ply],
@@ -787,13 +783,11 @@ function checkDrawArrow(board)
 
 		if (fen != board_move['fen'])
 		{
-			if (DEV['arrow'])
-				LS(`${board.id} wrong fen @${ply} / ${ply / 2 + 1}`);
+			if (DEV['arrow']) LS(`${board.id} wrong fen @${ply} / ${ply / 2 + 1}`);
 		}
 		else
 		{
-			if (DEV['arrow'])
-				LS(`${board.id} correct fen @${ply} / ${ply / 2 + 1}`);
+			if (DEV['arrow']) LS(`${board.id} correct fen @${ply} / ${ply / 2 + 1}`);
 
 			next = board_moves[next_ply];
 			if (next)
@@ -805,8 +799,7 @@ function checkDrawArrow(board)
 					let result = board.chessMove(next['m']);
 					Assign(next, result);
 					next['ply'] = next_ply;
-					if (DEV['arrow'])
-						LS(`${board.id} chess ${next['m']} => ${next['from']} - ${next['to']} @${next_ply} / ${next_ply / 2 + 1}`);
+					if (DEV['arrow']) LS(`${board.id} chess ${next['m']} => ${next['from']} - ${next['to']} @${next_ply} / ${next_ply / 2 + 1}`);
 				}
 				draw = true;
 			}
@@ -814,19 +807,16 @@ function checkDrawArrow(board)
 	}
 	else if (next && next['ply'] == next_ply)
 	{
-		if (DEV['arrow'])
-			LS(`${board.id} OK next @${next_ply} / ${next_ply / 2 + 1}`);
+		if (DEV['arrow']) LS(`${board.id} OK next @${next_ply} / ${next_ply / 2 + 1}`);
 		draw = true;
 	}
 
 	if (draw)
 	{
-		if (DEV['arrow'])
-			LS(`     => draw: ${next['m']} : ${next['from']} => ${next['to']} @${next['ply']} / ${next['ply'] / 2 + 1}`);
+		if (DEV['arrow']) LS(`     => draw: ${next['m']} : ${next['from']} => ${next['to']} @${next['ply']} / ${next['ply'] / 2 + 1}`);
 		main.arrow(id, next, is_other? from_opponent : 1);
 	}
-	else if (DEV['arrow'])
-		LS(`${board.id} no arrow`);
+	else if (DEV['arrow']) LS(`${board.id} no arrow`);
 }
 
 /**
@@ -920,8 +910,7 @@ function resetSubBoards(section, mode, render, start_fen)
 {
 	Keys(xboards).forEach(key => {
 		let board = xboards[key];
-		if (board.main_manual)
-			return;
+		if (board.main_manual) return;
 
 		if (mode & 1)
 			board.valid = false;
@@ -1118,13 +1107,11 @@ function updateBoardTheme(mode)
 		{
 			if (is_main)
 			{
-				if (!(mode & 1))
-					return;
+				if (!(mode & 1)) return;
 			}
 			else if (is_manual)
 			{
-				if (!(mode & 4))
-					return;
+				if (!(mode & 4)) return;
 			}
 			else if (!(mode & 2))
 				return;
@@ -1203,8 +1190,7 @@ function addQueue(section, parent)
  */
 function analyseCrosstable(section, data)
 {
-	if (!data)
-		return;
+	if (!data) return;
 	DefaultObject(table_data, section, {}).crossx = data;
 
 	// 0) get season #
@@ -1365,8 +1351,8 @@ function analyseCrosstable(section, data)
 		Keys(encounters).forEach(key => {
 			let engines = encounters[key],
 				names = Keys(engines);
-			if (names.length < 2)
-				return;
+			if (names.length < 2) return;
+
 			for (let name of names)
 			{
 				for (let name2 of names)
@@ -1463,8 +1449,7 @@ function changePage(parent, value)
 {
 	let tab = getActiveTab(parent),
 		active = tab.name;
-	if (DEV['ui2'])
-		LS(`changePage: ${parent} : ${value} ~ ${active}`);
+	if (DEV['ui2']) LS(`changePage: ${parent} : ${value} ~ ${active}`);
 
 	let page,
 		page_key = `page_${parent}`,
@@ -1500,8 +1485,7 @@ function checkPagination(parent)
 	if (!PAGINATIONS[name])
 		return 0;
 
-	if (DEV['queue'])
-		LS(`checkPagination: ${parent}/${name}`);
+	if (DEV['queue']) LS(`checkPagination: ${parent}/${name}`);
 
 	// check if there's enough data
 	let section = y_x,
@@ -1570,16 +1554,13 @@ function checkQueuedTables()
 
 	for (let queued of queued_tables)
 	{
-		if (DEV['queue'])
-			LS(`queued: ${queued}`);
+		if (DEV['queue']) LS(`queued: ${queued}`);
 
 		let [section, parent, table] = queued.split('/');
-		if (!QUEUES.includes(table))
-			continue;
+		if (!QUEUES.includes(table)) continue;
 
 		let data_x = table_data[section]['sched'];
-		if (!data_x)
-			continue;
+		if (!data_x) continue;
 
 		let data = data_x.data;
 		if (table == 'h2h')
@@ -1712,8 +1693,7 @@ function downloadLive()
 {
 	let left = 4,
 		section = 'live';
-	if (section != y_x)
-		return;
+	if (section != y_x) return;
 
 	function _done()
 	{
@@ -1808,8 +1788,7 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 		// save cache separately for Live and Archive
 		if (cache && (only_cache || Now() < cache['time'] + timeout))
 		{
-			if (DEV['json'])
-				LS(`cache found: ${key} : ${Now() - cache['time']} < ${timeout}`);
+			if (DEV['json']) LS(`cache found: ${key} : ${Now() - cache['time']} < ${timeout}`);
 			_done(cache['data'], true);
 			return;
 		}
@@ -1817,13 +1796,11 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 			LS(`no cache: ${key}`);
 	}
 
-	if (only_cache)
-		return;
+	if (only_cache) return;
 
 	// get the data
 	Resource(`${url}?ts=${Now()}`, (code, data, xhr) => {
-		if (code != 200)
-			return;
+		if (code != 200) return;
 
 		let cache_data = cache? cache['data']: null,
 			now = Now(1);
@@ -1844,8 +1821,7 @@ function downloadTable(section, url, name, callback, {add_delta, no_cache, only_
 		if (!no_cache)
 		{
 			SaveStorage(key, {'data': data, 'time': Floor(now)});
-			if (DEV['json'])
-				LS(`cache saved: ${key}`);
+			if (DEV['json']) LS(`cache saved: ${key}`);
 		}
 		_done(data, false);
 	});
@@ -1862,8 +1838,7 @@ function downloadTables(only_cache, live_flag)
 	if (!only_cache && !(live_flag & 1))
 		downloadPgn(section, 'live.pgn', false, downloadLive);
 
-	if (live_flag & 2)
-		return;
+	if (live_flag & 2) return;
 
 	if (!only_cache)
 		downloadGamelist();
@@ -1948,8 +1923,7 @@ function showFilteredGames(text)
  */
 function showTables(section, is_cup)
 {
-	if (section != y_x || is_cup == old_cup)
-		return;
+	if (section != y_x || is_cup == old_cup) return;
 	old_cup = is_cup;
 
 	let active = getActiveTab('table').name,
@@ -1977,8 +1951,7 @@ function showTables(section, is_cup)
  */
 function updateTable(section, name, rows, {output, parent='table', reset=true}={})
 {
-	if (!name)
-		return;
+	if (!name) return;
 
 	// 1) resolve shortcut
 	let is_shortcut,
@@ -2017,8 +1990,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 		table2 = CacheId(`table-${output || name}`),
 		body = _('tbody', table);
 
-	if (!table)
-		return;
+	if (!table) return;
 
 	// reset or append?
 	// - except if rows is null
@@ -2039,8 +2011,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 
 	if (rows)
 	{
-		if (!IsArray(rows))
-			return;
+		if (!IsArray(rows)) return;
 
 		// translate row keys + calculate _id and _text
 		rows.forEach((row, row_id) => {
@@ -2211,8 +2182,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 	}
 
 	// not a real table?
-	if (!data.length && !is_sched && !is_shortcut)
-		return;
+	if (!data.length && !is_sched && !is_shortcut) return;
 
 	for (let row of data)
 	{
@@ -2239,9 +2209,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 			{
 			case 'action':
 			case 'decision':
-			case 'reason':
-				td_class = 'opening';
-				break;
+			case 'reason': td_class = 'opening'; break;
 			case 'black':
 			case 'white':
 				let vclass = '';
@@ -2256,9 +2224,7 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 				value = value.replace('February', 'Feb').replace('June', 'Jun').replace('October', 'Oct');
 				break;
 			case 'download':
-			case 'pgn':
-				value = `<a href="${HOST_ARCHIVE}/${value}"><i data-svg="download"></i></a>`;
-				break;
+			case 'pgn': value = `<a href="${HOST_ARCHIVE}/${value}"><i data-svg="download"></i></a>`; break;
 			case 'engine':
 			case 'runner':
 			case 'winner':
@@ -2431,10 +2397,8 @@ function updateTable(section, name, rows, {output, parent='table', reset=true}={
 		});
 		// open game
 		C('[data-g]', function(e) {
-			if (Parent(e.target, {class_: 'fen', self: true}))
-				return;
-			if (CannotClick())
-				return;
+			if (Parent(e.target, {class_: 'fen', self: true})) return;
+			if (CannotClick()) return;
 
 			if (this.tagName == 'TR')
 			{
@@ -2527,8 +2491,7 @@ function analyseSeasons(data)
 	let seasons = (data || {}).Seasons,
 		section = 'archive',
 		is_archive = (y_x == section);
-	if (!seasons)
-		return;
+	if (!seasons) return;
 
 	let link = currentArchiveLink(section),
 		rows = Keys(seasons).reverse().map(key => Assign({season: isNaN(key)? key : `Season ${key}`}, seasons[key]));
@@ -2538,12 +2501,11 @@ function analyseSeasons(data)
 	if (is_archive)
 	{
 		let node = _(`[data-u="${link}"]`);
-		if (!node)
-			return;
+		if (!node) return;
 
 		let parent = Parent(node, {tag: 'grid'});
-		if (!parent)
-			return;
+		if (!parent) return;
+
 		Class([node, node.nextElementSibling], 'active');
 		expandSeason(parent.previousElementSibling, true);
 		tour_info[section].link = link;
@@ -2637,16 +2599,14 @@ function openEvent(section, callback)
 				return;
 			}
 		});
-		if (found)
-			return;
+		if (found) return;
 	});
 
 	Assign(info, {
 		'link': link,
 		'url': found,
 	});
-	if (!found || section != 'archive')
-		return;
+	if (!found || section != 'archive') return;
 
 	let dico = {no_cache: true},
 		event_tag = info['eventtag'],
@@ -2684,8 +2644,7 @@ function openGame()
 {
 	let info = tour_info['archive'],
 		event = info['url'];
-	if (!event)
-		return;
+	if (!event) return;
 
 	if (Y['season'] && (Y['div'] || Y['round'] || Y['stage']) && Y['game'])
 	{
@@ -2705,15 +2664,13 @@ function setSeasonEvents()
 
 	// expand/collapse
 	C('.season', function() {
-		if (CannotClick())
-			return;
+		if (CannotClick()) return;
 		expandSeason(this);
 	}, table);
 
 	// open games
 	C('a[data-u]', function() {
-		if (CannotClick())
-			return;
+		if (CannotClick()) return;
 
 		// 'season=18&div=l3' or 'season=cup5&round=round16'
 		let query = QueryString({query: this.dataset['u']}),
@@ -2807,8 +2764,7 @@ function calculateEventStats(section, rows)
 	if (!rows)
 	{
 		let data_x = table_data[section]['sched'];
-		if (!data_x)
-			return;
+		if (!data_x) return;
 		rows = data_x.data;
 	}
 
@@ -3008,8 +2964,7 @@ function calculateEstimates(section, rows)
 		row['started'] = true;
 		last = row['start'];
 	}
-	if (!last)
-		return;
+	if (!last) return;
 
 	// 18:18:54 on 2020.05.06
 	// => '2020.05.06 18:18:54': can be parsed by javascript correctly
@@ -3043,8 +2998,7 @@ function calculateEstimates(section, rows)
  */
 function createBracket(section, data)
 {
-	if (section != y_x)
-		return;
+	if (section != y_x) return;
 
 	// 1) create seeds
 	let game = 1,
@@ -3243,8 +3197,7 @@ function createConnector(curr, id, nexts, target, coeffs)
 		if (subs.length == 1)
 			next = subs[0];
 	}
-	if (!next)
-		return null;
+	if (!next) return null;
 
 	// create the SVG
 	let ax = curr.offsetLeft + curr.clientWidth,
@@ -3322,8 +3275,7 @@ function createCup(section, data, show)
 		tour.data = data;
 	else
 		data = tour.data;
-	if (!data)
-		return;
+	if (!data) return;
 
 	showTables(section, true);
 
@@ -3344,13 +3296,12 @@ function createCup(section, data, show)
 	// 3) cup events
 	// click on a match => load its games
 	C('.match', function() {
-		if (CannotClick())
-			return;
+		if (CannotClick()) return;
+
 		let dataset = this.dataset,
 			names = Split(dataset['n']),
 			round = dataset['r'];
-		if (!names[0] || !names[1])
-			return;
+		if (!names[0] || !names[1]) return;
 
 		let text = names.join(' ');
 		Y['game'] = 0;
@@ -3395,8 +3346,7 @@ function resizeBracket(force)
 {
 	let window_width = window.innerWidth;
 	if (!force && old_width)
-		if ((window_width > 640 && old_width > 640) || (window_width <= 640 && old_width <= 640))
-			return;
+		if ((window_width > 640 && old_width > 640) || (window_width <= 640 && old_width <= 640)) return;
 
 	let node = CacheId('table-brak'),
 		round = A('.rounds', node).length,
@@ -3442,11 +3392,9 @@ function checkAdjudication(dico, total_moves)
  */
 function checkMissingMoves(ply, round, pos, force)
 {
-	if (!Y['reload_missing'] || LOCALHOST)
-		return;
+	if (!Y['reload_missing'] || LOCALHOST) return;
 	let section = y_x;
-	if (section != 'live')
-		return;
+	if (section != 'live') return;
 
 	let new_game,
 		main = xboards[section],
@@ -3462,13 +3410,11 @@ function checkMissingMoves(ply, round, pos, force)
 		main.pos = pos;
 	}
 
-	if (delta < TIMEOUT_live_reload)
-		return;
+	if (delta < TIMEOUT_live_reload) return;
 
 	if (new_game || (main.round2 && main.round != main.round2))
 	{
-		if (DEV['new'])
-			LS(`round=${main.round} => ${main.round2} : pos=${new_game} => ${main.pos}`);
+		if (DEV['new']) LS(`round=${main.round} => ${main.round2} : pos=${new_game} => ${main.pos}`);
 	}
 	else if (!force)
 	{
@@ -3486,10 +3432,8 @@ function checkMissingMoves(ply, round, pos, force)
 					break;
 				}
 
-		if (empty < 0)
-			return;
-		if (DEV['new'])
-			LS(`empty=${empty} : delta=${delta}`);
+		if (empty < 0) return;
+		if (DEV['new']) LS(`empty=${empty} : delta=${delta}`);
 	}
 
 	AddTimeout(section, () => {
@@ -3504,13 +3448,11 @@ function checkMissingMoves(ply, round, pos, force)
  */
 function downloadLiveEvals(round)
 {
-	if (!round)
-		return;
+	if (!round) return;
 
 	let section = 'archive',
 		event = tour_info[section].url;
-	if (!event)
-		return;
+	if (!event) return;
 
 	let prefix = `${HOST_ARCHIVE}/${Lower(event)}_liveeval`;
 	downloadTable(section, `${prefix}_${round}.json`, null, data =>
@@ -3532,8 +3474,7 @@ function downloadLiveEvals(round)
  */
 function downloadPgn(section, url, reset_moves, callback)
 {
-	if (DEV['new'])
-		LS(`downloadPgn: ${section} : ${url} : ${reset_moves}`);
+	if (DEV['new']) LS(`downloadPgn: ${section} : ${url} : ${reset_moves}`);
 
 	let main = xboards[section];
 	main.time = Now(1);
@@ -3542,8 +3483,7 @@ function downloadPgn(section, url, reset_moves, callback)
 	let no_cache = (section == 'live')? `?ts=${Now()}` : '';
 
 	Resource(`${url}${no_cache}`, (code, data, xhr) => {
-		if (code != 200)
-			return;
+		if (code != 200) return;
 
 		let extra = {};
 		if (data)
@@ -3606,11 +3546,9 @@ function fixHeaderOpening(board, headers)
 {
 	let fen = headers['FEN'],
 		opening = headers['Opening'];
-	if (!fen || !board || (opening && !DUMMY_OPENINGS[opening]))
-		return;
+	if (!fen || !board || (opening && !DUMMY_OPENINGS[opening])) return;
 	// continuation
-	if (fen && getFenPly(fen) > -1)
-		return;
+	if (fen && getFenPly(fen) > -1) return;
 
 	fen = headers['FEN'] = board.chessLoad(fen) || fen;
 
@@ -3667,16 +3605,13 @@ function fixZeroMoves(moves, main_moves)
  */
 function parsePgn(section, data, {mode=15, origin=''}={})
 {
-	if (!data)
-		return null;
+	if (!data) return null;
 
 	// A) maybe we have a JSON already?
-	if (IsObject(data))
-		return data;
+	if (IsObject(data)) return data;
 
 	let json = ParseJSON(/** @type {string} */(data));
-	if (IsObject(json))
-		return /** @type {!Object} */(json);
+	if (IsObject(json)) return /** @type {!Object} */(json);
 
 	// B) parse the raw PGN
 	let inside, start,
@@ -3724,8 +3659,7 @@ function parsePgn(section, data, {mode=15, origin=''}={})
 			break;
 		}
 	}
-	if (!Keys(headers).length)
-		return null;
+	if (!Keys(headers).length) return null;
 
 	// fix FEN for FRC (archive)
 	let fen = headers['FEN'];
@@ -3778,8 +3712,7 @@ function parsePgn(section, data, {mode=15, origin=''}={})
 		headers['Opening'] = variant;
 
 	pgn['Moves'] = moves;
-	if (DEV['fen'])
-		LS(pgn);
+	if (DEV['fen']) LS(pgn);
 	return pgn;
 }
 
@@ -3846,8 +3779,7 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={})
 							new_pv = result.map(item => item['m']).join(' ');
 						if (pv != new_pv)
 						{
-							if (DEV['fen2'])
-								LS(ply, [pv, new_pv]);
+							if (DEV['fen2']) LS(ply, [pv, new_pv]);
 							pv = new_pv;
 						}
 					}
@@ -3922,13 +3854,11 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={})
 					let result = board.chessMove(move);
 					if (move != result.san)
 					{
-						if (DEV['fen2'])
-							LS(`${ply} : ${move}`, result);
+						if (DEV['fen2']) LS(`${ply} : ${move}`, result);
 						move = result.san;
 						if (!move)
 						{
-							if (mode & 16)
-								return [];
+							if (mode & 16) return [];
 							break;
 						}
 					}
@@ -3945,8 +3875,7 @@ function parsePgnMoves(section, data, {fen, mode=15, origin=''}={})
 					moves[ply]['fen'] = move_fen;
 
 				info = {};
-				if (DEV['fen'])
-					LS(`${ply} : ${move}`);
+				if (DEV['fen']) LS(`${ply} : ${move}`);
 			}
 			start = i + 1;
 			has_text = false;
@@ -4004,8 +3933,7 @@ function ResizeGame()
 	// 1) boards
 	Keys(xboards).forEach(key => {
 		let board = xboards[key];
-		if (!board.main && !board.sub)
-			return;
+		if (!board.main && !board.sub) return;
 
 		let area = GetArea(board.node),
 			width = area.clientWidth,
@@ -4023,8 +3951,7 @@ function ResizeGame()
 		let parent = Parent(node, {tag: 'grid'}),
 			next = parent.nextElementSibling,
 			units = parent.clientWidth * 1280;
-		if (!units)
-			return;
+		if (!units) return;
 
 		// [44.4% W | 44.4% D | 44.4% B] => 17755 units
 		Style(node, [['font-size', `${Min(13, units / 17755 * Y['percent_width'] / 100)}px`]]);
@@ -4166,8 +4093,7 @@ function updateAgrees(section)
  */
 function updateMaterials(move)
 {
-	if (!move)
-		return;
+	if (!move) return;
 
 	let material = move['material'] || move['mb'],
 		materials = [[], []];
@@ -4176,8 +4102,7 @@ function updateMaterials(move)
 	if (!material)
 	{
 		let fen = move['fen'];
-		if (!fen)
-			return;
+		if (!fen) return;
 
 		let stats = [0, 0, 0, 0, 0];
 		for (let char of fen.split(' ')[0])
@@ -4205,8 +4130,7 @@ function updateMaterials(move)
 	'qrbnp'.split('').forEach((key, j) => {
 		let pos = (4 - j) * 2,
 			value = is_string? parseInt(material.slice(pos, pos + 2), 10) : material[key];
-		if (!value)
-			return;
+		if (!value) return;
 
 		let id = (value > 0)? 0 : 1,
 			id2 = invert? 1 - id : id;
@@ -4261,8 +4185,7 @@ function updateMobility()
  */
 function updateMoveInfo(section, ply, move, fresh)
 {
-	if (!move)
-		return;
+	if (!move) return;
 
 	fixMoveFormat(move);
 
@@ -4324,8 +4247,7 @@ function updateMoveInfo(section, ply, move, fresh)
  */
 function updateMovePv(section, ply, move)
 {
-	if (!move)
-		return;
+	if (!move) return;
 
 	let is_book = move['book'],
 		eval_ = is_book? 'book' : move['wv'],
@@ -4431,10 +4353,8 @@ function updateOptions(section)
  */
 function updateOverviewBasic(section, headers)
 {
-	if (!headers)
-		return;
-	if (section != y_x)
-		return;
+	if (!headers) return;
+	if (section != y_x) return;
 
 	let main = xboards[section],
 		players = main.players;
@@ -4447,12 +4367,8 @@ function updateOverviewBasic(section, headers)
 		switch (key)
 		{
 		// TCEC Season 17 => S17
-		case 'event':
-			value = value.replace('TCEC Season ', 'S');
-			break;
-		case 'result':
-			value = value.replace(/1\/2/g, '½');
-			break;
+		case 'event': value = value.replace('TCEC Season ', 'S'); break;
+		case 'result': value = value.replace(/1\/2/g, '½'); break;
 		case 'timecontrol':
 			if (value)
 			{
@@ -4518,8 +4434,7 @@ function updateOverviewBasic(section, headers)
  */
 function updateOverviewMoves(section, headers, moves, is_new)
 {
-	if (!headers)
-		return null;
+	if (!headers) return null;
 
 	let finished,
 		is_live = (section == 'live'),
@@ -4545,14 +4460,12 @@ function updateOverviewMoves(section, headers, moves, is_new)
 	}
 	updateTimeControl(section, who);
 
-	if (section != y_x)
-		return null;
+	if (section != y_x) return null;
 
 	// 2) update the visible charts
 	if (section == sectionBoard())
 	{
-		if (DEV['chart'])
-			LS(`UOM: ${section}`);
+		if (DEV['chart']) LS(`UOM: ${section}`);
 		updatePlayerCharts(moves);
 	}
 
@@ -4569,8 +4482,7 @@ function updateOverviewMoves(section, headers, moves, is_new)
 		let result = headers['Result'];
 		if (is_live && is_new)
 			PlaySound(audiobox, (result == '1/2-1/2')? Y['sound_draw']: Y['sound_win']);
-		if (DEV['new'])
-			LS(`finished: result=${result} : is_live=${is_live} : is_new=${is_new}`);
+		if (DEV['new']) LS(`finished: result=${result} : is_live=${is_live} : is_new=${is_new}`);
 		main.setLast(result);
 	}
 	else
@@ -4660,8 +4572,7 @@ function updatePgn(section, data, extras, reset_moves)
 				pgn.Moves = [];
 			Assign(pgn.Moves, new_moves);
 		}
-		if (!ok)
-			return false;
+		if (!ok) return false;
 	}
 	Assign(pgn, extras || {});
 
@@ -4705,8 +4616,7 @@ function updatePgn(section, data, extras, reset_moves)
 	// TODO: what's the utility of this?
 	if (new_game)
 	{
-		if (DEV['new'])
-			LS(`new pgn: ${headers['Round']}`);
+		if (DEV['new']) LS(`new pgn: ${headers['Round']}`);
 		pgn.gameChanged = 0;
 		new_game = 0;
 	}
@@ -4727,8 +4637,7 @@ function updatePgn(section, data, extras, reset_moves)
 			resetSubBoards(section, 7, true, pgn.frc);
 			if (section == sectionBoard())
 			{
-				if (DEV['chart'])
-					LS(`UP: ${section}`);
+				if (DEV['chart']) LS(`UP: ${section}`);
 				resetCharts(section, true);
 			}
 		}
@@ -4770,8 +4679,7 @@ function updatePgn(section, data, extras, reset_moves)
 	let last_move = main.moves[main.moves.length - 1];
 	if (is_same && last_move && section == sectionBoard())
 	{
-		if (DEV['chart'])
-			LS(`UP: ${section}`);
+		if (DEV['chart']) LS(`UP: ${section}`);
 		sliceCharts(last_move['ply']);
 	}
 
@@ -4865,19 +4773,16 @@ function updateTimeControl(section, id)
  */
 function analyseLog(line)
 {
-	if (!Y['live_pv'])
-		return;
+	if (!Y['live_pv']) return;
 
 	// 1) get engine name
 	let pos = line.indexOf(' '),
 		pos2 = line.indexOf(': ');
-	if (pos < 0 || pos2 <= pos)
-		return;
+	if (pos < 0 || pos2 <= pos) return;
 
 	let left = line.slice(pos + 1, pos2),
 		pos3 = left.lastIndexOf('(');
-	if (pos3 <= 0)
-		return;
+	if (pos3 <= 0) return;
 
 	let id,
 		engine = left.slice(0, pos3),
@@ -4890,8 +4795,7 @@ function analyseLog(line)
 		id = 1;
 	else
 	{
-		if (DEV['log'])
-			LS(`unknown engine: ${engine}`);
+		if (DEV['log']) LS(`unknown engine: ${engine}`);
 		return;
 	}
 
@@ -4951,8 +4855,7 @@ function analyseLog(line)
 		pv = info['pv'] || '',
 		pvs = prev_info.pvs || {};
 	player.info = info;
-	if (y_x != 'live')
-		return;
+	if (y_x != 'live') return;
 
 	// 3) update eval + WDL
 	let ply = main.moves.length;
@@ -4972,8 +4875,7 @@ function analyseLog(line)
 
 	// 4) update PV
 	// - don't update if the new PV is a subset of the previous pv
-	if (!Y['log_pv'])
-		return;
+	if (!Y['log_pv']) return;
 
 	for (let key of Keys(pvs))
 	{
@@ -5069,8 +4971,7 @@ function boomEffect(section, type, info, volume, intensities, params, callback)
 	boomSound(type, volume2, intensities, sound => {
 		let boom_param = BOOM_PARAMS[sound] || BOOM_PARAMS._,
 			[_, shake_start, shake_duration, red_start, red_duration, magnitude, decay] = boom_param;
-		if (DEV['effect'])
-			LS(`${type}: ply=${main.moves.length} : ${sound} : ${boom_param} : ${info}`);
+		if (DEV['effect']) LS(`${type}: ply=${main.moves.length} : ${sound} : ${boom_param} : ${info}`);
 
 		// 5) visual stuff
 		let body = CacheId('body2'),
@@ -5128,8 +5029,8 @@ function boomSound(type, volume, intensities, callback)
 	if (sound == 'random')
 	{
 		let availables = sounds.slice(2).filter(sound => {
-			if (sound == last_sound)
-				return false;
+			if (sound == last_sound) return false;
+
 			let params = BOOM_PARAMS[sound] || BOOM_PARAMS._,
 				intensity = params[0];
 			return (intensity >= intensities[0] && intensity <= intensities[1]);
@@ -5139,8 +5040,7 @@ function boomSound(type, volume, intensities, callback)
 
 	last_sound = sound;
 	let gonna_play = volume? PlaySound(audiobox, sound, {onloaded: () => {
-		if (DEV['effect'])
-			LS(`sound ${sound} loaded, playing now ...`);
+		if (DEV['effect']) LS(`sound ${sound} loaded, playing now ...`);
 		PlaySound(audiobox, sound, {interrupt: true, volume: Y[`${type}_volume`] / 10 * volume});
 		callback(sound);
 	}}) : false;
@@ -5175,16 +5075,13 @@ function checkBoom(section, offset, force, only_check)
 	// !! [1.83, 1.45, -1.54, empty × 2, 2.05] => no boom, just a glitch => check X moves back
 	players.forEach((player, id) => {
 		// already boomed => skip
-		if (player.boom_ply == ply || force)
-			return;
+		if (player.boom_ply == ply || force) return;
 
 		// get the eval
 		let evals = player.evals;
-		if (!evals)
-			return;
+		if (!evals) return;
 		let eval_ = scaleBoom(clampEval(evals[ply]));
-		if (eval_ == undefined)
-			return;
+		if (eval_ == undefined) return;
 
 		// check diff + ratio with X previous evals
 		let count = 0,
@@ -5199,8 +5096,7 @@ function checkBoom(section, offset, force, only_check)
 			if (!worst || diff < worst[0])
 			{
 				worst = [diff, prev_eval, eval_, Abs(eval_) < Abs(prev_eval), id];
-				if (DEV['boom2'])
-					LS('worst=', ply, id, worst);
+				if (DEV['boom2']) LS('worst=', ply, id, worst);
 			}
 
 			++count;
@@ -5211,8 +5107,7 @@ function checkBoom(section, offset, force, only_check)
 		if (count >= 3 && worst && worst[0] > best[0] && worst[0] >= threshold)
 		{
 			best = worst;
-			if (DEV['boom'])
-				LS('best=', ply, id, best);
+			if (DEV['boom']) LS('best=', ply, id, best);
 			Assign(player, {
 				boomed: best[3]? -best[0]: best[0],
 				boom_ply: ply,
@@ -5220,10 +5115,8 @@ function checkBoom(section, offset, force, only_check)
 		}
 	});
 
-	if (!force && best[0] < threshold)
-		return [2];
-	if (only_check)
-		return [0, best];
+	if (!force && best[0] < threshold) return [2];
+	if (only_check) return [0, best];
 
 	let is_moob = best[3],
 		type = is_moob? 'moob' : 'boom';
@@ -5254,8 +5147,7 @@ function checkBoom(section, offset, force, only_check)
 		every: 1 / rate,
 		red_coeff: red_coeff,
 	});
-	if (DEV['boom4'])
-		LS([rate, red_coeff, volume].map(value => value.toFixed(3)).join(', '));
+	if (DEV['boom4']) LS([rate, red_coeff, volume].map(value => value.toFixed(3)).join(', '));
 	return [0, best, [rate, red_coeff, volume, intensities]];
 }
 
@@ -5316,8 +5208,7 @@ function checkExplosion(section, is_boom, force)
 			defuses.add(ply);
 			if (defuses.size >= Y['explosion_ply_reset'])
 				main.exploded = 0;
-			if (DEV['explode'])
-				LS(`defused: ${defuses.size} : ${[...defuses].join(' ')} : ${scores} => ${main.exploded}`);
+			if (DEV['explode']) LS(`defused: ${defuses.size} : ${[...defuses].join(' ')} : ${scores} => ${main.exploded}`);
 		}
 		explodes.clear();
 		return 2;
@@ -5326,8 +5217,7 @@ function checkExplosion(section, is_boom, force)
 	// 3) play sound, might fail if settings disable it
 	// check booms
 	explodes.add(ply);
-	if (DEV['explode'])
-		LS(`exploded: ${explodes.size} : ${[...explodes].join(' ')} : ${scores} => ${main.exploded} ~ ${best}`);
+	if (DEV['explode']) LS(`exploded: ${explodes.size} : ${[...explodes].join(' ')} : ${scores} => ${main.exploded} ~ ${best}`);
 	defuses.clear();
 
 	if (!force)
@@ -5421,8 +5311,7 @@ function clockTick(section, id)
 		// try to synchronize it with the left time
 		timeout = Floor(left) % 1000 - 1;
 
-	if (isNaN(timeout))
-		return;
+	if (isNaN(timeout)) return;
 
 	if (timeout < 50)
 		timeout += 100;
@@ -5483,8 +5372,7 @@ function shakeScreen()
 		coords[0] += RandomInt(-shake * 2, shake * 2 + 1) / 2;
 		coords[1] += RandomInt(-shake * 2, shake * 2 + 1) / 2;
 
-		if (DEV['effect2'])
-			LS(boom_info);
+		if (DEV['effect2']) LS(boom_info);
 		shake *= boom_info.decay;
 		Style(BOOM_ELEMENTS, [['transform', `translate(${coords[0]}px,${coords[1]}px)`]]);
 
@@ -5514,14 +5402,12 @@ function shakeScreen()
  */
 function startClock(section, id, finished, delta)
 {
-	if (DEV['time'])
-		LS(`startClock: section=${section} : id=${id} : finished=${finished} : delta=${delta}`);
+	if (DEV['time']) LS(`startClock: section=${section} : id=${id} : finished=${finished} : delta=${delta}`);
 
 	let is_live = (section == 'live');
 	if (is_live)
 	{
-		if (y_x != section)
-			return;
+		if (y_x != section) return;
 
 		S(CacheId(`cog${id}`), !finished);
 		Hide(CacheId(`cog${1 - id}`));
@@ -5588,8 +5474,7 @@ function updateClock(section, id, move)
 	else
 	{
 		// looking at the past => don't update anything
-		if (main && main.ply < main.moves.length - 1)
-			return;
+		if (main && main.ply < main.moves.length - 1) return;
 
 		elapsed = player.elapsed;
 		left = player.left;
@@ -5632,15 +5517,13 @@ function updateHardware(section, id, nodes, {engine, hardware, short}={})
 	let main = xboards[section],
 		player = main.players[id];
 	engine = engine || player.name;
-	if (!engine)
-		return;
+	if (!engine) return;
 
 	short = short || player.short || getShortName(engine);
 	if (hardware)
 		player.hardware = hardware;
 
-	if (section != y_x)
-		return;
+	if (section != y_x) return;
 
 	let full_engine = `${engine}\n${player.hardware}`;
 	for (let child of nodes)
@@ -5671,8 +5554,7 @@ function updateHardware(section, id, nodes, {engine, hardware, short}={})
  */
 function updateLiveEval(section, data, id, force_ply, no_graph)
 {
-	if (!data)
-		return false;
+	if (!data) return false;
 
 	let board = xboards[`live${id}`],
 		board_evals = board.evals[section],
@@ -5688,8 +5570,7 @@ function updateLiveEval(section, data, id, force_ply, no_graph)
 	// maybe old data?
 	if (round && round != main.round)
 	{
-		if (DEV['new'])
-			LS(`maybe old data => SKIP: ${round} vs ${main.round}`);
+		if (DEV['new']) LS(`maybe old data => SKIP: ${round} vs ${main.round}`);
 		return false;
 	}
 
@@ -5736,8 +5617,7 @@ function updateLiveEval(section, data, id, force_ply, no_graph)
 	let short = getShortName(engine);
 	updateHardware(section, id + 2, [box_node, node], {engine: engine, hardware: desc, short: short});
 
-	if (!is_same)
-		return false;
+	if (!is_same) return false;
 
 	let is_current = (ply == cur_ply + 1 || force_ply || (cur_ply == last_ply && ply > cur_ply));
 	if (is_current)
@@ -5754,8 +5634,7 @@ function updateLiveEval(section, data, id, force_ply, no_graph)
 
 		Keys(dico).forEach(key => {
 			let value = dico[key];
-			if (value == 'hide*')
-				return;
+			if (value == 'hide*') return;
 
 			for (let child of [box_node, node])
 				TextHTML(_(`[data-x="${key}"]`, child), Undefined(value, '-'));
@@ -5768,8 +5647,7 @@ function updateLiveEval(section, data, id, force_ply, no_graph)
 
 	if (!no_graph && section == sectionBoard())
 	{
-		if (DEV['chart'])
-			LS(`ULE: ${section}`);
+		if (DEV['chart']) LS(`ULE: ${section}`);
 		updateLiveCharts(moves || [data], id + 2);
 		checkMissingMoves(ply, round);
 		updateAgree(section, id + 2);
@@ -5789,8 +5667,7 @@ function updatePlayerEval(section, data, same_pv)
 {
 	// allow y_x even if pva is the board, to update info
 	let sboard = sectionBoard();
-	if (!Y['live_pv'] || (section != sboard && section != y_x))
-		return false;
+	if (!Y['live_pv'] || (section != sboard && section != y_x)) return false;
 
 	let is_pva = (section == 'pva'),
 		main = xboards[section],
@@ -5880,13 +5757,11 @@ function updatePlayerEval(section, data, same_pv)
 			TEXT(CacheId('movesleft'), `#${data['movesleft']}`);
 	}
 
-	if (DEV['chart'])
-		LS(`UPE: ${section}`);
+	if (DEV['chart']) LS(`UPE: ${section}`);
 	board.evals[section][ply] = data;
 
 	// no graph plot if the board does not match
-	if (section != sboard)
-		return true;
+	if (section != sboard) return true;
 
 	if (is_pva)
 		updatePlayerCharts([data]);
@@ -5973,8 +5848,7 @@ function benchmark(round=10, running=0)
 			});
 		}
 
-		if (bench_stop)
-			return;
+		if (bench_stop) return;
 
 		let started = (now > bench_countdown);
 		if (bench_start < 0 && started)
@@ -6077,9 +5951,7 @@ function GameActionKey(code)
 		// enter, space, x
 		case 13:
 		case 32:
-		case 83:
-			node.click();
-			break;
+		case 83: node.click(); break;
 		// left
 		case 37:
 			if (tag == 'DIV' && is_grid)
@@ -6103,9 +5975,7 @@ function GameActionKey(code)
 			}
 			break;
 		// up
-		case 38:
-			index = (index - 1 + length) % length;
-			break;
+		case 38: index = (index - 1 + length) % length; break;
 		// right
 		case 39:
 			if (tag == 'DIV' && is_grid)
@@ -6129,9 +5999,7 @@ function GameActionKey(code)
 			}
 			break;
 		// down
-		case 40:
-			index = (index + 1) % length;
-			break;
+		case 40: index = (index + 1) % length; break;
 		}
 
 		// changed a setting?
@@ -6363,9 +6231,7 @@ function ChangeSettingGame(name, value)
 	// using exact name
 	switch (name)
 	{
-	case 'agree_length':
-		showAgree();
-		break;
+	case 'agree_length': showAgree(); break;
 	case 'show_ply':
 		Keys(xboards).forEach(key => {
 			let board = xboards[key];
@@ -6385,20 +6251,14 @@ function ChangeSettingGame(name, value)
 		}
 		ClosePopups();
 		break;
-	case 'benchmark_game':
-		loadBenchmark();
-		break;
-	case 'benchmark_now':
-		benchmark();
-		break;
+	case 'benchmark_game': loadBenchmark(); break;
+	case 'benchmark_now': benchmark(); break;
 	case 'boom_effect':
 		SaveOption('boom_sound', value? 'random' : 0);
 		SaveOption('boom_visual', value? 'all' : 0);
 		break;
 	case 'copy_download':
-	case 'download_PGN':
-		copyPgn(board, true);
-		break;
+	case 'download_PGN': copyPgn(board, true); break;
 	case 'copy_FEN':
 		CopyClipboard(board.fen);
 		ClosePopups();
@@ -6415,9 +6275,7 @@ function ChangeSettingGame(name, value)
 		SaveOption('explosion_sound', value? 'random' : 0);
 		SaveOption('explosion_visual', value? 'all' : 0);
 		break;
-	case 'game_PV':
-		S(CacheId('pva-pv'), value);
-		break;
+	case 'game_PV': S(CacheId('pva-pv'), value); break;
 	case 'graph_color_0':
 	case 'graph_color_1':
 	case 'graph_color_2':
@@ -6425,13 +6283,9 @@ function ChangeSettingGame(name, value)
 	case 'graph_line':
 	case 'graph_radius':
 	case 'graph_tension':
-	case 'graph_text':
-		updateChartOptions(null, 3);
-		break;
+	case 'graph_text': updateChartOptions(null, 3); break;
 	case 'graph_eval_clamp':
-	case 'graph_eval_mode':
-		redrawEvalCharts(sboard);
-		break;
+	case 'graph_eval_mode': redrawEvalCharts(sboard); break;
 	case 'graph_scale':
 		let target = ((context_target || {}).id || '').split('-')[1];
 		if (charts[target])
@@ -6454,32 +6308,20 @@ function ChangeSettingGame(name, value)
 		}
 		break;
 	case 'marker_color':
-	case 'marker_opacity':
-		updateMarkers();
-		break;
-	case 'material_color':
-		updateMaterials(main.moves[main.ply]);
-		break;
+	case 'marker_opacity': updateMarkers(); break;
+	case 'material_color': updateMaterials(main.moves[main.ply]); break;
 	case 'moob_effect':
 		SaveOption('moob_sound', value? 'random' : 0);
 		SaveOption('moob_visual', value? 'all' : 0);
 		break;
-	case 'moves_left':
-		Class(CacheId('movesleft'), 'hidden', !value);
-		break;
+	case 'moves_left': Class(CacheId('movesleft'), 'hidden', !value); break;
 	case 'reverse_kills':
 		calculateEventStats(section);
 		updateTable(section, 'stats');
 		break;
-	case 'rows_per_page':
-		update_tab = true;
-		break;
-	case 'status':
-		showBoardInfo(y_x, 2);
-		break;
-	case 'status_pva':
-		showBoardInfo('pva', 2);
-		break;
+	case 'rows_per_page': update_tab = true; break;
+	case 'status': showBoardInfo(y_x, 2); break;
+	case 'status_pva': showBoardInfo('pva', 2); break;
 	case 'test_boom':
 		boom_last = 0;
 		checkBoom('live', 0, [3, 0, 0, false]);
@@ -6497,12 +6339,8 @@ function ChangeSettingGame(name, value)
 	// using prefix
 	switch (prefix)
 	{
-	case 'arrow':
-		redrawArrows();
-		break;
-	case 'wrap':
-		update_tab = true;
-		break;
+	case 'arrow': redrawArrows(); break;
+	case 'wrap': update_tab = true; break;
 	}
 
 	// update the current tab
@@ -6541,12 +6379,10 @@ function ChangedHash()
 			return `${key}=${value}`;
 		}).join('&');
 
-	if (missing || game_link == string)
-		return;
+	if (missing || game_link == string) return;
 
 	// new game link detected => try to load it
-	if (DEV['load'])
-		LS(`ChangedHash: ${game_link} => ${string} : ${missing}`);
+	if (DEV['load']) LS(`ChangedHash: ${game_link} => ${string} : ${missing}`);
 	game_link = string;
 
 	if (section == 'live')
@@ -6582,8 +6418,7 @@ function changedSection()
 	// reset some stuff
 	lockSubBoards(2);
 	resetSubBoards(section, 3, true);
-	if (DEV['chart'])
-		LS(`CS: ${section}`);
+	if (DEV['chart']) LS(`CS: ${section}`);
 	resetCharts(section);
 	redrawEvalCharts(section);
 
@@ -6879,9 +6714,7 @@ function handleBoardEvents(board, type, value, e, force)
 		}
 		move = board.moves[board.ply];
 		break;
-	case 'agree':
-		agree = true;
-		break;
+	case 'agree': agree = true; break;
 	// controls: play, next, ...
 	case 'control':
 		board_target = board;
@@ -6921,9 +6754,7 @@ function handleBoardEvents(board, type, value, e, force)
 		break;
 	// PV list was updated => next move is sent
 	// - if move is null, then hide the arrow
-	case 'next':
-		AddTimeout('arrow', redrawArrows, Y['arrow_history_lag']);
-		break;
+	case 'next': AddTimeout('arrow', redrawArrows, Y['arrow_history_lag']); break;
 	// ply was set
 	// !! make sure it's set manually
 	case 'ply':
@@ -6966,8 +6797,7 @@ function handleBoardEvents(board, type, value, e, force)
 					eval_ = evals[want_ply];
 				if (eval_)
 					updatePlayerEval(section, eval_);
-				if (DEV['ply2'])
-					LS('num_move=', num_move, 'id=', id, 'cur_ply=', cur_ply, 'want_ply=', want_ply, 'eval_=', eval_);
+				if (DEV['ply2']) LS('num_move=', num_move, 'id=', id, 'cur_ply=', cur_ply, 'want_ply=', want_ply, 'eval_=', eval_);
 			}
 
 			// show live engines
@@ -6999,8 +6829,7 @@ function handleBoardEvents(board, type, value, e, force)
 	let new_board = sectionBoard();
 	if (new_board != old_board || force)
 	{
-		if (DEV['chart'])
-			LS(`NN: ${old_board} => ${new_board}`);
+		if (DEV['chart']) LS(`NN: ${old_board} => ${new_board}`);
 		resetCharts(section, false);
 		updatePlayerCharts(board.moves);
 		if (new_board != 'pva')
@@ -7028,8 +6857,7 @@ function OpenTable(sel, clicked)
 		if (!tab)
 			tab = _(`[data-x="table-${sel}"]`);
 	}
-	if (!tab)
-		return;
+	if (!tab) return;
 
 	tab = /** @type {Node} */(tab);
 	let parent = Parent(tab, {class_: 'tabs'}),
@@ -7096,8 +6924,7 @@ function openedTable(node, name, tab)
 		sboard = sectionBoard(),
 		section = y_x,
 		main = xboards[sboard];
-	if (DEV['open'])
-		LS(`openedTable: ${parent}/${name}`);
+	if (DEV['open']) LS(`openedTable: ${parent}/${name}`);
 
 	// 2) special cases
 	if (is_chart && charts[name] && main)
@@ -7108,35 +6935,19 @@ function openedTable(node, name, tab)
 
 	switch (name)
 	{
-	case 'brak':
-		createCup(section);
-		break;
-	case 'crash':
-		downloadTable(section, 'crash.json', name);
-		break;
-	case 'cross':
-		analyseCrosstable(section, table_data[section].crossx);
-		break;
-	case 'info':
-		HTML(node, HTML(CacheId('desc')));
-		break;
+	case 'brak': createCup(section); break;
+	case 'crash': downloadTable(section, 'crash.json', name); break;
+	case 'cross': analyseCrosstable(section, table_data[section].crossx); break;
+	case 'info': HTML(node, HTML(CacheId('desc'))); break;
 	case 'kibitz':
-	case 'pv':
-		ResizeGame();
-		break;
+	case 'pv': ResizeGame(); break;
 	case 'log':
 		FillCombo('#nlog', [0, 5, 10, 'all'], Y['live_log']);
 		listenLog();
 		break;
-	case 'season':
-		downloadGamelist();
-		break;
-	case 'stats':
-		calculateEventStats(section);
-		break;
-	case 'winner':
-		downloadTable(section, 'winners.json', name);
-		break;
+	case 'season': downloadGamelist(); break;
+	case 'stats': calculateEventStats(section); break;
+	case 'winner': downloadTable(section, 'winners.json', name); break;
 	default:
 		updateTable(section, name);
 	}
@@ -7171,8 +6982,7 @@ function openedTable(node, name, tab)
  */
 function PopupCustom(id, name, e, scolor, text)
 {
-	if (e.buttons)
-		return;
+	if (e.buttons) return;
 
 	let num_col, show,
 		popup = CacheId(id),
@@ -7191,8 +7001,7 @@ function PopupCustom(id, name, e, scolor, text)
 			let main = xboards[y_x],
 				pgn = main.pgn,
 				headers = pgn['Headers'];
-			if (!headers)
-				return;
+			if (!headers) return;
 
 			let players = main.players,
 				player = players[scolor],
@@ -7220,8 +7029,7 @@ function PopupCustom(id, name, e, scolor, text)
 			if (xfen.fen != text)
 			{
 				xfen.instant();
-				if (!xfen.setFen(text, true))
-					return;
+				if (!xfen.setFen(text, true)) return;
 				Style(xfen.xoverlay, [['opacity', 0], ['transition', 'opacity 0.5s']]);
 			}
 		}
@@ -7270,8 +7078,7 @@ function PopupCustom(id, name, e, scolor, text)
  */
 function ResumeSleep(resume_time)
 {
-	if (DEV['queue'])
-		LS(`ResumeSleep: ${resume_time}`);
+	if (DEV['queue']) LS(`ResumeSleep: ${resume_time}`);
 	checkMissingMoves();
 	showBoardInfo(y_x, 1);
 }
@@ -7333,8 +7140,7 @@ function StartGame()
 	if (Y.wasm)
 		LoadLibraryOnce('js/chess-wasm.js', () => {
 			let module = window['Module'];
-			if (!module)
-				return;
+			if (!module) return;
 
 			module().then(instance => {
 				let ChessWASM = instance.Chess;

@@ -2560,8 +2560,7 @@ var controller_line = core_datasetController.extend({
 		var x, y;
 
 		var options = me._resolveDataElementOptions(point, index);
-		if (!xScale || ! yScale)
-			return;
+		if (!xScale || ! yScale) return;
 
 		x = xScale.getPixelForValue(IsObject(value)? value : NaN, index, datasetIndex);
 		y = reset ? yScale.getBasePixel() : me.calculatePointY(value, index, datasetIndex);
@@ -8008,7 +8007,7 @@ var Scale = Element.extend({
 				continue;
 			}
 
-			if (tick.value == 0 || (isHorizontal && !i)) {  // && options.offset === offsetGridLines)
+			if (tick.value == 0 || (isHorizontal && !i)) // && options.offset === offsetGridLines)
 			{
 				// Draw the first index specially
 				lineWidth = gridLines.zeroLineWidth;

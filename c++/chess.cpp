@@ -933,11 +933,8 @@ private:
 	 */
 	void UpdateEntry(Table *entry, Hash hash, int score, uint8_t bound, uint8_t depth, Move move)
 	{
-		if (!hash_mode)
-			return;
-
-		if (hash == entry->hash && depth < entry->depth && bound != BOUND_EXACT)
-			return;
+		if (!hash_mode) return;
+		if (hash == entry->hash && depth < entry->depth && bound != BOUND_EXACT) return;
 		entry->hash = hash;
 		entry->score = score;
 		entry->bound = bound;
@@ -970,8 +967,8 @@ public:
 	 */
 	Square AnToSquare(std::string an)
 	{
-		if (an.size() < 2)
-			return EMPTY;
+		if (an.size() < 2) return EMPTY;
+
 		Square file = an[0] - 'a',
 			rank = '8' - an[1];
 		return file + (rank << 4);
@@ -990,10 +987,8 @@ public:
 		for (auto &offset : PIECE_OFFSETS[KNIGHT])
 		{
 			auto pos = square + offset;
-			if (pos & 0x88)
-				continue;
-			if (board[pos] == target)
-				return true;
+			if (pos & 0x88) continue;
+			if (board[pos] == target) return true;
 		}
 
 		// bishop + pawn + rook + queen
@@ -1011,22 +1006,17 @@ public:
 					break;
 
 				auto value = board[pos];
-				if (!value)
-					continue;
-				if (COLOR(value) != color)
-					break;
+				if (!value) continue;
+				if (COLOR(value) != color) break;
 
 				auto piece_type = TYPE(value);
-				if (piece_type == QUEEN || piece_type == target)
-					return true;
+				if (piece_type == QUEEN || piece_type == target) return true;
 				if (k == 0)
 				{
-					if (piece_type == KING)
-						return true;
+					if (piece_type == KING) return true;
 					if (target == BISHOP && piece_type == PAWN)
 					{
-						if (color == ((j < 4)? BLACK: WHITE))
-							return true;
+						if (color == ((j < 4)? BLACK: WHITE)) return true;
 					}
 				}
 				break;
@@ -1809,26 +1799,11 @@ public:
 					++square;
 				}
 				break;
-			// turn
-			case 1:
-				turn = (value == 'w')? 0: 1;
-				break;
-			// castle
-			case 2:
-				castle += value;
-				break;
-			// en passant
-			case 3:
-				ep += value;
-				break;
-			// 50 moves rule
-			case 4:
-				half = (half * 10) + value - '0';
-				break;
-			// move #
-			case 5:
-				move = (move * 10) + value - '0';
-				break;
+			case 1: turn = (value == 'w')? 0: 1; break;      // turn
+			case 2: castle += value; break;                  // castle
+			case 3: ep += value; break;                      // en passant
+			case 4: half = (half * 10) + value - '0'; break; // 50 moves rule
+			case 5: move = (move * 10) + value - '0'; break; // move #
 			}
 		}
 
@@ -2623,8 +2598,7 @@ public:
 	 */
 	bool UndoMove()
 	{
-		if (ply <= 0)
-			return false;
+		if (ply <= 0) return false;
 		--ply;
 
 		auto &state = ply_states[ply & 127];

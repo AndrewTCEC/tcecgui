@@ -42,10 +42,8 @@ let HOST_ARCHIVE,
  */
 function addPlayerEval(player, ply, eval_)
 {
-	if (eval_ == undefined)
-		return;
-	if (!player.evals)
-		player.evals = [];
+	if (eval_ == undefined) return;
+	if (!player.evals) player.evals = [];
 	player.evals[ply] = eval_;
 }
 
@@ -71,8 +69,7 @@ function assignMove(move, dico)
 {
 	Assign(move, ...Keys(dico).filter(key => {
 		let value = dico[key];
-		if (value == '' || (key == 'ply' && value < -1))
-			return false;
+		if (value == '' || (key == 'ply' && value < -1)) return false;
 		return true;
 	}).map(key => ({[key]: dico[key]})));
 }
@@ -192,8 +189,7 @@ function convertCheckmate(value, ply)
  */
 function fixMoveFormat(move)
 {
-	if (move._fixed || move['book'])
-		return;
+	if (move._fixed || move['book']) return;
 
 	// fix eval
 	if (move['wv'] == undefined)

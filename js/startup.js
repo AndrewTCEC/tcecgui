@@ -1,6 +1,6 @@
 // startup.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-22
 //
 // Startup
 // - start everything: 3d, game, ...
@@ -25,11 +25,12 @@ LANGUAGES, listenLog, LoadDefaults, LoadLibraryOnce, LoadPreset, LOCALHOST, loca
 navigator, NO_IMPORTS, node_modal, node_overview, Now, ON_OFF, OpenTable, OptionNumber, orderBoards, PANES, Parent,
 ParseJSON, PD, PIECE_THEMES, PopulateAreas, POPUP_ADJUSTS, require, ResetDefaults, ResetOldSettings, ResetSettings,
 resizeBracket, ResizeGame, resizeMoveLists, resizeTable, ResumeSleep,
-S, SafeId, SaveOption, ScrollAdjust, ScrollDocument, SetDragEvents, SetDraggable, SetEngineEvents, SetFullScreenEvents,
-SetGameEvents, SetSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames, ShowPopup, SP, Start3d,
-StartGame, Startup3d, StartupConfig, StartupEngine, StartupGame, StartupGlobal, StartupGraph, StartupNetwork, Style,
+S, SafeId, SaveOption, ScrollAdjust, ScrollDocument, SetDragEvents, SetDraggable, SetEngineEvents, SetFileEvents,
+SetFullScreenEvents, SetGameEvents, SetSection, SHADOW_QUALITIES, Show, showBanner, showBoardInfo, showFilteredGames,
+ShowPopup, SP, Start3d, StartGame, Startup3d, StartupConfig, StartupEngine, StartupGame, StartupGlobal, StartupGraph,
+StartupNetwork, Style,
 TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, ToggleFullscreen, TRANSLATE_SPECIALS,
-TranslateNodes, TYPES, Undefined, updateBoardTheme, UpdateDebug, updatePgn, UpdateTheme, updateTwitch,
+TranslateNodes, TYPES, Undefined, UpdateBackground, updateBoardTheme, UpdateDebug, updatePgn, UpdateTheme, updateTwitch,
 VERSION, vi_ChangeSettingSpecial:true, vi_CheckHashSpecial:true, vi_HideAreas:true, vi_ImportSettings:true,
 vi_OpenedTableSpecial:true, vi_PopulateAreasAfter:true, vi_ResetSettingsAfter:true, vi_Resize:true,
 vi_SetModalEventsAfter:true, vi_WindowClickDataset:true, vi_WindowClickParent:true, vi_WindowClickParentDataset:true,
@@ -168,9 +169,7 @@ function ActionKey(code)
 	switch (code)
 	{
 	// escape
-	case 27:
-		ClosePopups();
-		break;
+	case 27: ClosePopups(); break;
 	}
 }
 
@@ -180,13 +179,12 @@ function ActionKey(code)
  */
 function AudioSet(set)
 {
-	let audio_settings = X_SETTINGS['audio'],
+	const audio_settings = X_SETTINGS['audio'],
 		prefix = `${set} - `;
 
 	Keys(audio_settings).forEach(key => {
-		if (key.slice(0, 6) != 'sound_')
-			return;
-		let choice = audio_settings[key][0].filter(value => value.slice(0, prefix.length) == prefix)[0];
+		if (key.slice(0, 6) != 'sound_') return;
+		const choice = audio_settings[key][0].filter(value => value.slice(0, prefix.length) == prefix)[0];
 		if (choice != undefined)
 		{
 			SaveOption(key, choice);
@@ -205,13 +203,12 @@ function AudioSet(set)
 function ChangeSettingSpecial(name, value, close)
 {
 	ClearTimeout('close_popup');
-	if (!name)
-		return false;
+	if (!name) return false;
 
 	// close contextual popup?
 	if (close)
 	{
-		let modal = SafeId('modal');
+		const modal = SafeId('modal');
 		if (modal.dataset['xy'] || close == 2)
 			ClosePopups();
 	}
@@ -220,11 +217,11 @@ function ChangeSettingSpecial(name, value, close)
 	if (name != 'preset')
 		Y['preset'] = 'custom';
 
-	let ivalue = value * 1,
+	const ivalue = value * 1,
 		main = xboards[y_x],
 		pva = xboards['pva'],
-		result = true,
 		svalue = /** @type {string} */(value);
+	let result = true;
 
 	AddHistory();
 
@@ -235,32 +232,22 @@ function ChangeSettingSpecial(name, value, close)
 	case 'highlight_color':
 	case 'highlight_size':
 	case 'notation':
-	case 'piece_theme':
-		updateBoardTheme(1);
-		break;
+	case 'piece_theme': updateBoardTheme(1); break;
 	case 'animate_pv':
 	case 'board_theme_pv':
 	case 'highlight_color_pv':
 	case 'highlight_size_pv':
 	case 'notation_pv':
-	case 'piece_theme_pv':
-		updateBoardTheme(2);
-		break;
+	case 'piece_theme_pv': updateBoardTheme(2); break;
 	case 'animate_pva':
 	case 'board_theme_pva':
 	case 'highlight_color_pva':
 	case 'highlight_size_pva':
 	case 'notation_pva':
-	case 'piece_theme_pva':
-		updateBoardTheme(4);
-		break;
-	case 'audio_set':
-		AudioSet(svalue);
-		break;
+	case 'piece_theme_pva': updateBoardTheme(4); break;
+	case 'audio_set': AudioSet(svalue); break;
 	case 'background_color':
-	case 'background_opacity':
-		UpdateBackground();
-		break;
+	case 'background_opacity': UpdateBackground(); break;
 	case 'background_reset':
 		ResetDefaults(/^background_/);
 		UpdateBackground();
@@ -282,9 +269,7 @@ function ChangeSettingSpecial(name, value, close)
 	case 'min_right_2':
 	case 'min_right':
 	case 'panel_gap':
-	case 'tabs_per_row':
-		Resize();
-		break;
+	case 'tabs_per_row': Resize(); break;
 	case 'click_here_to_RESET_everything':
 		ResetSettings(true);
 		SaveOption('last_preset', '');
@@ -296,7 +281,7 @@ function ChangeSettingSpecial(name, value, close)
 	case 'custom_white':
 	case 'custom_white_pv':
 	case 'custom_white_pva':
-		let is_pv = (name.slice(-2) == 'pv'),
+		const is_pv = (name.slice(-2) == 'pv'),
 			is_pva = (name.slice(-3) == 'pva'),
 			field = `board_theme${is_pva? '_pva' : (is_pv? '_pv' : '')}`;
 		SaveOption(field, 'custom');
@@ -307,16 +292,12 @@ function ChangeSettingSpecial(name, value, close)
 		Y['areas'] = Assign({}, DEFAULTS['areas']);
 		PopulateAreas(true);
 		break;
-	case 'drag_and_drop':
-		SetDraggable();
-		break;
+	case 'drag_and_drop': SetDraggable(); break;
 	case 'engine_font':
 	case 'engine_spacing':
 	case 'graph_aspect_ratio':
 	case 'panel_adjust':
-	case 'status_pv':
-		ResizePanels();
-		break;
+	case 'status_pv': ResizePanels(); break;
 	case 'eval':
 	case 'eval_left':
 	case 'moves':
@@ -329,9 +310,7 @@ function ChangeSettingSpecial(name, value, close)
 		ResizePanels();
 		ResizeGame();
 		break;
-	case 'export_settings':
-		ExportSettings(Y['last_preset'] || 'tcec-settings');
-		break;
+	case 'export_settings': ExportSettings(Y['last_preset'] || 'tcec-settings'); break;
 	case 'game_960':
 		pva.frc = ivalue;
 		pva.delayedPicks();
@@ -341,31 +320,21 @@ function ChangeSettingSpecial(name, value, close)
 		pva.setAi(false);
 		pva.think(true);
 		break;
-	case 'game_depth':
-		Configure('d', ivalue);
-		break;
-	case 'game_evaluation':
-		Configure('e', svalue);
-		break;
-	case 'game_level':
-		ConfigureString(svalue);
-		break;
+	case 'game_depth': Configure('d', ivalue); break;
+	case 'game_evaluation': Configure('e', svalue); break;
+	case 'game_level': ConfigureString(svalue); break;
 	case 'game_new_FEN':
 	case 'game_new_game':
 		pva.frc = Y['game_960'];
 		pva.newGame();
 		break;
-	case 'game_search':
-		Configure('s', svalue);
-		break;
+	case 'game_search': Configure('s', svalue); break;
 	case 'game_think':
 		pva.finished = false;
 		pva.setAi(true);
 		pva.think();
 		break;
-	case 'game_time':
-		Configure('t', ivalue);
-		break;
+	case 'game_time': Configure('t', ivalue); break;
 	case 'grid':
 	case 'grid_copy':
 	case 'grid_live':
@@ -381,58 +350,35 @@ function ChangeSettingSpecial(name, value, close)
 	case 'move_height_live':
 	case 'move_height_pv':
 	case 'move_height_pva':
-	case 'PV_height':
-		resizeMoveLists();
-		break;
-	case 'hardware':
-		Resize();
-		break;
-	case 'hide':
-		HideElement(context_target);
-		break;
+	case 'PV_height': resizeMoveLists(); break;
+	case 'hardware': Resize(); break;
+	case 'hide': HideElement(context_target); break;
 	case 'import_settings':
-		let json = ParseJSON(svalue);
-		if (IsObject(json))
-			ImportSettings(json, true);
+		const json = ParseJSON(svalue);
+		if (IsObject(json)) ImportSettings(json, true);
 		break;
-	case 'join_next':
-		TabElement(context_target);
-		break;
+	case 'join_next': TabElement(context_target); break;
 	case 'live_log':
 		if (Visible(CacheId('table-log')))
 			listenLog();
 		break;
-	case 'mobility':
-		UpdateVisible();
-		break;
-	case 'moves_copy':
-		PopulateAreas();
-		break;
-	case 'network':
-		checkSocketIo();
-		break;
+	case 'mobility': UpdateVisible(); break;
+	case 'moves_copy': PopulateAreas(); break;
+	case 'network': checkSocketIo(); break;
 	case 'preset':
 		LoadPreset(svalue);
 		SaveOption('last_preset', svalue);
 		break;
 	case 'shortcut_1':
 	case 'shortcut_2':
-	case 'shortcut_3':
-		UpdateShortcuts();
-		break;
+	case 'shortcut_3': UpdateShortcuts(); break;
 	// refresh the Engine tab
 	case 'SI_units':
-	case 'small_decimal':
-		handleBoardEvents(main, 'ply', main.moves[main.ply]);
-		break;
-	case 'theme':
-		ChangeTheme(svalue);
-		break;
+	case 'small_decimal': handleBoardEvents(main, 'ply', main.moves[main.ply]); break;
+	case 'theme': ChangeTheme(svalue); break;
 	case 'twitch_chat':
 	case 'twitch_dark':
-	case 'twitch_video':
-		updateTwitch();
-		break;
+	case 'twitch_video': updateTwitch(); break;
 	case 'unhide':
 		Keys(context_areas).forEach(key => {
 			context_areas[key][2] |= 1;
@@ -440,7 +386,7 @@ function ChangeSettingSpecial(name, value, close)
 		PopulateAreas(true);
 		break;
 	case 'use_for_arrow':
-		for (let id of [2, 3])
+		for (const id of [2, 3])
 			SaveOption(`arrow_color_${id}`, Y[`graph_color_${id}`]);
 		break;
 	default:
@@ -462,18 +408,17 @@ function ChangeSettingSpecial(name, value, close)
  */
 function ChangeTheme(theme)
 {
-	let def = THEMES[0];
-	if (theme != undefined)
-		SaveOption('theme', theme || def);
+	const def = THEMES[0];
+	if (theme != undefined) SaveOption('theme', theme || def);
 
 	theme = Y['theme'] || '';
-	let themes = [theme];
+	const themes = [theme];
 	// TODO: make sure every theme is included in THEMES
 	if (y_x == 'archive')
 		themes.push(`${theme}-archive`);
 
 	// update favicon only when needed
-	let icon = `image/favicon${theme.includes('dark')? 'b' : ''}.ico`,
+	const icon = `image/favicon${theme.includes('dark')? 'b' : ''}.ico`,
 		node = _('link[rel="shortcut icon"]');
 	if (node && node.href.slice(-icon.length) != icon)
 		node.href = icon;
@@ -492,11 +437,11 @@ function CheckHashSpecial(dico)
 	CheckStream();
 
 	// handle a short url
-	let archive_keys = ARCHIVE_KEYS.filter(key => dico[key] != undefined),
-		section = y_x;
+	const archive_keys = ARCHIVE_KEYS.filter(key => dico[key] != undefined);
+	let section = y_x;
 	if (archive_keys.length)
 	{
-		for (let key of ARCHIVE_KEYS)
+		for (const key of ARCHIVE_KEYS)
 			if (dico[key] == undefined)
 				Y[key] = undefined;
 		section = 'archive';
@@ -504,13 +449,12 @@ function CheckHashSpecial(dico)
 	else if (!dico['x'])
 		section = 'live';
 
-	if (!['archive', 'live'].includes(section))
-		section = 'live';
+	if (!['archive', 'live'].includes(section)) section = 'live';
 	hashes[section] = dico;
 	SetSection(section);
 	Z.s = section;
 
-	let is_live = (section == 'live'),
+	const is_live = (section == 'live'),
 		parent = CacheId('tables');
 	Class(CacheId('nav-archive'), 'yellow', !is_live);
 	Class(CacheId('nav-live'), 'red', is_live);
@@ -524,8 +468,7 @@ function CheckHashSpecial(dico)
 	TranslateNodes(CacheId('table-tabs'));
 
 	// changed section
-	if (ready)
-		ChangedHash();
+	if (ready) ChangedHash();
 
 	if (section != old_x)
 	{
@@ -554,9 +497,8 @@ function CheckStream()
 		Z.s = 'live';
 	}
 
-	let stream = Y['stream'];
-	if (stream == old_stream)
-		return;
+	const stream = Y['stream'];
+	if (stream == old_stream) return;
 	Y['stream'] = stream;
 
 	if (!stream)
@@ -579,13 +521,11 @@ function CheckStream()
 		AddTimeout('stream', () => {
 			++stream_click;
 
-			let shortcuts = [1, 2, 3].map(id => _(`.tab[data-x="shortcut_${id}"]`)).filter(node => Visible(node)),
+			const shortcuts = [1, 2, 3].map(id => _(`.tab[data-x="shortcut_${id}"]`)).filter(node => Visible(node)),
 				target = shortcuts[stream_click % 3];
-			if (target)
-				target.click();
+			if (target) target.click();
 
-			if (!Y['stream'])
-				ClearTimeout('stream');
+			if (!Y['stream']) ClearTimeout('stream');
 		}, TIMEOUT_stream, true);
 }
 
@@ -597,41 +537,37 @@ function CheckStream()
  */
 function Configure(name, value, only_color)
 {
-	for (let scolor of WB_LOWER)
+	for (const scolor of WB_LOWER)
 	{
 		if (only_color && scolor != only_color)
 			continue;
 
 		// create the dico
-		let key = `game_options_${scolor}`,
+		const key = `game_options_${scolor}`,
 			options = Y[key].split(' '),
 			result = {};
-		for (let option of options)
+		for (const option of options)
 		{
-			let items = option.split('=');
-			if (items.length < 2 || !CONFIGURE_KEYS[items[0]])
-				continue;
+			const items = option.split('=');
+			if (items.length < 2 || !CONFIGURE_KEYS[items[0]]) continue;
 			result[items[0]] = items[1];
 		}
 		result[name] = value;
 
 		// create the command line
-		let line = Keys(result).sort().map(key => `${key}=${result[key]}`).join(' '),
+		const line = Keys(result).sort().map(key => `${key}=${result[key]}`).join(' '),
 			node = _(`textarea[name="${key}"]`);
 		SaveOption(key, line);
-		if (node)
-			node.value = Y[key];
+		if (node) node.value = Y[key];
 
 		// existing level?
 		let found = 'custom';
 		Keys(LEVELS).forEach(name => {
-			let level = LEVELS[name];
-			if (level == line)
-				found = name;
+			const level = LEVELS[name];
+			if (level == line) found = name;
 		});
-		let input = _('#modal select[name="game_level"]');
-		if (input)
-			input.value = found;
+		const input = _('#modal select[name="game_level"]');
+		if (input) input.value = found;
 	}
 }
 
@@ -641,32 +577,30 @@ function Configure(name, value, only_color)
  */
 function ConfigureString(name)
 {
-	let level = LEVELS[name],
+	const level = LEVELS[name],
 		options = level.split(' ');
 
 	// options b&w
 	if (name != 'custom')
-		for (let scolor of WB_LOWER)
+		for (const scolor of WB_LOWER)
 		{
-			let key = `game_options_${scolor}`,
+			const key = `game_options_${scolor}`,
 				input = _(`#modal [name="${key}"]`);
-			if (input)
-				input.value = level;
+			if (input) input.value = level;
 			SaveOption(key, level);
 		}
 
 	// other inputs
-	for (let option of options)
+	for (const option of options)
 	{
-		let items = option.split('='),
+		const items = option.split('='),
 			config = CONFIGURE_KEYS[items[0]];
-		if (items.length < 2 || !config)
-			continue;
-		let key = `game_${config}`,
+		if (items.length < 2 || !config) continue;
+
+		const key = `game_${config}`,
 			input = _(`#modal [name="${key}"]`),
 			value = items[1];
-		if (input)
-			input.value = value;
+		if (input) input.value = value;
 		SaveOption(key, value);
 	}
 }
@@ -676,8 +610,8 @@ function ConfigureString(name)
  */
 function CreateSwaps()
 {
-	let swaps = ['end|1', 'next|1', 'next', 'end', 'minus', 'plus'].map(svg => {
-		let items = svg.split('|');
+	const swaps = ['end|1', 'next|1', 'next', 'end', 'minus', 'plus'].map(svg => {
+		const items = svg.split('|');
 		return [
 			`<div class="swap${items[1]? ' mirror' : ''}">`,
 				`<i data-svg="${items[0]}"></i>`,
@@ -685,7 +619,7 @@ function CreateSwaps()
 		].join('');
 	});
 
-	let html = [
+	const html = [
 		swaps.join(''),
 		'<div class="swap size dn"></div>',
 	].join('');
@@ -694,7 +628,7 @@ function CreateSwaps()
 
 	// events
 	C('.swap', function(e) {
-		let index = Index(this),
+		const index = Index(this),
 			node = this.parentNode.parentNode;
 		// 1, 2, 3, 4 => <<[-3] <[-1] >[1] >>[3]
 		if (index <= 4)
@@ -702,10 +636,10 @@ function CreateSwaps()
 		// 5, 6 => -[-1] +[1]
 		else if (index <= 6)
 		{
-			let add = index * 2 - 11,
+			const add = index * 2 - 11,
 				name = `max_${node.id}`,
-				sizer = _('.size', node),
-				value = Y[name];
+				sizer = _('.size', node);
+			let value = Y[name];
 
 			if (add > 0)
 				value += (value < 0)? 1 : add * 10;
@@ -730,26 +664,25 @@ function CreateSwaps()
 function FixOldSettings()
 {
 	// 1) add missing panel
-	let areas = Y['areas'],
-		default_areas = DEFAULTS['areas'],
-		populate = 0;
+	const areas = Y['areas'],
+		default_areas = DEFAULTS['areas'];
 	Keys(default_areas).forEach(key => {
-		if (!areas[key])
-			areas[key] = default_areas[key];
+		if (!areas[key]) areas[key] = default_areas[key];
 	});
 
 	// 2) insert "agree" somewhere if doesn't exist
-	let found = FindArea('table-agree');
+	let populate = 0;
+	const found = FindArea('table-agree');
 	if (found.id < 0)
 	{
-		for (let key of Keys(areas))
+		for (const key of Keys(areas))
 		{
-			let id, prev,
-				vector = areas[key];
+			let id, prev;
+			const vector = areas[key];
 
 			for (let i = vector.length - 1; i >= 0; --i)
 			{
-				let item = vector[i];
+				const item = vector[i];
 				if ((item[1] & 1) && (item[2] & 1) && item[0].slice(0, 6) == 'table-')
 				{
 					id = i;
@@ -768,14 +701,14 @@ function FixOldSettings()
 	}
 
 	// 3) insert shortcut_3 after shortcut_2
-	let name = 'shortcut_3',
+	const name = 'shortcut_3',
 		found3 = FindArea(name);
 	if (found3.id < 0)
 	{
-		let found = FindArea('shortcut_2');
+		const found = FindArea('shortcut_2');
 		if (found.id >= 0)
 		{
-			let area = found.area,
+			const area = found.area,
 				vector = areas[found.key];
 			vector.splice(found.id + 1, 0, [name, area[1], 1]);
 			area[1] = 1;
@@ -790,9 +723,8 @@ function FixOldSettings()
 	// 4) move height from em => px
 	// - guess, min height is 39px normally, so anything under that = old setting, but will miss values over
 	Keys(Y).filter(key => key.slice(0, 11) == 'move_height').forEach(key => {
-		let value = Y[key];
-		if (value < 39)
-			SaveOption(key, Floor(value * 26) / 2);
+		const value = Y[key];
+		if (value < 39) SaveOption(key, Floor(value * 26) / 2);
 	});
 }
 
@@ -802,17 +734,15 @@ function FixOldSettings()
  */
 function HandleDrop(e)
 {
-	if (!Y['drag_and_drop'])
-		return;
+	if (!Y['drag_and_drop']) return;
 	AddHistory();
 
 	let child = GetDropId(e.target).node;
-	if (!child)
-		return;
+	if (!child) return;
 
-	let in_tab = 0,
-		parent = Parent(e.target, {class_: 'area', self: true}),
+	const parent = Parent(e.target, {class_: 'area', self: true}),
 		rect = child? child.getBoundingClientRect() : null;
+	let in_tab = 0;
 
 	// 1) resolve tab => nodes
 	if (HasClass(drag_source, 'drop'))
@@ -828,13 +758,13 @@ function HandleDrop(e)
 
 	if (parent && drag_source != child)
 	{
-		let next,
-			parent_areas = new Set([
+		const parent_areas = new Set([
 				GetArea(drag_source).id,
 				parent.id,
 			]),
 			prev_source = drag_source.previousElementSibling,
 			prev_tabbed = (context_areas[drag_source.id] || [])[1];
+		let next;
 
 		// 2) insert before or after
 		if (child)
@@ -850,12 +780,12 @@ function HandleDrop(e)
 		parent.insertBefore(drag_source, next? child.nextElementSibling : child);
 
 		// 3) from/to tabs
-		let context_area = DefaultArray(context_areas, drag_source.id, [drag_source.id, 0, 1]);
+		const context_area = DefaultArray(context_areas, drag_source.id, [drag_source.id, 0, 1]);
 		if (in_tab & 2)
 		{
 			if (next)
 			{
-				let prev_context = context_areas[child.id] || [];
+				const prev_context = context_areas[child.id] || [];
 				context_area[1] = prev_context[1] || 0;
 				prev_context[1] = 1;
 			}
@@ -868,15 +798,15 @@ function HandleDrop(e)
 		// zero the last tab
 		if ((in_tab & 1) && prev_source && prev_tabbed == 0)
 		{
-			let prev_context = context_areas[prev_source.id || prev_source.dataset['x']] || [];
+			const prev_context = context_areas[prev_source.id || prev_source.dataset['x']] || [];
 			prev_context[1] = 0;
 		}
 
 		// 4) update areas
-		let areas = Y['areas'];
-		for (let parent of parent_areas)
+		const areas = Y['areas'];
+		for (const parent of parent_areas)
 			areas[parent] = From(SafeId(parent).children).filter(child => child.id).map(child => {
-				let context_area = context_areas[child.id] || [];
+				const context_area = context_areas[child.id] || [];
 				return [child.id, context_area[1] || 0, Undefined(context_area[2], 1)];
 			});
 
@@ -937,7 +867,7 @@ function InitGlobals()
 
 	TEXT(CacheId('version'), VERSION);
 	HTML(CacheId('champions'), CHAMPIONS.map(text => {
-		let [season, winner] = text.split('|');
+		const [season, winner] = text.split('|');
 		return `<i data-t="Season"></i> ${season}: ${winner}`;
 	}).join(' | '));
 
@@ -949,8 +879,7 @@ function InitGlobals()
 	// delayed loading
 	showBanner();
 	updateTwitch(null, null, true);
-	if (y_three)
-		AddTimeout('three', () => Set3dScene, TIMEOUT_three);
+	if (y_three) AddTimeout('three', () => Set3dScene, TIMEOUT_three);
 
 	// google ads
 	if (!DEV['ad'] && !LOCALHOST)
@@ -969,20 +898,18 @@ function InitGlobals()
 
 	// font size detector
 	AddTimeout('font', () => {
-		let font_height = SafeId('text').offsetHeight;
+		const font_height = SafeId('text').offsetHeight;
 		if (font_height != old_font_height || window.innerHeight != old_window_height)
 			Resize();
 
-		if (Y['stream'])
-			ScrollDocument(node_overview, {smooth: false});
+		if (Y['stream']) ScrollDocument(node_overview, {smooth: false});
 	}, TIMEOUT_font, true);
 
 	// suspend/resume
 	AddTimeout('resume', () => {
-		let now = Now(),
+		const now = Now(),
 			diff = now - resume_time;
-		if (diff * 1000 > TIMEOUT_resume * 3)
-			ResumeSleep(resume_time);
+		if (diff * 1000 > TIMEOUT_resume * 3) ResumeSleep(resume_time);
 		resume_time = now;
 	}, TIMEOUT_resume, true);
 
@@ -996,7 +923,7 @@ function InitGlobals()
  */
 function InsertGoogleAd(id)
 {
-	let [suffix, width, height] = [
+	const [suffix, width, height] = [
 			[9, 252, 210],
 			[2021, 438, 250],
 		][id],
@@ -1073,9 +1000,8 @@ function PopulateAreasAfter()
  */
 function QuickSetup(force)
 {
-	let old = Z.new_version;
-	if (!force && (old == undefined || old >= '20210109e' || Y['seen'] || y_x == 'archive' || Y['stream']))
-		return;
+	const old = Z.new_version;
+	if (!force && (old == undefined || old >= '20210109e' || Y['seen'] || y_x == 'archive' || Y['stream'])) return;
 	ActivateTabs();
 	ShowPopup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
 	SaveOption('seen', 1);
@@ -1109,17 +1035,16 @@ function Resize()
 
 	// 2) limit each panel
 	Style(
-		'#banners, #bottom, #main, .pagin, .scroller, #sub-header, #table-log, #table-search, #table-status'
-		+ ', #table-tabs, #top',
+		'#banners, #bottom, #main, .pagin, .scroller, #sub-header, #table-log, #table-search, #table-status, #table-tabs, #top',
 		`max-width:${Y['max_window']}px`
 	);
 
 	// 3) chat height => resize all sibling tabs
-	let chat_height = Clamp(Y['chat_height'], 350, window.height),
+	const chat_height = Clamp(Y['chat_height'], 350, window.height),
 		chat_tab = _('.tab[data-x="table-chat"]'),
 		parent = Parent(chat_tab),
-		siblings = '#shortcut_1, #shortcut_2, #shortcut_3, #table-chat, #table-info, #table-winner',
 		yheight = (window.innerWidth <= 866)? 'auto' : `${chat_height + 32}px`;
+	let siblings = '#shortcut_1, #shortcut_2, #shortcut_3, #table-chat, #table-info, #table-winner';
 	if (parent)
 		siblings = From(parent.children).map(child => `#${child.dataset['x']}`).join(', ');
 
@@ -1132,7 +1057,7 @@ function Resize()
 
 	// 5) resize charts
 	E('.chart', node => {
-		let parent = node.parentNode,
+		const parent = node.parentNode,
 			width = parent.clientWidth - 2,
 			height = width / Max(0.5, Y['graph_aspect_ratio']);
 		Style(node, [['height', `${height}px`], ['width', `${width}px`]]);
@@ -1157,12 +1082,12 @@ function ResizePanels()
 	UpdateVisible();
 
 	// panel full + width
-	let panel_gap = Y['panel_gap'],
+	const panel_gap = Y['panel_gap'],
 		panels = From(A('.panel')).sort((a, b) => a.style.order - b.style.order),
 		visible_width = VisibleWidth();
-	for (let panel of panels)
+	for (const panel of panels)
 	{
-		let name = panel.id,
+		const name = panel.id,
 			max_width = Min(visible_width - 8, Y[`max_${name}`]),
 			min_width = Min(visible_width - 8, Y[`min_${name}`]),
 			styles = [`margin:0 ${panel_gap}px`];
@@ -1171,10 +1096,8 @@ function ResizePanels()
 			Hide(panel);
 		else
 		{
-			if (max_width > -1)
-				styles.push(`max-width:${max_width}px`);
-			if (min_width > -1)
-				styles.push(`min-width:${min_width}px`);
+			if (max_width > -1) styles.push(`max-width:${max_width}px`);
+			if (min_width > -1) styles.push(`min-width:${min_width}px`);
 
 			Class(panel, 'full', panel.style.order == 2 && visible_width <= 866);
 			Style(panel, styles.join(';'));
@@ -1191,7 +1114,7 @@ function ResizePanels()
 	Style('#top > *', `max-width:calc(${(100 / Y['column_top'])}% - ${Y['column_top'] * 2}px)`);
 
 	// special cases
-	let node = CacheId('engine');
+	const node = CacheId('engine');
 	if (node)
 	{
 		Attrs(CacheId('eval'), {'data-t': (node.clientWidth > 330)? 'Evaluation' : 'Eval'});
@@ -1200,20 +1123,19 @@ function ResizePanels()
 
 	// column/row mode
 	E('.status', node => {
-		let area = GetArea(node);
+		const area = GetArea(node);
 		Style(node, [['margin-bottom', '1em'], ['margin-top', 0]], area.clientWidth < 390);
 	});
 	Keys(xboards).forEach(key => {
-		let board = xboards[key];
-		if (!board.sub || board.manual)
-			return;
-		let node = board.node,
+		const board = xboards[key];
+		if (!board.sub || board.manual) return;
+		const node = board.node,
 			area_width = GetArea(node).clientWidth;
 		Class(board.xmoves, 'column', area_width < 390);
 		Class(node, 'fcol', area_width >= 390);
 	});
 	E('#table-kibitz, #table-pv', node => {
-		let area = GetArea(node);
+		const area = GetArea(node);
 		Class(node, 'frow fastart', area.clientWidth >= 390);
 	});
 
@@ -1225,10 +1147,10 @@ function ResizePanels()
 
 	// resize all charts
 	E('.chart', node => {
-		let area = GetArea(node);
+		const area = GetArea(node);
 		if (area && !['bottom', 'top'].includes(area.id))
 		{
-			let width = area.clientWidth;
+			const width = area.clientWidth;
 			Style(node, [['height', `${width / Max(0.5, Y['graph_aspect_ratio'])}px`], ['width', `${width}px`]]);
 		}
 	});
@@ -1247,8 +1169,7 @@ function Set3dScene(three)
 
 	Style(CacheId('three'), [['color', y_three? '#fff' : '#555']]);
 	S(CacheId('canvas'), y_three);
-	if (three)
-		Start3d();
+	if (three) Start3d();
 }
 /**
  *
@@ -1265,7 +1186,7 @@ function ShowAbout()
  */
 function ShowArchiveLive()
 {
-	let section = y_x,
+	const section = y_x,
 		is_live = (section == 'live');
 
 	Hide(is_live? '#archive' : '#live');
@@ -1280,12 +1201,12 @@ function ShowArchiveLive()
  */
 function ShowCustomColors(name)
 {
-	let show = (Y[name] == 'custom');
-	for (let color of WB_LOWER)
+	const show = (Y[name] == 'custom');
+	for (const color of WB_LOWER)
 	{
 		let node = _(`[data-t="Custom ${color}"]`, node_modal);
-		if (!node)
-			continue;
+		if (!node) continue;
+
 		node = node.parentNode;
 		S(node, show);
 		S(node.nextElementSibling, show);
@@ -1297,17 +1218,17 @@ function ShowCustomColors(name)
  */
 function ShowLiveEngines()
 {
-	let main = xboards[y_x],
+	const main = xboards[y_x],
 		players = main.players,
 		single_line = Y['single_line'];
 
-	for (let id of [0, 1])
+	for (const id of [0, 1])
 	{
 		let hardware = players[id + 2].hardware;
-		if (!hardware)
-			continue;
+		if (!hardware) continue;
+
 		hardware = hardware.replace(/th/g, 'TH').replace(/ TB$/, '');
-		let sel = `[data-x="live+${id}"]`;
+		const sel = `[data-x="live+${id}"]`;
 		TextHTML(sel, hardware);
 		Style(sel, [['top', `${single_line? 0.35 : 1.9}em`]]);
 	}
@@ -1319,13 +1240,12 @@ function ShowLiveEngines()
  */
 function TabElement(target)
 {
-	let id = GetDropId(target).id,
+	const id = GetDropId(target).id,
 		areas = Y['areas'];
-	if (id == null)
-		return;
+	if (id == null) return;
 
 	Keys(areas).forEach(key => {
-		for (let vector of areas[key])
+		for (const vector of areas[key])
 			if (vector[0] == id)
 			{
 				vector[1] = vector[1]? 0 : 1;
@@ -1339,26 +1259,6 @@ function TabElement(target)
 }
 
 /**
- * Update the background
- */
-function UpdateBackground()
-{
-	let node = CacheId('background');
-	if (!node)
-		return;
-
-	let color = Y['background_color'],
-		image = Y['background_image'],
-		image_url = image? `url(${image})` : '',
-		opacity = image? Y['background_opacity']: 0;
-
-	if (node.style.backgroundImage != image_url)
-		node.style.backgroundImage = image_url;
-
-	Style(node, [['background-color', (color == '#000000')? '' : color], ['opacity', opacity]]);
-}
-
-/**
  * Update the shortcuts on the top right
  * - copy the tab text
  * - copy the table html
@@ -1366,14 +1266,13 @@ function UpdateBackground()
  */
 function UpdateShortcuts()
 {
-	let names = new Set();
+	const names = new Set();
 
 	for (let id = 1; id <= 3; ++id)
 	{
-		let tab = _(`.tab[data-x="shortcut_${id}"]`),
+		const tab = _(`.tab[data-x="shortcut_${id}"]`),
 			shortcut = Y[`shortcut_${id}`];
-		if (!tab)
-			continue;
+		if (!tab) continue;
 
 		if (shortcut)
 		{
@@ -1382,10 +1281,10 @@ function UpdateShortcuts()
 				target = _('[data-t]', target);
 			if (target)
 			{
-				let name = target.dataset['t'];
+				const name = target.dataset['t'];
 				tab.dataset['t'] = SHORTCUT_NAMES[name] || name;
 				TranslateNodes(tab.parentNode);
-				let node = CacheId(`shortcut_${id}`),
+				const node = CacheId(`shortcut_${id}`),
 					table = CacheId(`table-${shortcut}`);
 
 				// not in tables => direct copy, ex: "stats"
@@ -1397,7 +1296,7 @@ function UpdateShortcuts()
 	}
 
 	// resize
-	for (let name of names)
+	for (const name of names)
 		resizeTable(name);
 }
 
@@ -1406,7 +1305,7 @@ function UpdateShortcuts()
  */
 function UpdateVisible()
 {
-	let eval_left = Y['eval_left'],
+	const eval_left = Y['eval_left'],
 		hardware = Y['hardware'],
 		single_line = Y['single_line'],
 		templates = [eval_left? '3em' : 'auto', 'auto', '1fr'];
@@ -1439,14 +1338,12 @@ function UpdateVisible()
  */
 function WindowClickDataset(dataset)
 {
-	let id = dataset['id'];
+	const id = dataset['id'];
 	switch (id)
 	{
-	case 'about':
-		ShowAbout();
-		return 1;
+	case 'about': ShowAbout(); return 1;
 	case 'load_pgn':
-		let file = CacheId('file');
+		const file = CacheId('file');
 		Attrs(file, {'data-x': id});
 		file.click();
 		return 1;
@@ -1463,15 +1360,12 @@ function WindowClickDataset(dataset)
  */
 function WindowClickParent(parent, is_click)
 {
-	if (HasClass(parent, 'fen'))
-		return 1;
-	if (HasClasses(parent, 'live-pv|xmoves'))
-		context_target = parent;
+	if (HasClass(parent, 'fen')) return 1;
+	if (HasClasses(parent, 'live-pv|xmoves')) context_target = parent;
 
 	if (is_click)
 	{
-		if (HasClass(parent, 'popup-close'))
-			return 2;
+		if (HasClass(parent, 'popup-close')) return 2;
 		if (HasClass(parent, 'tab'))
 		{
 			OpenTable(parent, true);
@@ -1488,7 +1382,7 @@ function WindowClickParent(parent, is_click)
  */
 function WindowClickParentDataset(dataset)
 {
-	let seek = dataset['seek'];
+	const seek = dataset['seek'];
 	if (seek)
 	{
 		showFilteredGames(seek);
@@ -1505,12 +1399,11 @@ function WindowClickParentDataset(dataset)
  */
 function SetModalEventsAfter()
 {
-	let node = _('[data-t="Board theme"]', node_modal);
-	if (!node)
-		return;
-	node = _('select', node.parentNode.nextElementSibling);
-	if (node)
-		ShowCustomColors(node.name);
+	const node = _('[data-t="Board theme"]', node_modal);
+	if (!node) return;
+
+	const select = _('select', node.parentNode.nextElementSibling);
+	if (select) ShowCustomColors(select.name);
 }
 
 /**
@@ -1524,29 +1417,26 @@ function SetGlobalEvents()
 	// it won't be triggered by PushState and replaceState
 	Events(window, 'hashchange', () => CheckHash());
 	Events(window, 'popstate', e => {
-		let state = e.state;
-		if (!state)
-			return;
+		const state = e.state;
+		if (!state) return;
 		Assign(Y, state);
 		CheckHashSpecial(state);
 	});
 
 	// keys
 	Events(window, 'keydown keyup', e => {
-		let okay,
-			active = document.activeElement,
+		const active = document.activeElement,
 			code = e.keyCode,
 			is_game = true,
 			type = e.type;
+		let okay;
 
-		if (!code)
-			return;
+		if (!code) return;
 		if (type == 'keydown')
 			ActionKey(code);
 
 		// ignore keys when on inputs, except ENTER & TAB
-		if (active && {INPUT: 1, TEXTAREA: 1}[active.tagName])
-			return;
+		if (active && {INPUT: 1, TEXTAREA: 1}[active.tagName]) return;
 
 		if (type == 'keydown')
 		{
@@ -1554,8 +1444,7 @@ function SetGlobalEvents()
 				okay = GameActionKey(code);
 			else
 				okay = actionKeyNoInput(code, active);
-			if (!KEYS[code])
-				KEY_TIMES[code] = Now(1);
+			if (!KEYS[code]) KEY_TIMES[code] = Now(1);
 			KEYS[code] = 1;
 		}
 		else
@@ -1589,10 +1478,10 @@ function SetGlobalEvents()
 	C('#overlay', () => ClosePopups());
 
 	C('.pages', e => {
-		let target = e.target;
+		const target = e.target;
 		if (HasClass(target, 'page'))
 		{
-			let parent = Parent(target, {class_: 'pagin'});
+			const parent = Parent(target, {class_: 'pagin'});
 			changePage(parent.id.split('-')[0], target.dataset['p']);
 		}
 		SP(e);
@@ -1612,7 +1501,7 @@ function SetGlobalEvents()
 		updateTwitch((this.id.slice(-1) == '1') * 1);
 	});
 	C('#hide-chat, #hide-video, #show-chat, #show-video', function() {
-		let [left, right] = this.id.split('-');
+		const [left, right] = this.id.split('-');
 		SaveOption(`twitch_${right}`, (left == 'show') * 1);
 		updateTwitch();
 	});
@@ -1628,48 +1517,36 @@ function SetGlobalEvents()
 	// context menus
 	Keys(CONTEXT_MENUS).forEach(key => {
 		Events(key, 'contextmenu', function(e) {
-			if (CannotPopup())
-				return;
+			if (CannotPopup()) return;
 			context_target = e.target;
 
 			// skip some elements
-			let tag = context_target.tagName;
-			if (['INPUT', 'SELECT'].includes(tag))
-				return;
-			if (tag == 'A' && context_target.href)
-				return;
+			const tag = context_target.tagName;
+			if (['INPUT', 'SELECT'].includes(tag)) return;
+			if (tag == 'A' && context_target.href) return;
 
 			ShowPopup('options', true, {setting: CONTEXT_MENUS[key], xy: [e.clientX, e.clientY]});
 			PD(e);
 		});
 	});
-	Events(
-		'#archive, #live, #live0, #live1, #moves-archive, #moves-live, #moves-pv0, #moves-pv1, #pv0, #pv1, #pva,'
-		+ '#table-live0, #table-live1', 'contextmenu', function(e) {
-		if (CannotPopup())
-			return;
-		let is_pv = '01'.includes(this.id.slice(-1)),
-			is_pva = (this.id == 'pva'),
-			target = e.target;
+	Events('#archive, #live, #live0, #live1, #moves-archive, #moves-live, #moves-pv0, #moves-pv1, #pv0, #pv1, #pva, #table-live0, #table-live1', 'contextmenu', function(e) {
+		if (CannotPopup()) return;
+
+		const is_pv = '01'.includes(this.id.slice(-1)),
+			is_pva = (this.id == 'pva');
+		let target = e.target;
 
 		while (target)
 		{
-			let dataset = target.dataset,
-				name;
-			if (dataset && ['next', 'prev'].includes(dataset['x']))
-				return;
-			else if (HasClasses(target, 'hardware|live-basic|live-more'))
-				name = 'eval';
-			else if (HasClass(target, 'live-pv'))
-				name = 'live';
-			else if (HasClass(target, 'xbottom'))
-				return;
-			else if (HasClass(target, 'xcontain'))
-				name = is_pva? 'game' : (is_pv? 'board_pv' : 'board');
-			else if (HasClass(target, 'xcontrol'))
-				name = 'control';
-			else if (HasClass(target, 'xmoves'))
-				name = `copy${is_pva? '_pva' : (is_pv? '_pv' : '')}`;
+			const dataset = target.dataset;
+			let name;
+			if (dataset && ['next', 'prev'].includes(dataset['x'])) return;
+			else if (HasClasses(target, 'hardware|live-basic|live-more')) name = 'eval';
+			else if (HasClass(target, 'live-pv')) name = 'live';
+			else if (HasClass(target, 'xbottom')) return;
+			else if (HasClass(target, 'xcontain')) name = is_pva? 'game' : (is_pv? 'board_pv' : 'board');
+			else if (HasClass(target, 'xcontrol')) name = 'control';
+			else if (HasClass(target, 'xmoves')) name = `copy${is_pva? '_pva' : (is_pv? '_pv' : '')}`;
 
 			if (name)
 			{
@@ -1682,12 +1559,12 @@ function SetGlobalEvents()
 		}
 	});
 	Events(window, 'contextmenu', e => {
-		if (CannotPopup())
-			return;
-		let node = e.target;
+		if (CannotPopup()) return;
+
+		const node = e.target;
 		if (HasClasses(node, 'tab drop'))
 		{
-			let id = node.dataset['x'],
+			const id = node.dataset['x'],
 				name = (id.includes('shortcut') || id.includes('chat'))? 'quick' : 'tab';
 			context_target = node;
 			ShowPopup('options', true, {setting: name, xy: [e.clientX, e.clientY]});
@@ -1696,62 +1573,43 @@ function SetGlobalEvents()
 	});
 
 	// file
-	Events(CacheId('file'), 'change', function() {
-		let file = this.files[0],
-			id = this.dataset['x'],
-			reader = new FileReader();
-		if (!file)
-			return;
+	SetFileEvents('#file', {
+		'background_image': ['url', (reader, id) => {
+			const result = reader.result,
+				save = (result.length < 2e6),
+				sopacity = 'background_opacity';
 
-		if (id == 'background_image')
-		{
-			reader.readAsDataURL(file);
-			reader.onloadend = function() {
-				let result = reader.result,
-					save = (result.length < 1e6),
-					sopacity = 'background_opacity';
+			Y[id] = result;
+			if (save) SaveOption(id, result);
 
-				Y[id] = result;
-				if (save)
-					SaveOption(id, result);
-
-				if (!Y[sopacity])
-				{
-					Y[sopacity] = 0.2;
-					if (save)
-						SaveOption(sopacity);
-				}
-				UpdateBackground();
-			};
-			return;
-		}
-
-		reader.readAsText(file);
-		reader.onloadend = () => {
-			let data = /** @type {string} */(reader.result);
-			switch (id)
+			if (!Y[sopacity])
 			{
-				case 'import_settings':
-					ChangeSetting(id, data);
-					SaveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
-					break;
-				case 'language':
-					let json = ParseJSON(data);
-					if (IsObject(json))
-						ApiTranslateGet(false, undefined, /** @type {!Object} */(json));
-					break;
-				case 'load_pgn':
-					let new_section = 'archive';
-					if (updatePgn(new_section, data))
-					{
-						Y.scroll = '#overview';
-						SetSection(new_section);
-						Z.s = new_section;
-						CheckHashSpecial({x: new_section});
-					}
-					break;
-				}
-		};
+				Y[sopacity] = 0.2;
+				if (save) SaveOption(sopacity);
+			}
+			UpdateBackground();
+		}],
+		'import_settings': ['text', (reader, id, file) => {
+			const data = /** @type {string} */(reader.result);
+			ChangeSetting(id, data);
+			SaveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
+		}],
+		'language': ['text', (reader, id) => {
+			const data = /** @type {string} */(reader.result),
+				json = ParseJSON(data);
+			if (IsObject(json)) ApiTranslateGet(false, undefined, /** @type {!Object} */(json));
+		}],
+		'load_pgn': ['text', (reader, id) => {
+			const data = /** @type {string} */(reader.result),
+				new_section = 'archive';
+			if (updatePgn(new_section, data))
+			{
+				Y.scroll = '#overview';
+				SetSection(new_section);
+				Z.s = new_section;
+				CheckHashSpecial({x: new_section});
+			}
+		}],
 	});
 
 	// extra events
@@ -1785,7 +1643,7 @@ function PrepareSettings()
 	y_three = 0;
 	SetSection('live');
 
-	let DEFAULT_NO_IMPORTS = {
+	const DEFAULT_NO_IMPORTS = {
 		'div': '',                                          // archive link
 		'game': 0,
 		'link': '',                                         // live link
@@ -1897,7 +1755,7 @@ function PrepareSettings()
 		},
 	});
 
-	let no_imports = Assign({}, ...Keys(DEFAULT_NO_IMPORTS).map(key => ({[key]: 1})));
+	const no_imports = Assign({}, ...Keys(DEFAULT_NO_IMPORTS).map(key => ({[key]: 1})));
 	Assign(NO_IMPORTS, no_imports);
 	Assign(NO_IMPORTS, {
 		'dev': 1,
@@ -1963,7 +1821,7 @@ function PrepareSettings()
 	});
 
 	// settings
-	let agree_length = [ON_OFF, 1, 'show how many plies are in agreement between 2 players / kibitzers'],
+	const agree_length = [ON_OFF, 1, 'show how many plies are in agreement between 2 players / kibitzers'],
 		analyses = [{list: ['lichess', 'chessdb', 'evalguide=eguide'], type: 'list'}],
 		bamboo = 'bamboo',
 		bamboo2 = `${bamboo} - `,
@@ -2282,7 +2140,7 @@ function PrepareSettings()
 			'graph_min_width': OptionNumber(240, 40, 640),
 			'graph_radius': OptionNumber(1.2, 0, 10, 0.1, {}, 'radius of the points'),
 			'graph_scale': [SCALES, 0, '!', null, () => {
-				let name = ((context_target || {}).id || '').split('-')[1],
+				const name = ((context_target || {}).id || '').split('-')[1],
 					value = Y['scales'][name];
 				DEFAULTS['graph_scale'] = DEFAULT_SCALES[name];
 				return (value & 10)? 10 : value;

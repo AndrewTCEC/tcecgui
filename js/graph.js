@@ -123,10 +123,8 @@ function calculateWin(id, eval_, ply)
  */
 function checkFirstNum(num)
 {
-	if (first_num >= 0 && first_num <= num)
-		return;
-	if (DEV['chart'])
-		LS(`first_num: ${first_num} => ${num}`);
+	if (first_num >= 0 && first_num <= num) return;
+	if (DEV['chart']) LS(`first_num: ${first_num} => ${num}`);
 
 	if (first_num >= 0)
 	{
@@ -275,8 +273,7 @@ function createCharts()
 		C(CacheId(`chart-${name}`), e => {
 			let chart = charts[name],
 				point = chart.getElementAtEvent(e)[0];
-			if (!point)
-				return;
+			if (!point) return;
 
 			let ds_index = point._datasetIndex,
 				index = point._index,
@@ -309,12 +306,10 @@ function createCharts()
 function fixLabels(labels)
 {
 	let num_label = labels.length;
-	if (!num_label)
-		return;
+	if (!num_label) return;
 
 	let offset = labels[num_label - 1] - num_label + 1;
-	if (isNaN(offset))
-		return;
+	if (isNaN(offset)) return;
 
 	for (let i = 0; i < num_label; ++i)
 		if (labels[i] == undefined)
@@ -370,8 +365,7 @@ function invertEval(eval_)
  */
 function markPlyChart(name, ply, max_ply)
 {
-	if (!Visible(CacheId(`table-${name}`)))
-		return;
+	if (!Visible(CacheId(`table-${name}`))) return;
 
 	let data, offset,
 		chart = charts[name],
@@ -547,11 +541,9 @@ function newAxisY(id, y_ticks, dico)
  */
 function redrawEvalCharts(section)
 {
-	if (DEV['chart'])
-		LS(`REC: ${section}`);
+	if (DEV['chart']) LS(`REC: ${section}`);
 	let board = xboards[section];
-	if (!board)
-		return;
+	if (!board) return;
 
 	let moves = board.moves,
 		name = 'eval',
@@ -578,8 +570,7 @@ function redrawEvalCharts(section)
  */
 function resetChart(chart, name)
 {
-	if (!chart)
-		return;
+	if (!chart) return;
 
 	let data_c = chart.data;
 	data_c.labels.length = 0;
@@ -646,20 +637,17 @@ function setScaleFunc(name)
  */
 function sliceCharts(last_ply)
 {
-	if (isNaN(last_ply))
-		return;
+	if (isNaN(last_ply)) return;
 
 	let from = 0,
 		to = last_ply - first_num + 2;
-	if (DEV['chart'])
-		LS(`SC: ${last_ply} - ${first_num} + 2 = ${to}`);
+	if (DEV['chart']) LS(`SC: ${last_ply} - ${first_num} + 2 = ${to}`);
 
 	Keys(charts).forEach(key => {
 		let chart = charts[key],
 			data_c = chart_data[key];
 
-		if (DEV['chart'] && data_c.labels.length > to)
-			LS(`SC:${chart.name} : ${data_c.labels.length} > ${to}`);
+		if (DEV['chart'] && data_c.labels.length > to) LS(`SC:${chart.name} : ${data_c.labels.length} > ${to}`);
 
 		data_c.labels = data_c.labels.slice(from, to);
 		for (let dataset of data_c.datasets)
@@ -676,21 +664,15 @@ function sliceCharts(last_ply)
 function updateChart(name)
 {
 	let chart = charts[name];
-	if (!chart)
-		return;
+	if (!chart) return;
 
 	let scale = Y['scales'][name];
-	if (scale == 0 && name == 'eval')
-		updateScaleLinear(chart);
-	if (scale & 2)
-		updateScaleCustom(chart);
-	else if (scale & 4)
-		updateScaleEval(chart);
-	else if (scale & 16)
-		updateScaleBoom(chart);
+	if (scale == 0 && name == 'eval') updateScaleLinear(chart);
+	else if (scale & 2) updateScaleCustom(chart);
+	else if (scale & 4) updateScaleEval(chart);
+	else if (scale & 16) updateScaleBoom(chart);
 
-	if (DEV['chart'])
-		LS(`UC: ${name}`);
+	if (DEV['chart']) LS(`UC: ${name}`);
 	chart.update();
 }
 
@@ -707,8 +689,7 @@ function updateChartOptions(name, mode)
 		if (!name || name == 'eval')
 		{
 			let data = chart_data['eval'];
-			if (!data)
-				return;
+			if (!data) return;
 			let datasets = data.datasets;
 
 			for (let id = 0; id < 4; ++id)
@@ -735,12 +716,10 @@ function updateChartOptions(name, mode)
 
 	// line width + update
 	Keys(charts).forEach(key => {
-		if (name && name != key)
-			return;
+		if (name && name != key) return;
 
 		let chart = charts[key];
-		if (!chart)
-			return;
+		if (!chart) return;
 
 		if (mode & 2)
 		{
@@ -784,13 +763,10 @@ function updateChartOptions(name, mode)
  */
 function updateLiveChart(name, moves, id)
 {
-	if (DEV['chart'])
-		LS(`ULC: ${name} : ${id}`);
-	if (!moves)
-		return;
+	if (DEV['chart']) LS(`ULC: ${name} : ${id}`);
+	if (!moves) return;
 	// live engine is not desired?
-	if (id >= 2 && !Y[`live_engine_${id - 1}`])
-		return;
+	if (id >= 2 && !Y[`live_engine_${id - 1}`]) return;
 
 	// library hasn't loaded yet => queue
 	let data_c = chart_data[name];
@@ -827,9 +803,7 @@ function updateLiveChart(name, moves, id)
 		};
 		switch (name)
 		{
-		case 'agree':
-			dico.y = move.agree;
-			break;
+		case 'agree': dico.y = move.agree; break;
 		case 'eval':
 			dico.eval = eval_;
 			dico.y = is_percent? calculateWin(id, eval_, ply) : clampEval(eval_);
@@ -854,12 +828,10 @@ function updateLiveChart(name, moves, id)
  */
 function updateLiveCharts(moves, id)
 {
-	if (DEV['chart'])
-		LS(`ULC+: ${id}`);
+	if (DEV['chart']) LS(`ULC+: ${id}`);
 	Keys(LIVE_GRAPHS).forEach(name => {
 		let flag = LIVE_GRAPHS[name];
-		if (flag && id >= 2)
-			return;
+		if (flag && id >= 2) return;
 		updateLiveChart(name, moves, id);
 	});
 }
@@ -880,14 +852,11 @@ function updateMarkers()
  */
 function updatePlayerChart(name, moves)
 {
-	if (DEV['chart'])
-		LS(`UPC: ${name}`);
-	if (!Visible(CacheId(`table-${name}`)))
-		return;
+	if (DEV['chart']) LS(`UPC: ${name}`);
+	if (!Visible(CacheId(`table-${name}`))) return;
 
 	let data = chart_data[name];
-	if (!data)
-		return;
+	if (!data) return;
 
 	let datasets = data.datasets,
 		invert_wb = (name == 'mobil') * 1,
@@ -955,9 +924,7 @@ function updatePlayerChart(name, moves)
 			dico.nodes = move['n'];
 			dico.y = move['s'];
 			break;
-		case 'tb':
-			dico.y = move['tb'];
-			break;
+		case 'tb': dico.y = move['tb']; break;
 		case 'time':
 			datasets[2 + (ply & 1)].data[num2] = Assign({y: move['tl'] / 1000}, dico);
 			dico.y = move['mt'] / 1000;
@@ -980,8 +947,7 @@ function updatePlayerChart(name, moves)
  */
 function updatePlayerCharts(moves)
 {
-	if (DEV['chart'])
-		LS('UPC+');
+	if (DEV['chart']) LS('UPC+');
 	Keys(charts).forEach(key => {
 		updatePlayerChart(key, moves);
 	});
@@ -997,8 +963,7 @@ function updatePlayerCharts(moves)
 function updateScaleBoom(chart)
 {
 	let scale = chart.scales.y_axis_0;
-	if (!scale)
-		return;
+	if (!scale) return;
 
 	scale.options.funcs = (Y['graph_eval_mode'] == 'percent') ? [
 		x => x,
@@ -1016,15 +981,13 @@ function updateScaleBoom(chart)
 function updateScaleCustom(chart)
 {
 	let scale = chart.scales.y_axis_0;
-	if (!scale)
-		return;
+	if (!scale) return;
 
 	// 1) calculate the 2 regions + center
 	let datasets = scale.chart.data.datasets,
 		data0 = datasets[0].data.filter(item => item != null).map(item => item.y),
 		data1 = datasets[1].data.filter(item => item != null).map(item => item.y);
-	if (!data0.length || !data1.length)
-		return;
+	if (!data0.length || !data1.length) return;
 
 	let max0 = Max(...data0),
 		max1 = Max(...data1),
@@ -1049,8 +1012,7 @@ function updateScaleCustom(chart)
 				sum1 = data1.reduce((a, b) => a + b),
 				delta = Abs((sum0 / (sum0 + sum1) - 0.5));
 
-			if (DEV['chart'])
-				LS(`USC: ${sum0} : ${sum1} : ${sum0/sum1} => ${delta}`);
+			if (DEV['chart']) LS(`USC: ${sum0} : ${sum1} : ${sum0/sum1} => ${delta}`);
 			if (delta > 0.25)
 				scales[name] |= 1;
 			else
@@ -1100,8 +1062,7 @@ function updateScaleCustom(chart)
 function updateScaleEval(chart)
 {
 	let scale = chart.scales.y_axis_0;
-	if (!scale)
-		return;
+	if (!scale) return;
 
 	scale.options.funcs = (Y['graph_eval_mode'] == 'percent') ? [
 		x => x,
@@ -1120,8 +1081,7 @@ function updateScaleLinear(chart)
 {
 	let eval_clamp = Y['graph_eval_clamp'],
 		scale = chart.scales.y_axis_0;
-	if (!scale)
-		return;
+	if (!scale) return;
 
 	scale.options.funcs = (eval_clamp > 0)? [
 		x => Clamp(x, -eval_clamp, eval_clamp),
@@ -1141,8 +1101,7 @@ function updateScaleLinear(chart)
  */
 function initGraph()
 {
-	if (DEV['chart'])
-		LS('IG');
+	if (DEV['chart']) LS('IG');
 	createChartData();
 
 	AddTimeout('graph', () => {

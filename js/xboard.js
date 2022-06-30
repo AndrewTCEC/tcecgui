@@ -1,6 +1,6 @@
 // xboard.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-24
 //
 // game board:
 // - 4 rendering modes:
@@ -2600,9 +2600,9 @@ class XBoard
 			lines.push(`  ${scolumn}`);
 
 		// output result
-		let font_size = (notation & 12)? 0.5 * num_col / (num_col + 1) : 0.5,
+		let fontSize = (notation & 12)? 0.5 * num_col / (num_col + 1) : 0.5,
 			text = lines.join('\n');
-		this.output(`<pre style="font-size:${font_size}em">${text}</pre>`);
+		this.output(`<pre style="font-size:${fontSize}em">${text}</pre>`);
 
 		Hide(this.xframe);
 		Hide(this.xpieces);

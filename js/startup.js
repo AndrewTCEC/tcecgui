@@ -1,6 +1,6 @@
 // startup.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-06-22
+// @version 2022-06-24
 //
 // Startup
 // - start everything: 3d, game, ...
@@ -30,7 +30,7 @@ SetFullScreenEvents, SetGameEvents, SetSection, SHADOW_QUALITIES, Show, showBann
 ShowPopup, SP, Start3d, StartGame, Startup3d, StartupConfig, StartupEngine, StartupGame, StartupGlobal, StartupGraph,
 StartupNetwork, Style,
 TAB_NAMES, TABLES, TEXT, TextHTML, THEMES, TIMEOUT_tables, timeouts, ToggleFullscreen, TRANSLATE_SPECIALS,
-TranslateNodes, TYPES, Undefined, UpdateBackground, updateBoardTheme, UpdateDebug, updatePgn, UpdateTheme, updateTwitch,
+TranslateNodes, TYPES, Undefined, UpdateBackground, updateBoardTheme, UpdateDebug, UpdatePgn, UpdateTheme, updateTwitch,
 VERSION, vi_ChangeSettingSpecial:true, vi_CheckHashSpecial:true, vi_HideAreas:true, vi_ImportSettings:true,
 vi_OpenedTableSpecial:true, vi_PopulateAreasAfter:true, vi_ResetSettingsAfter:true, vi_Resize:true,
 vi_SetModalEventsAfter:true, vi_WindowClickDataset:true, vi_WindowClickParent:true, vi_WindowClickParentDataset:true,
@@ -246,9 +246,9 @@ function ChangeSettingSpecial(name, value, close)
 	case 'notation_pva':
 	case 'piece_theme_pva': updateBoardTheme(4); break;
 	case 'audio_set': AudioSet(svalue); break;
-	case 'background_color':
-	case 'background_opacity': UpdateBackground(); break;
-	case 'background_reset':
+	case 'backgroundColor':
+	case 'backgroundOpacity': UpdateBackground(); break;
+	case 'backgroundReset':
 		ResetDefaults(/^background_/);
 		UpdateBackground();
 		break;
@@ -310,7 +310,7 @@ function ChangeSettingSpecial(name, value, close)
 		ResizePanels();
 		ResizeGame();
 		break;
-	case 'export_settings': ExportSettings(Y['last_preset'] || 'tcec-settings'); break;
+	case 'exportSettings': ExportSettings(Y['last_preset'] || 'tcec-settings'); break;
 	case 'game_960':
 		pva.frc = ivalue;
 		pva.delayedPicks();
@@ -353,7 +353,7 @@ function ChangeSettingSpecial(name, value, close)
 	case 'PV_height': resizeMoveLists(); break;
 	case 'hardware': Resize(); break;
 	case 'hide': HideElement(context_target); break;
-	case 'import_settings':
+	case 'importSettings':
 		const json = ParseJSON(svalue);
 		if (IsObject(json)) ImportSettings(json, true);
 		break;
@@ -862,7 +862,7 @@ function InitCustoms(initial)
 function InitGlobals()
 {
 	ChangedHash();
-	ApiTranslateGet(Z.new_version, Resize);
+	ApiTranslateGet(Z.newVersion, Resize);
 	checkSocketIo();
 
 	TEXT(CacheId('version'), VERSION);
@@ -1000,7 +1000,7 @@ function PopulateAreasAfter()
  */
 function QuickSetup(force)
 {
-	const old = Z.new_version;
+	const old = Z.newVersion;
 	if (!force && (old == undefined || old >= '20210109e' || Y['seen'] || y_x == 'archive' || Y['stream'])) return;
 	ActivateTabs();
 	ShowPopup('options', true, {center: 1, overlay: 1, setting: 'quick_setup'});
@@ -1589,7 +1589,7 @@ function SetGlobalEvents()
 			}
 			UpdateBackground();
 		}],
-		'import_settings': ['text', (reader, id, file) => {
+		'importSettings': ['text', (reader, id, file) => {
 			const data = /** @type {string} */(reader.result);
 			ChangeSetting(id, data);
 			SaveOption('last_preset', file.name.split('.').slice(0, -1).join('.'));
@@ -1602,7 +1602,7 @@ function SetGlobalEvents()
 		'load_pgn': ['text', (reader, id) => {
 			const data = /** @type {string} */(reader.result),
 				new_section = 'archive';
-			if (updatePgn(new_section, data))
+			if (UpdatePgn(new_section, data))
 			{
 				Y.scroll = '#overview';
 				SetSection(new_section);
@@ -1769,7 +1769,7 @@ function PrepareSettings()
 		'game_search': 1,
 		'game_time': 1,
 		'game_wasm': 1,
-		'import_settings': 2,
+		'importSettings': 2,
 		'language': 1,
 		'last_preset': 1,
 		'preset': 1,
@@ -1845,11 +1845,11 @@ function PrepareSettings()
 		// new column after 10 items
 		'_split': 11,
 		'general': {
-			'export_settings': '1',
-			'import_settings': [{text: 'Enter JSON data', type: 'link'}, ''],
+			'exportSettings': '1',
+			'importSettings': [{text: 'Enter JSON data', type: 'link'}, ''],
 			'language': {
 				'_svg': 'language',
-				'_value': [LANGUAGES, ''],
+				'_val': [LANGUAGES, ''],
 			},
 			'preset': [PRESETS, 'custom'],
 			'theme': [THEMES, THEMES[0]],
@@ -1876,10 +1876,10 @@ function PrepareSettings()
 			'volume': OptionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),
 		},
 		'video': {
-			'background_color': [{type: 'color'}, '#000000'],
-			'background_image': [{type: 'link'}, ''],
-			'background_opacity': OptionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
-			'background_reset': '1',
+			'backgroundColor': [{type: 'color'}, '#000000'],
+			'backgroundImage': [{type: 'link'}, ''],
+			'backgroundOpacity': OptionNumber(0, 0, 1, 0.01, {}, HELP_OPACITY),
+			'backgroundReset': '1',
 			'encoding': [['Gamma', 'Linear', 'sRGB'], 'sRGB', '3D'],
 			'exposure': OptionNumber(1, 0.1, 10, 0.1, {}, '3D'),
 			'gamma': OptionNumber(1.5, 0, 10, 0.1, {}, '3D'),
@@ -1948,11 +1948,11 @@ function PrepareSettings()
 			'board_theme': [Keys(BOARD_THEMES), 'chess24'],
 			'custom_black': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#000000'],
+				'_val': [{type: 'color'}, '#000000'],
 			},
 			'custom_white': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#ffffff'],
+				'_val': [{type: 'color'}, '#ffffff'],
 			},
 			'controls': [ON_OFF, 1, HELP_CONTROLS],
 			'copy': copy_download,
@@ -1971,11 +1971,11 @@ function PrepareSettings()
 			'board_theme_pv': [Keys(BOARD_THEMES), 'uscf'],
 			'custom_black_pv': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#000000'],
+				'_val': [{type: 'color'}, '#000000'],
 			},
 			'custom_white_pv': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#ffffff'],
+				'_val': [{type: 'color'}, '#ffffff'],
 			},
 			'controls_pv': [ON_OFF, 1, HELP_CONTROLS],
 			'copy': copy_download,
@@ -1994,11 +1994,11 @@ function PrepareSettings()
 			'board_theme_pva': [Keys(BOARD_THEMES), 'uscf'],
 			'custom_black_pva': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#000000'],
+				'_val': [{type: 'color'}, '#000000'],
 			},
 			'custom_white_pva': {
 				'_class': 'dn',
-				'_value': [{type: 'color'}, '#ffffff'],
+				'_val': [{type: 'color'}, '#ffffff'],
 			},
 			'controls_pva': [ON_OFF, 1, HELP_CONTROLS],
 			'highlight_color_pva': [{type: 'color'}, '#ffff00'],
@@ -2333,7 +2333,7 @@ function PrepareSettings()
 			'_pop': true,
 			'copy': copy_moves,
 			'download_PGN': '1',
-			'load_PGN': {_id: 'load_pgn', _value: ''},
+			'load_PGN': {'_id': 'load_pgn', '_val': ''},
 		},
 		'quick_setup': {
 			'_pop': true,
@@ -2343,7 +2343,7 @@ function PrepareSettings()
 			'explosion_effect': [ON_OFF, 1, 'audiovisual effect when most engines agree that someone is winning'],
 			'language': {
 				'_svg': 'language',
-				'_value': [LANGUAGES, ''],
+				'_val': [LANGUAGES, ''],
 			},
 			'theme': [THEMES, THEMES[0]],
 			'volume': OptionNumber(10, 0, 20, 0.5, {}, HELP_VOLUME),

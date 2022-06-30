@@ -1,6 +1,6 @@
 // engine.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-06-22
+// @version 2022-06-24
 //
 // used as a base for all frameworks
 // unlike common.js, states are required
@@ -120,10 +120,10 @@ const _ALL = 'all',
 	// &1:no import/export, &2:no change setting, &4:update Y but no localStorage
 	NO_IMPORTS = {
 		'dev': 1,
-		'import_settings': 2,
+		'importSettings': 2,
 		'language': 1,
-		'password': 2,
 		'preset': 1,
+		'pw': 2,
 		'seen': 1,
 		'version': 1,
 		'x': 1,
@@ -190,7 +190,7 @@ const _ALL = 'all',
 		foot: 'OK',
 		ip: '',
 		ip_time: 0,
-		new_version: false,
+		newVersion: false,
 		s: '',
 		title_add: '',
 	};
@@ -694,12 +694,11 @@ function MergeSettings(x_settings)
 			let setting = settings[key];
 			if (!IsObject(setting)) return;
 
-			// support {_value: [...]}
-			if (setting['_value'])
+			// support {_val: [...]}
+			if (setting['_val'])
 			{
-				setting = setting['_value'];
-				if (IsFunction(setting))
-					setting = setting();
+				setting = setting['_val'];
+				if (IsFunction(setting)) setting = setting();
 			}
 
 			// support {_multi: 2, a: [...], b: [...]}
@@ -855,14 +854,14 @@ function ResetItemSetting(node)
 
 /**
  * Reset some settings if the version is too old
- * @param {string} new_version
+ * @param {string} newVersion
  */
-function ResetOldSettings(new_version)
+function ResetOldSettings(newVersion)
 {
 	const version = Undefined(Y['version'], '');
-	if (version == new_version)
+	if (version == newVersion)
 	{
-		SaveOption('version', new_version);
+		SaveOption('version', newVersion);
 		return;
 	}
 
@@ -879,9 +878,9 @@ function ResetOldSettings(new_version)
 				ResetDefault(item);
 			}
 
-	LS(`version: ${version} => ${new_version} : ${changes}`);
-	SaveOption('version', new_version);
-	Z.new_version = version;
+	LS(`version: ${version} => ${newVersion} : ${changes}`);
+	SaveOption('version', newVersion);
+	Z.newVersion = version;
 }
 
 /**
@@ -1371,7 +1370,7 @@ function ShowSettings(name, {flag, grid_class='options', item_class='item', titl
 
 		let scolor = setting['_color'],                     // item text color
 			sextra = setting['_extra'],                     // extra label, ex: [min, max]
-			svalue = setting['_value'];                     // value or callback
+			svalue = setting['_val'];                       // value or callback
 
 		if (sflag && sflag & flag) return;
 		if (IsFunction(son) && !son()) return;
@@ -1725,8 +1724,7 @@ function ResizeText(text, resize, class_='resize')
 function Translate(text)
 {
 	if (!text) return text;
-	if (DEV['translate'])
-		TRANSLATES[text] = '';
+	if (DEV['translate']) TRANSLATES[text] = '';
 
 	// hello~2 => hello
 	if (Y['language'] == 'eng')
@@ -3479,10 +3477,10 @@ function UpdateBackground()
 	const node = CacheId('background');
 	if (!node) return;
 
-	const color = Y['background_color'],
-		image = Y['background_image'],
+	const color = Y['backgroundColor'],
+		image = Y['backgroundImage'],
 		image_url = image? `url(${image})` : '',
-		opacity = image? Y['background_opacity']: 0;
+		opacity = image? Y['backgroundOpacity']: 0;
 
 	if (node.style.backgroundImage != image_url)
 		node.style.backgroundImage = image_url;

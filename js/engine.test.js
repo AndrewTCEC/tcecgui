@@ -3,7 +3,7 @@
  */
 // engine.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-24
 //
 /*
 globals
@@ -24,9 +24,9 @@ const {Assign, CACHE_IDS, Clear, CreateNode, Id} = require('./common.js'),
 	} = require('./engine.js');
 
 Assign(DEFAULTS, {
-	background_color: '#000000',
-	background_image: '',
-	background_opacity: 0,
+	backgroundColor: '#000000',
+	backgroundImage: '',
+	backgroundOpacity: 0,
 	language: '',
 	limit: 20,
 	skip: 0,
@@ -575,7 +575,7 @@ global.SP = () => {};
 				controls_pva: [ON_OFF, 1],
 				custom_white_pv: {
 					_class: 'dn',
-					_value: [{type: 'color'}, '#ffffff'],
+					_val: [{type: 'color'}, '#ffffff'],
 				},
 				source_color: {
 					_multi: 2,
@@ -602,7 +602,7 @@ global.SP = () => {};
 				controls_pva: [ON_OFF, 1],
 				custom_white_pv: {
 					_class: 'dn',
-					_value: [{type: 'color'}, '#ffffff'],
+					_val: [{type: 'color'}, '#ffffff'],
 				},
 				source_color: {
 					_multi: 2,
@@ -707,9 +707,9 @@ global.SP = () => {};
 	[{language: 'fra', limit: 40, skip: 10}, /language/, {language: 'eng', limit: 40, skip: 10}],
 	[{language: 'fra', limit: 40, skip: 10}, /.*/, {language: 'eng', limit: 20, skip: 0}],
 	[
-		{background_color: '#ff0000', background_image: 'xxyy', background_opacity: 0.5},
+		{backgroundColor: '#ff0000', backgroundImage: 'xxyy', backgroundOpacity: 0.5},
 		/^background_/,
-		{background_color: '#000000', background_image: '', background_opacity: 0},
+		{backgroundColor: '#000000', backgroundImage: '', backgroundOpacity: 0},
 	],
 ].forEach(([y, pattern, answer], id) => {
 	test(`ResetDefaults:${id}`, () => {

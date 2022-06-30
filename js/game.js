@@ -1,6 +1,6 @@
 // game.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-26
 //
 // Game specific code:
 // - control the board, moves
@@ -3495,10 +3495,9 @@ function downloadPgn(section, url, reset_moves, callback)
 		}
 
 		main.pgn = {};
-		updatePgn(section, data, extra, reset_moves);
+		UpdatePgn(section, data, extra, reset_moves);
 
-		if (section == 'archive' && Y.scroll)
-			ScrollAdjust(Y.scroll);
+		if (section == 'archive' && Y.scroll) ScrollAdjust(Y.scroll);
 		if (callback) callback();
 	}, {type: 'text'});
 }
@@ -4429,7 +4428,7 @@ function updateOverviewBasic(section, headers)
  * @param {string} section
  * @param {!Object} headers
  * @param {Array<Move>} moves
- * @param {boolean=} is_new have we received new moves (from updatePgn)?
+ * @param {boolean=} is_new have we received new moves (from UpdatePgn)?
  * @returns {boolean?} finished
  */
 function updateOverviewMoves(section, headers, moves, is_new)
@@ -4549,7 +4548,7 @@ function updateOverviewResult(move, num_ply, finished)
  * @param {boolean=} reset_moves triggered by check_missing_moves
  * @returns {boolean}
  */
-function updatePgn(section, data, extras, reset_moves)
+function UpdatePgn(section, data, extras, reset_moves)
 {
 	let main = xboards[section],
 		pgn = parsePgn(section, data);
@@ -7231,7 +7230,7 @@ if (typeof exports != 'undefined')
 		tour_info: tour_info,
 		updateLiveEval: updateLiveEval,
 		updateMaterials: updateMaterials,
-		updatePgn: updatePgn,
+		UpdatePgn: UpdatePgn,
 		updatePlayerEval: updatePlayerEval,
 	});
 // >>

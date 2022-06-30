@@ -1,6 +1,6 @@
 // game.test.js
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-26
 /*
 globals
 expect, global, require, test
@@ -13,7 +13,7 @@ let {Assign, Clear, FromTimestamp, IsArray, IsString, Keys, ParseJSON, Stringify
 		analyseLog, calculateH2h, calculateProbability, calculateSeeds, checkAdjudication, checkBoom, checkExplosion,
 		checkExplosionBoom, copyPgn, createBoards, createGameLink, createSeek, currentArchiveLink, extractThreads,
 		fixHeaderOpening, fixZeroMoves, formatEngine, formatFen, formatHhmmss, formatOpening, getShortName,
-		parseDateTime, parsePgn, parsePgnMoves, parseTimeControl, tour_info, updateLiveEval, updateMaterials, updatePgn,
+		parseDateTime, parsePgn, parsePgnMoves, parseTimeControl, tour_info, updateLiveEval, updateMaterials, UpdatePgn,
 		updatePlayerEval,
 	} = require('./game.js'),
 	{getFenPly, xboards} = require('./global.js'),
@@ -2343,7 +2343,7 @@ function initPlayers(ply, players, evals)
 	],
 ].forEach(([data, section, edata, eid, force_ply, answer], id) => {
 	test(`updateLiveEval:${id}`, () => {
-		updatePgn(section, data);
+		UpdatePgn(section, data);
 		expect(updateLiveEval(section, edata, eid, force_ply)).toEqual(answer);
 	});
 });
@@ -2364,7 +2364,7 @@ function initPlayers(ply, players, evals)
 	});
 });
 
-// updatePgn
+// UpdatePgn
 [
 	['live', {}, null, false, 0],
 	['live', {}, '', false, 0],
@@ -2417,7 +2417,7 @@ function initPlayers(ply, players, evals)
 		88,
 	],
 ].forEach(([section, board_data, data, answer, num_move], id) => {
-	test(`updatePgn:${id}`, () => {
+	test(`UpdatePgn:${id}`, () => {
 		let main = xboards[section];
 		main.moves.length = 0;
 
@@ -2426,7 +2426,7 @@ function initPlayers(ply, players, evals)
 		else
 			Clear(main.pgn);
 
-		expect(updatePgn(section, data)).toEqual(answer);
+		expect(UpdatePgn(section, data)).toEqual(answer);
 		expect(main.moves.length).toEqual(num_move);
 	});
 });

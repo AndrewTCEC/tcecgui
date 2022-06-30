@@ -1,6 +1,6 @@
 // network
 // @author octopoulo <polluxyz@gmail.com>
-// @version 2022-05-21
+// @version 2022-06-26
 //
 // all socket functions are here
 //
@@ -12,7 +12,7 @@ _, A, AddTimeout, analyseCrosstable, analyseLog, analyseTournament, Assign, Cach
 CreateNode,
 DEV, exports, From, global, HasClass, Hide, HOST, HTML, Id, InitWebSockets, InsertNodes, IsArray,
 LoadLibrary, LS, Max, Min, MSG_USER_COUNT, Now, ParseJSON, RandomInt, require,
-S, SaveOption, setViewers, Show, socket_io:true, updateLiveEval, updatePgn, updatePlayerEval, updateTable, updateTwitch,
+S, SaveOption, setViewers, Show, socket_io:true, updateLiveEval, UpdatePgn, updatePlayerEval, updateTable, updateTwitch,
 VisibleWidth, window, Y, y_x
 */
 'use strict';
@@ -146,7 +146,7 @@ function eventSockets()
 	});
 	socket_io.on('pgn', data => {
 		logSocket('pgn', data);
-		updatePgn('live', data);
+		UpdatePgn('live', data);
 	});
 	socket_io.on('schedule', data => {
 		logSocket('schedule', data);
@@ -194,7 +194,7 @@ function eventSockets()
  * Handle log from websocket
  * @param {Array} data
  */
-function handleLog(data)
+function HandleLog(data)
 {
 	log_time = Now();
 
@@ -320,8 +320,8 @@ function SocketMessage(e)
 	switch (method)
 	{
 	// messages
-	case MSG_CUSTOM_LOG: handleLog(data); break;
-	case MSG_CUSTOM_PGN: updatePgn('live', data); break;
+	case MSG_CUSTOM_LOG: HandleLog(data); break;
+	case MSG_CUSTOM_PGN: UpdatePgn('live', data); break;
 	case MSG_USER_COUNT: setViewers(data); break;
 
 	// full files

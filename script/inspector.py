@@ -1,6 +1,6 @@
 # coding: utf-8
 # @author octopoulo <polluxyz@gmail.com>
-# @version 2021-05-19
+# @version 2022-06-25
 
 """
 Inspect JS files
@@ -31,7 +31,7 @@ class Inspect:
     """
 
     def __init__(self):
-        self.re_args = re.compile(r'(\w+)(?:=(?:\w+|\[.*?\]|{.*?}|\'.*?\'))?(?:[,}]|$)', re.S)
+        self.re_args = re.compile(r'(\w+)(?:=(?:\[.*?\]|{.*?}|\(.*?\)|[^,}]+))?(?:[,}]|$)', re.S)
         self.re_exports = re.compile(r'[Aa]ssign\(exports, {(.*?)}\);', re.S)
         self.re_function = re.compile(r'/\*\*(.*?)\*/\r?\n(?:async )?function\s*(\w+)\s*\((.*?)\)\s*{(.*?)\r?\n}', re.S)
         self.re_globals = re.compile(r'/\*\s*globals\s*(.*?)\*/', re.S)
@@ -77,7 +77,7 @@ class Inspect:
         # 3) check function doc
         funcs = self.re_function.findall(data)
         for doc, name, args, content in funcs:
-            has_return = bool(re.search(r'\n    return ', content))
+            has_return = bool(re.search(r'\n( {4}|\t)return ', content))
             doc_return = '@returns' in doc
             if has_return is not doc_return:
                 print(f'{filename}: return: {name}')

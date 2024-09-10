@@ -16,16 +16,16 @@
     <script src="js/chart.js"></script>
     <script src="js/graph.js"></script>
     <script src="js/game.js"></script>
-    <script src="js/libs/socket.io.dev.js"></script>
+    <!-- <script src="js/libs/socket.io.dev.js"></script> -->
     <script src="js/network.js"></script>
     <script src="js/startup.js"></script>
     <script src="js/config.js"></script>
     <script src="js/script.js"></script>
-    <script src="js/libs/three.js"></script>
+    <!-- <script src="js/libs/three.js"></script>
     <script src="js/libs/stats.js"></script>
     <script src="js/libs/GLTFLoader.js"></script>
     <script src="js/libs/DRACOLoader.js"></script>
-    <script src="js/libs/camera-controls.js"></script>
+    <script src="js/libs/camera-controls.js"></script> -->
     <link href="css/light.css" rel="stylesheet">
     <!-- END -->
     <!-- {SCRIPT} -->
@@ -33,9 +33,9 @@
 </head>
 <body class="noselect notranslate">
 <div id="body">
-<vert id="meta-canvas">
+<v id="meta-canvas">
     <canvas id="canvas"></canvas>
-</vert>
+</v>
 <div id="background"></div>
 <div id="overlay" class="dn"></div>
 <div id="banner" class="dn"></div>
@@ -46,56 +46,56 @@
 </div>
 <span id="text">&nbsp;</span>
 <div id="modal2">
-    <vert id="modal" class="popup"></vert>
+    <v id="modal" class="popup"></v>
 </div>
 <div id="rect"></div>
 <input id="file" type="file" class="dn">
 <!-- benchmark -->
 <div id="benchmark" class="dn">
-    <vert id="bench-title" data-t="Benchmark"></vert>
-    <vert id="bench-sub" class="dn"></vert>
-    <vert id="bench-count">&nbsp;</vert>
+    <v id="bench-title" data-t="Benchmark"></v>
+    <v id="bench-sub" class="dn"></v>
+    <v id="bench-count">&nbsp;</v>
     <grid id="bench-grid"></grid>
-    <vert><a id="bench-stop" data-t="STOP"></a></vert>
+    <v><a id="bench-stop" data-t="STOP"></a></v>
 </div>
 <!-- header -->
-<horis id="header" class="fcenter">
-    <hori id="sub-header" class="fbetween">
-        <horis class="faround fabase">
+<hs id="header" class="fcenter">
+    <h id="sub-header" class="fbetween">
+        <hs class="faround fabase">
             <div id="section">
                 <a id="nav-live" class="nav shadow" href="#" data-t="Live~2"></a>
                 <a id="nav-archive" class="nav shadow" href="#x=archive" data-t="Archive"></a>
             </div>
-            <hori id="info" class="nav">
+            <h id="info" class="nav">
                 <i data-t="Info"></i>
                 <i data-svg="down"></i>
-            </hori>
-            <hori id="download" class="nav">
+            </h>
+            <h id="download" class="nav">
                 <i data-t="Download"></i>
                 <i data-svg="down"></i>
-            </hori>
-            <hori id="articles" class="nav">
+            </h>
+            <h id="articles" class="nav">
                 <i data-t="Articles"></i>
                 <i data-svg="down"></i>
-            </hori>
-            <hori id="options" class="nav">
+            </h>
+            <h id="options" class="nav">
                 <i data-t="Options"></i>
                 <i data-svg="down"></i>
-            </hori>
-        </horis>
-        <horis id="icons" class="fend">
+            </h>
+        </hs>
+        <hs id="icons" class="fend">
             <i id="theme0" data-svg="sun" class="dn"></i>
             <i id="theme1" data-svg="moon" class="dn"></i>
             <!-- <i id="three" data-svg="cube" data-t="3D scene" data-t2="title"></i> -->
             <i id="full0" data-svg="expand"></i>
             <i id="full1" data-svg="compress" class="dn"></i>
-        </horis>
-    </hori>
-</horis>
+        </hs>
+    </h>
+</hs>
 <!-- container -->
-<vert id="body2">
+<v id="body2">
     <!-- banners -->
-    <horis id="banners" class="fbetween fastart">
+    <hs id="banners" class="fbetween fastart">
         <div>
             <a href="liveold.html" target="_blank">
                 <img src="image/tcec2.jpg" class="banner" alt="TCEC">
@@ -105,10 +105,10 @@
             </a>
         </div>
         <!-- ad0 -->
-        <vert id="ad0" class="facenter">
-            <hori class="google-ad fcenter"></hori>
+        <v id="ad0" class="facenter">
+            <h class="google-ad fcenter"></h>
             <div class="adblock dn"></div>
-        </vert>
+        </v>
         <div>
             <a id="twitch" href="https://www.twitch.tv/TCEC_Chess_TV" target="_blank">
                 <img src="image/twitch.svg" class="banner" alt="Twitch stream">
@@ -119,55 +119,55 @@
                 <input type="image" class="banner" src="image/paypal3.jpg" name="submit" alt="PayPal - The safer, easier way to pay online!">
             </form>
         </div>
-    </horis>
+    </hs>
     <div id="overview" class="scroller"></div>
-    <horis id="top" class="area fcenter fastart"></horis>
-    <hori id="main" class="fcenter fastretch">
+    <hs id="top" class="area fcenter fastart"></hs>
+    <h id="main" class="fcenter fastretch">
         <!-- left_2 -->
-        <vert id="left_2" class="panel">
-            <hori class="swaps"></hori>
-            <vert id="left_20" class="area"></vert>
-        </vert>
+        <v id="left_2" class="panel">
+            <h class="swaps"></h>
+            <v id="left_20" class="area"></v>
+        </v>
         <!-- left -->
-        <vert id="left" class="panel">
-            <hori class="swaps"></hori>
+        <v id="left" class="panel">
+            <h class="swaps"></h>
             <!-- left0 -->
-            <vert id="left0" class="area">
+            <v id="left0" class="area">
                 <div id="archive" class="xboard drag dn"></div>
                 <div id="live" class="xboard drag"></div>
-                <horis id="moves-archive" class="moves drag"></horis>
-                <horis id="moves-live" class="moves drag"></horis>
+                <hs id="moves-archive" class="moves drag"></hs>
+                <hs id="moves-live" class="moves drag"></hs>
                 <div id="moves-pv0" class="drag"></div>
                 <div id="moves-pv1" class="drag"></div>
                 <div id="table-live0" class="drag"></div>
                 <div id="table-live1" class="drag"></div>
-            </vert>
-        </vert>
+            </v>
+        </v>
         <!-- center -->
-        <vert id="center" class="panel">
-            <hori class="swaps"></hori>
+        <v id="center" class="panel">
+            <h class="swaps"></h>
             <!-- center0 -->
-            <vert id="center0" class="area">
+            <v id="center0" class="area">
                 <!-- engines -->
                 <grid id="engine" class="grid3 drag">
-                    <hori id="info0" class="fcenter">
-                        <hori id="king0" class="icon fcenter">
+                    <h id="info0" class="fcenter">
+                        <h id="king0" class="fcenter">
                             <div></div>
-                        </hori>
-                    </hori>
+                        </h>
+                    </h>
                     <i></i>
-                    <hori id="info1" class="fcenter">
-                        <hori id="king1" class="icon fcenter">
+                    <h id="info1" class="fcenter">
+                        <h id="king1" class="fcenter">
                             <div></div>
-                        </hori>
-                    </hori>
-                    <vert class="engine-box fcenter">
-                        <vert id="engine0"></vert>
-                    </vert>
+                        </h>
+                    </h>
+                    <v class="engine-box fcenter">
+                        <v id="engine0"></v>
+                    </v>
                     <i></i>
-                    <vert class="engine-box fcenter">
-                        <vert id="engine1"></vert>
-                    </vert>
+                    <v class="engine-box fcenter">
+                        <v id="engine1"></v>
+                    </v>
                     <div class="logo">
                         <img id="logo0" src="image/tcec.jpg">
                     </div>
@@ -176,14 +176,14 @@
                         <img id="logo1" src="image/tcec.jpg">
                     </div>
                     <div id="eval0">&nbsp;</div>
-                    <vert class="fcenter">
+                    <v class="fcenter">
                         <div id="eval" class="einfo" data-t="Eval"></div>
-                    </vert>
+                    </v>
                     <div id="eval1"></div>
                     <div id="mobil0">&nbsp;</div>
-                    <vert id="mobil_" class="fcenter">
+                    <v id="mobil_" class="fcenter">
                         <a id="mobil" title="r-mobility"></a>
-                    </vert>
+                    </v>
                     <div id="mobil1"></div>
                     <div id="depth0">&nbsp;</div>
                     <div class="einfo" data-t="Depth/SD"></div>
@@ -220,133 +220,133 @@
                             <i data-svg="cog"></i>
                         </div>
                     </div>
-                    <horis id="material0" class="fcenter"></horis>
+                    <hs id="material0" class="fcenter"></hs>
                     <i id="material"></i>
-                    <horis id="material1" class="fcenter"></horis>
+                    <hs id="material1" class="fcenter"></hs>
                 </grid>
                 <!-- charts -->
-                <vert id="table-eval" class="drag">
+                <v id="table-eval" class="drag">
                     <div class="chart">
                         <canvas id="chart-eval" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Eval"></div>
-                </vert>
-                <vert id="table-mobil" class="drag dn">
+                </v>
+                <v id="table-mobil" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-mobil" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Mobility"></div>
-                </vert>
-                <vert id="table-time" class="drag dn">
+                </v>
+                <v id="table-time" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-time" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Time"></div>
-                </vert>
-                <vert id="table-depth" class="drag dn">
+                </v>
+                <v id="table-depth" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-depth" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="{Depth}/{SD}"></div>
-                </vert>
-                <vert id="table-speed" class="drag dn">
+                </v>
+                <v id="table-speed" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-speed" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Speed"></div>
-                </vert>
-                <vert id="table-node" class="drag dn">
+                </v>
+                <v id="table-node" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-node" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Nodes"></div>
-                </vert>
-                <vert id="table-tb" class="drag dn">
+                </v>
+                <v id="table-tb" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-tb" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="TB"></div>
-                </vert>
-                <vert id="table-agree" class="drag dn">
+                </v>
+                <v id="table-agree" class="drag dn">
                     <div class="chart">
                         <canvas id="chart-agree" class="graphs"></canvas>
                     </div>
                     <div class="label dn" data-t="Agree"></div>
-                </vert>
+                </v>
                 <!-- pv -->
-                <vert id="table-pv" class="drag dn">
+                <v id="table-pv" class="drag dn">
                     <div id="box-pv0">
-                        <hori id="pv0" class="xboard fastart"></hori>
+                        <h id="pv0" class="xboard fastart"></h>
                         <div id="status-pv0" class="status"></div>
                     </div>
                     <div id="box-pv1">
-                        <hori id="pv1" class="xboard fastart"></hori>
+                        <h id="pv1" class="xboard fastart"></h>
                         <div id="status-pv1" class="status"></div>
                     </div>
-                </vert>
-                <vert id="table-kibitz" class="drag dn">
+                </v>
+                <v id="table-kibitz" class="drag dn">
                     <div id="box-live0">
-                        <hori id="live0" class="xboard fastart"></hori>
+                        <h id="live0" class="xboard fastart"></h>
                         <div id="status-live0" class="status"></div>
                     </div>
                     <div id="box-live1">
-                        <hori id="live1" class="xboard fastart"></hori>
+                        <h id="live1" class="xboard fastart"></h>
                         <div id="status-live1" class="status"></div>
                     </div>
-                </vert>
-                <vert id="table-pva" class="drag dn">
-                    <vert id="pva" class="xboard"></vert>
-                    <horis id="pva-pv" class="live-pv fabase"></horis>
-                </vert>
-            </vert>
-        </vert>
+                </v>
+                <v id="table-pva" class="drag dn">
+                    <v id="pva" class="xboard"></v>
+                    <hs id="pva-pv" class="live-pv fabase"></hs>
+                </v>
+            </v>
+        </v>
         <!-- right -->
-        <vert id="right" class="panel">
-            <hori class="swaps"></hori>
+        <v id="right" class="panel">
+            <h class="swaps"></h>
             <!-- right0 -->
-            <vert id="right0" class="area">
+            <v id="right0" class="area">
                 <!-- twitch chat -->
-                <vert id="table-chat" class="drag">
-                    <vert class="w100">
+                <v id="table-chat" class="drag">
+                    <v class="w100">
                         <iframe id="chat" frameborder="0" style="width: 100%" scrolling="no"></iframe>
-                        <vert id="chat2">
+                        <v id="chat2">
                             <a id="show-chat" class="dn" data-t="Enable Twitch chat"></a>
-                        </vert>
-                    </vert>
-                    <hori id="under-chat" class="fbetween w100">
-                        <hori>
+                        </v>
+                    </v>
+                    <h id="under-chat" class="fbetween w100">
+                        <h>
                             <a class="subscribe" href="https://www.twitch.tv/products/tcecpoc/ticket" target="_blank" data-t="Subscribe"></a>
                             <a class="subscribe" href="https://streamlabs.com/TCEC_Chess_TV" target="_blank" data-t="Donate"></a>
-                        </hori>
-                        <hori id="twitch-theme" class="fend">
+                        </h>
+                        <h id="twitch-theme" class="fend">
                             <i id="twitch0" data-svg="sun" class="dn"></i>
                             <i id="twitch1" data-svg="moon" class="dn"></i>
                             <i id="hide-chat" data-svg="x"></i>
-                        </hori>
-                    </hori>
-                </vert>
+                        </h>
+                    </h>
+                </v>
                 <div id="table-winner" class="drag scroller dn"></div>
                 <div id="table-info" class="drag dn">INFO</div>
-                <horis id="shortcut_1" class="drag scroller dn"></horis>
-                <horis id="shortcut_2" class="drag scroller dn"></horis>
-                <horis id="shortcut_3" class="drag scroller dn"></horis>
-            </vert>
-        </vert>
+                <hs id="shortcut_1" class="drag scroller dn"></hs>
+                <hs id="shortcut_2" class="drag scroller dn"></hs>
+                <hs id="shortcut_3" class="drag scroller dn"></hs>
+            </v>
+        </v>
         <!-- right_2 -->
-        <vert id="right_2" class="panel">
-            <hori class="swaps"></hori>
-            <vert id="right_20" class="area"></vert>
-        </vert>
-    </hori>
-    <horis id="bottom" class="area fcenter"></horis>
+        <v id="right_2" class="panel">
+            <h class="swaps"></h>
+            <v id="right_20" class="area"></v>
+        </v>
+    </h>
+    <hs id="bottom" class="area fcenter"></hs>
     <!-- ad1 -->
-    <vert id="ad1" class="facenter">
-        <hori class="google-ad fcenter"></hori>
+    <v id="ad1" class="facenter">
+        <h class="google-ad fcenter"></h>
         <div class="adblock dn"></div>
-    </vert>
+    </v>
     <!-- tables -->
-    <vert id="tables">
-        <horis id="table-tabs" class="tabs">
+    <v id="tables">
+        <hs id="table-tabs" class="tabs">
             <div class="tab" data-x="season" data-t="Seasons"></div>
             <div class="tab dn" data-x="brak">
                 <i data-svg="medal"></i>
@@ -384,15 +384,15 @@
                 <i data-svg="crash"></i>
                 <i data-t="Crash info"></i>
             </div>
-        </horis>
+        </hs>
         <!-- pagination -->
-        <horis id="table-pagin" class="pagin fbetween dn">
+        <hs id="table-pagin" class="pagin fbetween dn">
             <div>
                 <i class="row-filter"></i> / <i class="row-total"></i>
                 <i data-t="rows"></i>
             </div>
-            <horis class="pages"></horis>
-        </horis>
+            <hs class="pages"></hs>
+        </hs>
         <!-- tables -->
         <div id="table-season" class="scroller dn"></div>
         <div id="table-game" class="scroller dn"></div>
@@ -402,39 +402,39 @@
         <div id="table-cross" class="scroller dn"></div>
         <div id="table-h2h" class="scroller dn"></div>
         <div id="table-sched" class="scroller dn"></div>
-        <hori id="table-stats" class="fcenter dn">
+        <h id="table-stats" class="fcenter dn">
             <grid class="estats"></grid>
-        </hori>
+        </h>
         <div id="table-log" class="dn">
-            <hori class="fend">
+            <h class="fend">
                 <select id="nlog"></select>
-            </hori>
+            </h>
             <div id="live-log"></div>
         </div>
         <div id="table-crash" class="scroller dn"></div>
         <!-- search -->
-        <horis id="table-search" class="fend dn">
+        <hs id="table-search" class="fend dn">
             <input id="search" class="search" data-t="Search" data-t2="placeholder">
-        </horis>
-    </vert>
-</vert>
+        </hs>
+    </v>
+</v>
 <!-- twitch video -->
-<hori id="twitch2" class="fcenter fastart">
-    <vert>
+<h id="twitch2" class="fcenter fastart">
+    <v>
         <div id="twitch-vid" class="dn"></div>
         <a id="show-video" class="dn" data-t="Enable Twitch channel"></a>
-        <hori class="fend w100">
+        <h class="fend w100">
             <i id="hide-video" data-svg="x" class="dn"></i>
-        </hori>
-    </vert>
-</hori>
+        </h>
+    </v>
+</h>
 <div id="adblock" class="dn">
     <i data-t="TCEC is based on voluntary work."></i><br>
     <i data-t="Please consider whitelisting [TCEC_URL] in your ad blocker --- or send a donation."></i>
     <i data-t="Thank you!"></i>
 </div>
 <!-- footer -->
-<vert id="footer">
+<v id="footer">
     <div id="desc">
         <p>
             <i data-t="[TCEC] is a computer chess tournament organized and maintained by Chessdom in cooperation with Chessdom Arena."></i>
@@ -459,23 +459,23 @@
         <i data-t="version"></i> <i id="version"></i>.<i id="keycode">00</i>
     </div>
     <div data-t="TCEC is sponsored by [SPONSOR]"></div>
-</vert>
+</v>
 <!-- popup -->
-<vert id="about" class="popup dn">
-    <vert class="about">
-        <hori class="fbetween">
+<v id="about" class="popup dn">
+    <v class="about">
+        <h class="fbetween">
             <h5 data-t="About TCEC"></h5>
             <i class="popup-close" data-svg="x"></i>
-        </hori>
+        </h>
         <hr>
-        <vert>
+        <v>
             <div id="popup-desc"></div>
-        </vert>
-        <vert>
+        </v>
+        <v>
             <h4 data-t="{The TCEC Grand Champions}:"></h4>
             <div id="champions"></div>
-        </vert>
-        <vert>
+        </v>
+        <v>
             <h4 data-t="{Special thanks}:"></h4>
             <div>
                 Martin Thoresen,
@@ -487,12 +487,12 @@
                 <i data-t="and"></i>
                 <a href="http://open-chess.org/index.php" target="_blank">Jeremy Bernstein</a>.
             </div>
-        </vert>
-        <vert>
+        </v>
+        <v>
             <h5>&copy; TCEC 2010-2021</h5>
-        </vert>
-    </vert>
-</vert>
+        </v>
+    </v>
+</v>
 </div>
 <!-- css override -->
 <div id="extra-style" class="dn"></div>

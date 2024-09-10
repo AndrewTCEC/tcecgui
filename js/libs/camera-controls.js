@@ -192,7 +192,7 @@
 	    _this = _possibleConstructorReturn(this, _getPrototypeOf(CameraControls).call(this));
 	    _this._camera = camera;
 	    _this._yAxisUpSpace = new THREE.Quaternion().setFromUnitVectors(_this._camera.up, _AXIS_Y);
-	    _this._yAxisUpSpaceInverse = _this._yAxisUpSpace.clone().inverse();
+	    _this._yAxisUpSpaceInverse = _this._yAxisUpSpace.clone().invert();
 	    _this._state = STATE.NONE;
 		_this.enabled = true;
 		_this.enableRotate = true;
@@ -806,7 +806,7 @@
 	    value: function updateCameraUp() {
 	      this._yAxisUpSpace.setFromUnitVectors(this._camera.up, _AXIS_Y);
 
-	      this._yAxisUpSpaceInverse.copy(this._yAxisUpSpace).inverse();
+	      this._yAxisUpSpaceInverse.copy(this._yAxisUpSpace).invert();
 	    }
 	  }, {
 	    key: "update",
